@@ -118,13 +118,20 @@ export default function Dashboard() {
       {/* ── Header ── */}
       <div className="bg-white pt-10 pb-4 px-5">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-gray-400 font-medium">
-              {new Date().toLocaleString(language === 'en' ? 'en-IN' : 'hi-IN', { month: 'long', year: 'numeric' })}
-            </p>
-            <h1 className="text-lg font-bold text-gray-900">
-              {language === 'en' ? 'Bachao' : 'बचाओ'}
-            </h1>
+          <div className="flex items-center gap-2.5">
+            <img
+              src="/bachao-logo.png"
+              alt="Bachao"
+              className="w-10 h-10 rounded-xl object-cover shadow-sm"
+            />
+            <div>
+              <p className="text-xs text-gray-400 font-medium">
+                {new Date().toLocaleString(language === 'en' ? 'en-IN' : 'hi-IN', { month: 'long', year: 'numeric' })}
+              </p>
+              <h1 className="text-lg font-bold text-gray-900">
+                {language === 'en' ? 'Bachao' : 'बचाओ'}
+              </h1>
+            </div>
           </div>
           <button
             onClick={toggleLanguage}
