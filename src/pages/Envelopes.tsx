@@ -1,8 +1,22 @@
 import { useState } from 'react';
-import { useStore, type Category } from '../store/useStore';
+import { useStore, type Category, type Expense } from '../store/useStore';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { getCat, CATEGORIES } from '../lib/categories';
-import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Tag, Lock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Tag, Lock, Percent, PiggyBank, Pencil } from 'lucide-react';
+import EditTransactionSheet from '../components/EditTransactionSheet';
+
+const CAT_LABELS: Record<string, { en: string; hi: string }> = {
+  food:          { en: 'Food',          hi: 'खाना' },
+  transport:     { en: 'Transport',     hi: 'यातायात' },
+  shopping:      { en: 'Shopping',      hi: 'शॉपिंग' },
+  health:        { en: 'Health',        hi: 'स्वास्थ्य' },
+  entertainment: { en: 'Entertainment', hi: 'मनोरंजन' },
+  utilities:     { en: 'Utilities',     hi: 'बिल' },
+  education:     { en: 'Education',     hi: 'शिक्षा' },
+  home:          { en: 'Home',          hi: 'घर' },
+  other:         { en: 'Other',         hi: 'अन्य' },
+  telecom:       { en: 'Telecom',       hi: 'टेलिकॉम' },
+};
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -19,10 +33,35 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function Envelopes() {
-  const { expenses, envelopes, members, language, updateEnvelopeBudget, syncStatus, isPremium, setTab } = useStore();
-  const [expanded, setExpanded] = useState<Category | null>(null);
-  const [editing, setEditing]   = useState<Category | null>(null);
-  const [editVal, setEditVal]   = useState('');
+  const {
+    expenses, envelopes, members, language,
+    updateEnvelopeBudget, syncStatus, isPremium, setTab,
+    allocationRules, setAllocationRule,
+  } = useStore();
+  const [expanded, setExpanded]       = useState<Category | null>(null);
+  const [editing, setEditing]         = useState<Category | null>(null);
+  const [editVal, setEditVal]         = useState('');
+  const [editTx, setEditTx]           = useState<Expense | null>(null);
+  const [rulesOpen, setRulesOpen]     = useState(false);
+  const [ruleVals, setRuleVals]       = useState<Record<string, string>>(
+    () => Object.fromEntries(CATEGORIES.map((c) => [c.id, String(allocationRules[c.id] ?? 0)])),
+  );
+
+  const totalRulePct = CATEGORIES.reduce((s, c) => s + (Number(ruleVals[c.id]) || 0), 0);
+  const savingsPct   = Math.max(100 - totalRulePct, 0);
+
+  function commitRule(id: Category) {
+    const v = Math.max(0, Math.min(100, Number(ruleVals[id]) || 0));
+    setRuleVals((p) => ({ ...p, [id]: String(v) }));
+    setAllocationRule(id, v);
+  }
+
+  function distributeEvenlyRules() {
+    const each = Math.floor(100 / CATEGORIES.length);
+    const newVals = Object.fromEntries(CATEGORIES.map((c) => [c.id, String(each)]));
+    setRuleVals(newVals);
+    CATEGORIES.forEach((c) => setAllocationRule(c.id, each));
+  }
 
   const thisMonth = new Date().toISOString().slice(0, 7);
   const monthExpenses = expenses.filter((e) => e.date.startsWith(thisMonth));
@@ -32,12 +71,11 @@ export default function Envelopes() {
     const txns = monthExpenses
       .filter((e) => e.category === cat.id)
       .sort((a, b) => b.date.localeCompare(a.date));
-    const spent = txns.reduce((s, e) => s + e.amount, 0);
-    const remaining = env.budget - spent;
-    const pct = env.budget > 0 ? Math.min((spent / env.budget) * 100, 100) : 0;
-    const isLow  = pct > 75 && pct < 100;
-    const isOver = remaining < 0;
-    return { cat, env, txns, spent, remaining, pct, isLow, isOver };
+    const spent   = txns.reduce((s, e) => s + e.amount, 0);
+    const pct     = env.budget > 0 ? Math.min((spent / env.budget) * 100, 110) : 0;
+    const isOver  = env.budget > 0 && spent > env.budget;
+    const isWarn  = env.budget > 0 && pct >= 75 && !isOver;
+    return { cat, env, txns, spent, pct, isWarn, isOver };
   });
 
   const totalBudget    = rows.reduce((s, r) => s + r.env.budget, 0);
@@ -55,6 +93,7 @@ export default function Envelopes() {
   }
 
   return (
+    <>
     <div className="flex flex-col gap-4 pb-24 pt-10">
       {/* Header */}
       <div className="px-5">
@@ -114,14 +153,10 @@ export default function Envelopes() {
           </div>
           <div className="flex justify-between mt-1.5">
             <span className="text-[10px] text-gray-400">
-              {Math.round((totalSpent / totalBudget) * 100)}%{' '}
-              {language === 'en' ? 'used' : 'उपयोग'}
+              {totalBudget > 0 ? `${Math.round(Math.min((totalSpent / totalBudget) * 100, 110))}% ${language === 'en' ? 'of limit' : 'सीमा का'}` : ''}
             </span>
-            <span
-              className={`text-[11px] font-bold ${totalRemaining >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}
-            >
-              {totalRemaining >= 0 ? fmt(totalRemaining) : '−' + fmt(Math.abs(totalRemaining))}{' '}
-              {language === 'en' ? 'left' : 'बचा'}
+            <span className="text-[11px] font-bold text-gray-700">
+              {fmt(totalSpent)} {language === 'en' ? 'spent' : 'खर्च'}
             </span>
           </div>
         </div>
@@ -129,9 +164,9 @@ export default function Envelopes() {
 
       {/* Envelope cards */}
       <div className="px-4 flex flex-col gap-2">
-        {rows.map(({ cat, env, txns, spent, remaining, pct, isLow, isOver }) => {
+        {rows.map(({ cat, env, txns, spent, pct, isWarn, isOver }) => {
           const isExpanded = expanded === cat.id;
-          const barColor = isOver ? '#f43f5e' : isLow ? '#f59e0b' : '#22c55e';
+          const barColor = isOver ? '#f43f5e' : isWarn ? '#f59e0b' : '#22c55e';
 
           return (
             <div
@@ -165,16 +200,16 @@ export default function Envelopes() {
                           {language === 'en' ? 'OVER' : 'पार'}
                         </span>
                       )}
-                      {isLow && !isOver && (
+                      {isWarn && (
                         <span className="text-[9px] bg-amber-100 text-amber-600 font-bold px-1.5 py-0.5 rounded-full">
-                          {language === 'en' ? 'LOW' : 'कम'}
+                          {language === 'en' ? 'NEAR' : 'पास'}
                         </span>
                       )}
                       <span
                         className="text-sm font-black"
-                        style={{ color: isOver ? '#f43f5e' : isLow ? '#f59e0b' : '#22c55e' }}
+                        style={{ color: isOver ? '#f43f5e' : isWarn ? '#f59e0b' : '#374151' }}
                       >
-                        {remaining >= 0 ? fmt(remaining) : '−' + fmt(Math.abs(remaining))}
+                        {fmt(spent)}
                       </span>
                     </div>
                   </div>
@@ -186,7 +221,9 @@ export default function Envelopes() {
                   </div>
                   <div className="flex justify-between items-center mt-1">
                     <span className="text-[10px] text-gray-400">
-                      {fmt(spent)} {language === 'en' ? 'spent' : 'खर्च'}
+                      {env.budget > 0
+                        ? `${Math.round(Math.min(pct, 110))}% ${language === 'en' ? 'of limit' : 'सीमा का'}`
+                        : language === 'en' ? 'no limit set' : 'सीमा नहीं'}
                     </span>
                     {/* Budget edit */}
                     {editing === cat.id ? (
@@ -231,11 +268,11 @@ export default function Envelopes() {
                     txns.map((tx) => {
                       const member = members.find((m) => m.id === tx.memberId);
                       return (
-                        <div
+                        <button
                           key={tx.id}
-                          className="flex items-center gap-3 px-4 py-2.5 bg-gray-50/50"
+                          onClick={() => setEditTx(tx)}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 bg-gray-50/50 active:bg-gray-100 transition-colors text-left"
                         >
-                          {/* Member avatar */}
                           <div
                             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                             style={{ background: member?.color ?? '#9ca3af' }}
@@ -244,7 +281,7 @@ export default function Envelopes() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-semibold text-gray-700 truncate">
-                              {tx.note}
+                              {tx.note || (language === 'en' ? '(no note)' : '(メモなし)')}
                             </p>
                             <p className="text-[10px] text-gray-400">
                               {member?.name} · {timeAgo(tx.date)}
@@ -253,7 +290,8 @@ export default function Envelopes() {
                           <span className="text-xs font-bold text-rose-500 shrink-0">
                             −{fmt(tx.amount)}
                           </span>
-                        </div>
+                          <Pencil className="w-3 h-3 text-gray-300 shrink-0" />
+                        </button>
                       );
                     })
                   )}
@@ -270,6 +308,151 @@ export default function Envelopes() {
             </div>
           );
         })}
+      </div>
+
+      {/* ── 収入配分ルール設定 ── */}
+      <div className="px-4">
+        <button
+          onClick={() => setRulesOpen((o) => !o)}
+          className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 active:bg-gray-50 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+            <Percent className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold text-gray-800">
+              {language === 'en' ? 'Allocation Rules' : 'आय वितरण नियम'}
+            </p>
+            <p className="text-xs text-gray-400">
+              {language === 'en'
+                ? `Auto-split income by % · ${savingsPct}% → savings`
+                : `% से स्वचालित बाँटें · ${savingsPct}% → बचत`}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span
+              className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                totalRulePct === 100
+                  ? 'bg-emerald-100 text-emerald-600'
+                  : totalRulePct > 100
+                  ? 'bg-rose-100 text-rose-600'
+                  : 'bg-amber-100 text-amber-600'
+              }`}
+            >
+              {totalRulePct}%
+            </span>
+            {rulesOpen ? <ChevronUp className="w-4 h-4 text-gray-300" /> : <ChevronDown className="w-4 h-4 text-gray-300" />}
+          </div>
+        </button>
+
+        {rulesOpen && (
+          <div className="bg-white rounded-2xl mt-1 overflow-hidden border border-gray-50">
+            {/* total bar */}
+            <div className="px-4 pt-3 pb-1">
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-[10px] text-gray-400 font-semibold uppercase">
+                  {language === 'en' ? 'Total allocation' : 'कुल आवंटन'}
+                </span>
+                <span
+                  className={`text-xs font-black ${
+                    totalRulePct > 100
+                      ? 'text-rose-500'
+                      : totalRulePct === 100
+                      ? 'text-emerald-500'
+                      : 'text-amber-500'
+                  }`}
+                >
+                  {totalRulePct}% / 100%
+                </span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-1">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.min(totalRulePct, 100)}%`,
+                    background: totalRulePct > 100 ? '#f43f5e' : totalRulePct === 100 ? '#22c55e' : '#f59e0b',
+                  }}
+                />
+              </div>
+              {totalRulePct !== 100 && (
+                <p className={`text-[10px] text-right font-medium ${totalRulePct > 100 ? 'text-rose-400' : 'text-amber-500'}`}>
+                  {totalRulePct > 100
+                    ? (language === 'en' ? `${totalRulePct - 100}% over! Reduce to continue` : `${totalRulePct - 100}% ज़्यादा!`)
+                    : (language === 'en' ? `${100 - totalRulePct}% unassigned → savings` : `${100 - totalRulePct}% बचत में जाएगा`)}
+                </p>
+              )}
+            </div>
+
+            {/* distribute evenly */}
+            <div className="px-4 py-2">
+              <button
+                onClick={distributeEvenlyRules}
+                className="w-full py-2 bg-gray-50 rounded-xl text-xs font-semibold text-gray-500 active:scale-95 transition-transform"
+              >
+                {language === 'en' ? '⚡ Distribute evenly (10% each)' : '⚡ बराबर बाँटें (10% प्रत्येक)'}
+              </button>
+            </div>
+
+            {/* per-category % inputs */}
+            <div className="flex flex-col divide-y divide-gray-50">
+              {CATEGORIES.map((cat) => {
+                const label = CAT_LABELS[cat.id];
+                const val   = ruleVals[cat.id] ?? '0';
+                const num   = Number(val) || 0;
+                return (
+                  <div key={cat.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0"
+                      style={{ background: cat.bg }}
+                    >
+                      {cat.icon}
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-gray-700">
+                      {label ? (language === 'en' ? label.en : label.hi) : cat.id}
+                    </span>
+                    {/* mini bar */}
+                    <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden mr-2">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${Math.min(num, 100)}%`,
+                          background: num > 0 ? cat.color : '#e5e7eb',
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        max="100"
+                        value={val}
+                        onChange={(e) => setRuleVals((p) => ({ ...p, [cat.id]: e.target.value }))}
+                        onBlur={() => commitRule(cat.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && commitRule(cat.id)}
+                        className="w-12 text-right text-sm font-bold text-gray-900 bg-gray-50 rounded-lg px-2 py-1 outline-none"
+                      />
+                      <span className="text-xs text-gray-400 font-semibold">%</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* savings row */}
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-teal-50/60 border-t border-teal-100">
+              <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+                <PiggyBank className="w-4 h-4 text-teal-600" />
+              </div>
+              <span className="flex-1 text-sm font-medium text-teal-700">
+                {language === 'en' ? 'Savings (auto)' : 'बचत (स्वतः)'}
+              </span>
+              <span className="text-sm font-black text-teal-600">
+                {savingsPct}%
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Manage Categories — Premium gate */}
@@ -346,5 +529,14 @@ export default function Envelopes() {
         </div>
       </div>
     </div>
+
+    {/* Edit transaction sheet */}
+    {editTx && (
+      <EditTransactionSheet
+        target={{ kind: 'expense', data: editTx }}
+        onClose={() => setEditTx(null)}
+      />
+    )}
+    </>
   );
 }

@@ -14,8 +14,16 @@ const INCOME_SOURCES: { id: IncomeSource; icon: string; en: string; hi: string }
   { id: 'other_income', icon: '💰', en: 'Other',      hi: 'अन्य' },
 ];
 
+function fmt(n: number) {
+  return '₹' + Math.abs(n).toLocaleString('en-IN');
+}
+
 export default function AddExpense() {
-  const { addExpense, addIncome, setTab, language, members, activeMemberId, setActiveMember, envelopes } = useStore();
+  const {
+    addExpense, addIncome, setTab, language,
+    members, activeMemberId, setActiveMember,
+    envelopes, expenses,
+  } = useStore();
 
   const [mode, setMode]         = useState<Mode>('expense');
   const [category, setCategory] = useState<Category>('food');
@@ -24,30 +32,39 @@ export default function AddExpense() {
   const [note, setNote]         = useState('');
   const [saved, setSaved]       = useState(false);
 
-  // Remaining in the selected envelope
   const thisMonth = new Date().toISOString().slice(0, 7);
-  const { expenses } = useStore.getState();
-  const envelopeSpent = expenses
+
+  // selected category spending & limit for hint bar
+  const catSpent  = expenses
     .filter((e) => e.date.startsWith(thisMonth) && e.category === category)
     .reduce((s, e) => s + e.amount, 0);
-  const envelopeBudget = envelopes.find((e) => e.id === category)?.budget ?? 0;
-  const envelopeLeft   = envelopeBudget - envelopeSpent;
+  const catBudget = envelopes.find((e) => e.id === category)?.budget ?? 0;
+  const catFill   = catBudget > 0 ? Math.min((catSpent / catBudget) * 100, 110) : 0;
+  const catOver   = catBudget > 0 && catSpent > catBudget;
+  const catWarn   = catBudget > 0 && catFill >= 75 && !catOver;
 
   function handleSave() {
     const n = Number(amount);
     if (!n || n <= 0) return;
     if (mode === 'expense') {
       addExpense({ category, amount: n, note, memberId: activeMemberId });
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        setAmount('');
+        setNote('');
+        setTab('home');
+      }, 900);
     } else {
       addIncome({ source, amount: n, note, memberId: activeMemberId });
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        setAmount('');
+        setNote('');
+        setTab('home');
+      }, 900);
     }
-    setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      setAmount('');
-      setNote('');
-      setTab('home');
-    }, 900);
   }
 
   return (
@@ -58,7 +75,7 @@ export default function AddExpense() {
         </h2>
       </div>
 
-      {/* Mode toggle: Expense / Income */}
+      {/* Mode toggle */}
       <div className="px-4 mb-5">
         <div className="bg-white rounded-2xl p-1 flex gap-1">
           <button
@@ -86,18 +103,22 @@ export default function AddExpense() {
       <div className="px-4 mb-4">
         <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
           {mode === 'expense'
-            ? (language === 'en' ? 'Choose envelope' : 'लिफ़ाफ़ा चुनें')
+            ? (language === 'en' ? 'Category' : 'कैटेगरी')
             : (language === 'en' ? 'Income source' : 'आय का स्रोत')}
         </p>
         {mode === 'expense' ? (
           <div className="grid grid-cols-5 gap-2">
             {CATEGORIES.map((cat) => {
-              const env = envelopes.find((e) => e.id === cat.id);
-              const spent = expenses
+              const env     = envelopes.find((e) => e.id === cat.id);
+              const spent   = expenses
                 .filter((e) => e.date.startsWith(thisMonth) && e.category === cat.id)
                 .reduce((s, e) => s + e.amount, 0);
-              const left = (env?.budget ?? 0) - spent;
+              const fill    = env?.budget ? Math.min((spent / env.budget) * 100, 110) : 0;
+              const over    = env?.budget ? spent > env.budget : false;
+              const warn    = env?.budget ? fill >= 75 && !over : false;
+              const dotColor = over ? '#f43f5e' : warn ? '#f97316' : '#22c55e';
               const isSelected = category === cat.id;
+
               return (
                 <button
                   key={cat.id}
@@ -111,15 +132,13 @@ export default function AddExpense() {
                   <span className="text-[8px] font-medium text-gray-500 leading-tight text-center px-0.5">
                     {language === 'en' ? cat.id.slice(0, 5) : cat.id.slice(0, 4)}
                   </span>
-                  {env && (
+                  {/* spending dot indicator */}
+                  {spent > 0 && (
                     <span
                       className="text-[8px] font-bold leading-tight"
-                      style={{ color: left < 0 ? '#f43f5e' : left < env.budget * 0.25 ? '#f59e0b' : '#22c55e' }}
+                      style={{ color: dotColor }}
                     >
-                      ₹{Math.abs(left) >= 1000
-                        ? (Math.abs(left) / 1000).toFixed(1) + 'k'
-                        : Math.abs(left)}
-                      {left < 0 ? ' !' : ''}
+                      {spent >= 1000 ? (spent / 1000).toFixed(1) + 'k' : spent}
                     </span>
                   )}
                 </button>
@@ -146,34 +165,35 @@ export default function AddExpense() {
         )}
       </div>
 
-      {/* Envelope remaining hint (expense mode only) */}
-      {mode === 'expense' && (
+      {/* Spending progress hint (expense mode, if budget set) */}
+      {mode === 'expense' && catBudget > 0 && (
         <div className="px-4 mb-2">
-          <div
-            className={`flex items-center justify-between px-4 py-2 rounded-xl text-xs font-semibold ${
-              envelopeLeft < 0 ? 'bg-rose-50 text-rose-500' : 'bg-gray-50 text-gray-500'
-            }`}
-          >
-            <span>
-              {language === 'en' ? 'Envelope balance:' : 'लिफ़ाफ़े में बचा:'}
-            </span>
-            <span className={envelopeLeft < 0 ? 'text-rose-600' : 'text-emerald-600'}>
-              {envelopeLeft < 0 ? '−₹' + Math.abs(envelopeLeft).toLocaleString('en-IN') + ' over!' : '₹' + envelopeLeft.toLocaleString('en-IN')}
-            </span>
+          <div className="bg-white rounded-xl px-4 py-2.5">
+            <div className="flex justify-between text-xs mb-1.5">
+              <span className="text-gray-400 font-medium">
+                {language === 'en' ? 'Spent this month' : 'इस महीने खर्च'}
+              </span>
+              <span className={`font-bold ${catOver ? 'text-rose-500' : catWarn ? 'text-orange-500' : 'text-gray-600'}`}>
+                {fmt(catSpent)} / {fmt(catBudget)}
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(catFill, 100)}%`,
+                  background: catOver ? '#f43f5e' : catWarn ? '#f97316' : '#22c55e',
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
 
       {/* Amount */}
       <div className="px-4 mb-4">
-        <div className={`rounded-2xl px-4 flex items-center gap-2 h-16 ${
-          mode === 'expense' ? 'bg-white' : 'bg-white'
-        }`}>
-          <span
-            className={`text-2xl font-black ${
-              mode === 'expense' ? 'text-rose-300' : 'text-emerald-300'
-            }`}
-          >
+        <div className="rounded-2xl px-4 flex items-center gap-2 h-16 bg-white">
+          <span className={`text-2xl font-black ${mode === 'expense' ? 'text-rose-300' : 'text-emerald-300'}`}>
             ₹
           </span>
           <input

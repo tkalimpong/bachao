@@ -18,11 +18,11 @@ const DEFAULT_ENVELOPES: Envelope[] = [
   { id: 'shopping',      budget: 5000 },
   { id: 'health',        budget: 3000 },
   { id: 'entertainment', budget: 2000 },
-  { id: 'bills',         budget: 4000 },
+  { id: 'utilities',     budget: 4000 },
   { id: 'education',     budget: 5000 },
   { id: 'home',          budget: 3000 },
-  { id: 'travel',        budget: 5000 },
   { id: 'other',         budget: 2000 },
+  { id: 'telecom',       budget: 2000 },
 ];
 
 /** "2026-05-01" 形式の当月1日 */

@@ -1,6 +1,8 @@
-import { useStore } from '../store/useStore';
+import { useState } from 'react';
+import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat, CATEGORIES } from '../lib/categories';
-import { Globe, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { Globe, TrendingDown, TrendingUp, Minus, PiggyBank, Pencil } from 'lucide-react';
+import EditTransactionSheet from '../components/EditTransactionSheet';
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -23,78 +25,62 @@ const SOURCE_ICONS: Record<string, string> = {
   salary: '💼', freelance: '💻', business: '🏪', gift: '🎁', rent: '🏠', other_income: '💰',
 };
 
-// ── SVG circular gauge ──────────────────────────────────────────────────────
-// リングは「残高」を表す。
-//   100% 残高 → 緑の満タンリング
-//   40% 以下  → オレンジに変わりリングが縮む
-//   0% (ちょうど使い切り) → リング消滅
-//   マイナス  → 赤リングが 0 から時計回りに伸びる（赤字が増えるほど長くなる）
+// ── SVG circular gauge（加算式）──────────────────────────────────────────────
+// 支出が増えると 12時から時計回りにリングが伸びていく。
+//   0%          → リングなし（グレーの背景のみ）
+//   1〜74%      → 緑リングが時計回りに伸びる
+//   75〜99%     → オレンジ（上限に近い警告色）
+//   100%〜      → 赤（上限超過）、最大 110% 分まで伸びて止まる
+//   budget = 0  → グレーの細いリングで「記録あり」を示すだけ
 const RING_R    = 21;
 const RING_CIRC = 2 * Math.PI * RING_R;
 
-function GaugeRing({ budget, remaining }: { budget: number; remaining: number }) {
-  const isOver = remaining < 0;
-
-  // ── 緑 / オレンジ リング ──────────────────────────────────────────────
-  // strokeDasharray 4値方式：「0-長dash, spentLen-gap, remainLen-dash, 大gap」
-  //   → 最初の 0-dash ＋ gap が 12時から時計回りにギャップを作る
-  //   → 残高 arc は その後ろ（時計回り方向の後ろ = 反時計回り側）に出る
-  const remainPct  = budget > 0 ? Math.max((remaining / budget) * 100, 0) : 0;
-  const spentPct   = 100 - remainPct;
-  const spentLen   = (spentPct   / 100) * RING_CIRC;  // 12時から CW に広がるギャップ長
-  const remainLen  = (remainPct  / 100) * RING_CIRC;  // 残高 arc 長
-  const remainColor = remainPct > 40 ? '#22c55e' : '#f97316';
-
-  // ── 赤（超過）リング ──────────────────────────────────────────────────
-  // dashLen を変える方式：
-  //   dashLen = overPct/100 × CIRC、offset = 0
-  //   → 12時からそのまま「時計回り」に伸びる
-  const overPct = isOver ? Math.min((Math.abs(remaining) / budget) * 100, 100) : 0;
-  const overLen = (overPct / 100) * RING_CIRC;
+function GaugeRing({ budget, spent }: { budget: number; spent: number }) {
+  const hasBudget = budget > 0;
+  const fillPct   = hasBudget ? Math.min((spent / budget) * 100, 110) : 0;
+  const fillLen   = (fillPct / 100) * RING_CIRC;
+  const color     = fillPct >= 100 ? '#f43f5e' : fillPct >= 75 ? '#f97316' : '#22c55e';
 
   return (
     <>
-      {/* トラック（背景の薄いリング） */}
+      {/* トラック */}
       <circle cx="29" cy="29" r={RING_R} fill="none" stroke="#f3f4f6" strokeWidth="3.5" />
 
-      {/* 残高リング
-          dasharray = "0 {spentLen} {remainLen} {RING_CIRC}"
-          └ [0-dash][spentLen-gap][remainLen-dash][大gap]
-          → 12時から spentLen 分のギャップ(CW) → 残高 arc → 以降は非表示 */}
-      {remainLen > 0 && (
+      {/* 支出リング：12時（-90°）から時計回りに伸びる */}
+      {hasBudget && fillLen > 0 ? (
         <circle
           cx="29" cy="29" r={RING_R}
           fill="none"
-          stroke={remainColor}
+          stroke={color}
           strokeWidth="3.5"
           strokeLinecap="round"
-          strokeDasharray={`0 ${spentLen} ${remainLen} ${RING_CIRC}`}
+          strokeDasharray={`${fillLen} ${RING_CIRC}`}
           strokeDashoffset={0}
           transform="rotate(-90 29 29)"
           style={{ transition: 'stroke-dasharray 0.8s ease, stroke 0.5s ease' }}
         />
-      )}
-
-      {/* 超過リング（12時から時計回りに伸びる） */}
-      {overLen > 0 && (
+      ) : !hasBudget && spent > 0 ? (
+        /* 上限未設定でも支出があれば細いグレーリングで示す */
         <circle
           cx="29" cy="29" r={RING_R}
           fill="none"
-          stroke="#f43f5e"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          strokeDasharray={`${overLen} ${RING_CIRC}`}
-          strokeDashoffset={0}
+          stroke="#d1d5db"
+          strokeWidth="2"
+          strokeDasharray={`${RING_CIRC * 0.25} ${RING_CIRC}`}
           transform="rotate(-90 29 29)"
-          style={{ transition: 'stroke-dasharray 0.8s ease' }}
         />
-      )}
+      ) : null}
     </>
   );
 }
 
+type EditTarget =
+  | { kind: 'expense'; data: Expense }
+  | { kind: 'income';  data: Income };
+
 export default function Dashboard() {
   const { expenses, incomes, envelopes, members, language, toggleLanguage, setTab } = useStore();
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
 
   const thisMonth    = new Date().toISOString().slice(0, 7);
   const monthExpenses = expenses.filter((e) => e.date.startsWith(thisMonth));
@@ -114,17 +100,16 @@ export default function Dashboard() {
     ...incomes.map((i)  => ({ kind: 'income'  as const, data: i })),
   ].sort((a, b) => b.data.date.localeCompare(a.data.date)).slice(0, 8);
 
-  // Envelope gauge data — all 10 categories
+  // Envelope gauge data — all 10 categories（加算式）
   const gaugeData = CATEGORIES.map((cat) => {
     const env   = envelopes.find((e) => e.id === cat.id)!;
     const spent = monthExpenses
       .filter((e) => e.category === cat.id)
       .reduce((s, e) => s + e.amount, 0);
-    const remaining  = env.budget - spent;
-    const remainPct  = env.budget > 0 ? (remaining / env.budget) * 100 : 0;
-    const isLow      = remainPct > 0 && remainPct <= 40;
-    const isOver     = remaining < 0;
-    return { cat, env, spent, remaining, remainPct, isLow, isOver };
+    const fillPct = env.budget > 0 ? (spent / env.budget) * 100 : 0;
+    const isOver  = env.budget > 0 && spent > env.budget;
+    const isWarn  = env.budget > 0 && fillPct >= 75 && !isOver;
+    return { cat, env, spent, fillPct, isWarn, isOver };
   });
 
   return (
@@ -204,6 +189,47 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* ── 貯蓄カード（自動計算）─────────────────────────────────────────── */}
+      <div className="px-4">
+        {balance >= 0 ? (
+          <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <PiggyBank className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-white/70 font-medium">
+                {language === 'en' ? 'Savings this month' : 'इस महीने की बचत'}
+              </p>
+              <p className="text-xl font-black text-white">
+                +{fmt(balance)}
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-xs text-white/70">
+                {language === 'en' ? 'of income' : 'आय का'}
+              </p>
+              <p className="text-sm font-bold text-white">
+                {totalIn > 0 ? Math.round((balance / totalIn) * 100) : 0}%
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-rose-50 border border-rose-100 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+              <PiggyBank className="w-5 h-5 text-rose-400" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-rose-400 font-medium">
+                {language === 'en' ? 'Overspending this month' : 'इस महीने ज़्यादा खर्च'}
+              </p>
+              <p className="text-xl font-black text-rose-500">
+                −{fmt(Math.abs(balance))}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── アイデア1: Envelope gauge grid ─────────────────────────────────── */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-2 ml-1">
@@ -220,12 +246,8 @@ export default function Dashboard() {
 
         <div className="bg-white rounded-2xl p-3">
           <div className="grid grid-cols-5 gap-1">
-            {gaugeData.map(({ cat, env, remaining, remainPct, isLow, isOver }) => {
-              const amtColor = isOver
-                ? 'text-rose-500'
-                : isLow
-                ? 'text-orange-500'
-                : 'text-emerald-500';
+            {gaugeData.map(({ cat, env, spent, isWarn, isOver }) => {
+              const amtColor = isOver ? 'text-rose-500' : isWarn ? 'text-orange-500' : 'text-gray-600';
 
               return (
                 <button
@@ -235,10 +257,8 @@ export default function Dashboard() {
                 >
                   {/* SVG ring + icon */}
                   <svg width="58" height="58" viewBox="0 0 58 58">
-                    <GaugeRing budget={env.budget} remaining={remaining} />
-                    {/* icon background circle */}
+                    <GaugeRing budget={env.budget} spent={spent} />
                     <circle cx="29" cy="29" r="17" fill={cat.bg} />
-                    {/* emoji */}
                     <text
                       x="29" y="35"
                       textAnchor="middle"
@@ -249,11 +269,9 @@ export default function Dashboard() {
                     </text>
                   </svg>
 
-                  {/* remaining amount */}
+                  {/* spent amount */}
                   <span className={`text-[9px] font-black leading-tight ${amtColor}`}>
-                    {remaining >= 0
-                      ? fmtShort(remaining)
-                      : '−' + fmtShort(Math.abs(remaining))}
+                    {spent > 0 ? fmtShort(spent) : '–'}
                   </span>
                 </button>
               );
@@ -263,9 +281,9 @@ export default function Dashboard() {
           {/* legend */}
           <div className="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-gray-50">
             {[
-              { color: '#22c55e', en: 'Plenty',  hi: 'पर्याप्त' },
-              { color: '#f97316', en: '≤40% left', hi: '≤40% बचा' },
-              { color: '#f43f5e', en: 'Over',    hi: 'पार'       },
+              { color: '#22c55e', en: 'OK',     hi: 'ठीक' },
+              { color: '#f97316', en: '≥75%',   hi: '≥75%' },
+              { color: '#f43f5e', en: 'Over',   hi: 'पार'  },
             ].map((l) => (
               <div key={l.en} className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
@@ -290,70 +308,72 @@ export default function Dashboard() {
             if (kind === 'expense') {
               const cat = getCat(data.category as any);
               return (
-                <div key={data.id} className="flex items-center gap-3 px-4 py-3">
-                  {/* ① 誰が — member avatar */}
+                <button
+                  key={data.id}
+                  onClick={() => setEditTarget({ kind: 'expense', data: data as Expense })}
+                  className="w-full flex items-center gap-3 px-4 py-3 active:bg-gray-50 transition-colors text-left"
+                >
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-sm"
                     style={{ background: member?.color ?? '#9ca3af' }}
                   >
                     {member?.avatar ?? '?'}
                   </div>
-
-                  {/* ② 何に — category icon badge */}
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
                     style={{ background: cat.bg }}
                   >
                     {cat.icon}
                   </div>
-
-                  {/* note + date (very subdued) */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{data.note}</p>
-                    <p className="text-[10px] text-gray-300">
-                      {relativeDate(data.date, language)}
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {data.note || (language === 'en' ? '(no note)' : '(メモなし)')}
                     </p>
+                    <p className="text-[10px] text-gray-300">{relativeDate(data.date, language)}</p>
                   </div>
-
-                  {/* ③ いくら — amount */}
-                  <span className="text-sm font-black text-rose-500 shrink-0">
-                    −{fmt(data.amount)}
-                  </span>
-                </div>
+                  <span className="text-sm font-black text-rose-500 shrink-0">−{fmt(data.amount)}</span>
+                  <Pencil className="w-3.5 h-3.5 text-gray-200 shrink-0" />
+                </button>
               );
             } else {
               const icon = SOURCE_ICONS[(data as any).source] ?? '💰';
               return (
-                <div key={data.id} className="flex items-center gap-3 px-4 py-3">
-                  {/* member avatar */}
+                <button
+                  key={data.id}
+                  onClick={() => setEditTarget({ kind: 'income', data: data as Income })}
+                  className="w-full flex items-center gap-3 px-4 py-3 active:bg-gray-50 transition-colors text-left"
+                >
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-sm"
                     style={{ background: member?.color ?? '#9ca3af' }}
                   >
                     {member?.avatar ?? '?'}
                   </div>
-
-                  {/* source icon */}
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0 bg-emerald-50">
                     {icon}
                   </div>
-
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{data.note}</p>
-                    <p className="text-[10px] text-gray-300">
-                      {relativeDate(data.date, language)}
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {data.note || (language === 'en' ? '(no note)' : '(メモなし)')}
                     </p>
+                    <p className="text-[10px] text-gray-300">{relativeDate(data.date, language)}</p>
                   </div>
-
-                  <span className="text-sm font-black text-emerald-500 shrink-0">
-                    +{fmt(data.amount)}
-                  </span>
-                </div>
+                  <span className="text-sm font-black text-emerald-500 shrink-0">+{fmt(data.amount)}</span>
+                  <Pencil className="w-3.5 h-3.5 text-gray-200 shrink-0" />
+                </button>
               );
             }
           })}
         </div>
       </div>
+
+      {/* Edit transaction sheet */}
+      {editTarget && (
+        <EditTransactionSheet
+          target={editTarget}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
     </div>
   );
 }
