@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useStore, type Category } from '../store/useStore';
+import { isFirebaseConfigured } from '../lib/firebase';
 import { getCat, CATEGORIES } from '../lib/categories';
-import { ChevronDown, ChevronUp, Wifi, Users } from 'lucide-react';
+import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Tag, Lock } from 'lucide-react';
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -18,7 +19,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function Envelopes() {
-  const { expenses, envelopes, members, language, updateEnvelopeBudget, isPremium, setTab } = useStore();
+  const { expenses, envelopes, members, language, updateEnvelopeBudget, syncStatus, isPremium, setTab } = useStore();
   const [expanded, setExpanded] = useState<Category | null>(null);
   const [editing, setEditing]   = useState<Category | null>(null);
   const [editVal, setEditVal]   = useState('');
@@ -61,11 +62,25 @@ export default function Envelopes() {
           <h2 className="text-xl font-bold text-gray-900">
             {language === 'en' ? 'Envelopes' : 'लिफ़ाफ़े'}
           </h2>
-          {/* Real-time indicator */}
-          <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-            <Wifi className="w-2.5 h-2.5" />
-            {language === 'en' ? 'Live' : 'लाइव'}
-          </div>
+          {/* Real-time sync indicator */}
+          {syncStatus === 'live' && (
+            <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <Wifi className="w-2.5 h-2.5" />
+              {language === 'en' ? 'Live' : 'लाइव'}
+            </div>
+          )}
+          {syncStatus === 'connecting' && (
+            <div className="flex items-center gap-1 bg-amber-50 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+              <Wifi className="w-2.5 h-2.5" />
+              {language === 'en' ? 'Syncing…' : 'सिंक हो रहा है…'}
+            </div>
+          )}
+          {syncStatus === 'offline' && isFirebaseConfigured && (
+            <div className="flex items-center gap-1 bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <WifiOff className="w-2.5 h-2.5" />
+              {language === 'en' ? 'Offline' : 'ऑफ़लाइन'}
+            </div>
+          )}
         </div>
         <p className="text-xs text-gray-400">
           {language === 'en'
@@ -257,6 +272,36 @@ export default function Envelopes() {
         })}
       </div>
 
+      {/* Manage Categories — Premium gate */}
+      <div className="px-4">
+        <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
+            <Tag className="w-5 h-5 text-brand-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800">
+              {language === 'en' ? 'Manage Categories' : 'कैटेगरी प्रबंधन'}
+            </p>
+            <p className="text-xs text-gray-400 truncate">
+              {language === 'en' ? 'Add or edit custom categories' : 'कस्टम कैटेगरी जोड़ें या बदलें'}
+            </p>
+          </div>
+          {isPremium ? (
+            <button className="bg-brand-500 text-white text-xs font-bold px-3 py-1.5 rounded-full active:scale-95 transition-transform">
+              {language === 'en' ? 'Manage' : 'प्रबंधन'}
+            </button>
+          ) : (
+            <button
+              onClick={() => setTab('premium')}
+              className="flex items-center gap-1 bg-gray-100 text-gray-500 text-xs font-bold px-3 py-1.5 rounded-full active:scale-95 transition-transform"
+            >
+              <Lock className="w-3 h-3" />
+              {language === 'en' ? 'Plus' : 'प्लस'}
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Real-time family activity feed */}
       <div className="px-4">
         <div className="bg-gray-900 rounded-2xl p-4">
@@ -290,12 +335,12 @@ export default function Envelopes() {
               );
             })}
           </div>
-          {!isPremium && (
+          {!isFirebaseConfigured && (
             <button
               onClick={() => setTab('premium')}
               className="mt-3 w-full py-2 bg-brand-500/20 text-brand-400 text-xs font-bold rounded-xl active:scale-95"
             >
-              {language === 'en' ? 'Unlock real-time sync → Pro' : 'रियल-टाइम सिंक अनलॉक → प्रो'}
+              {language === 'en' ? 'Enable real-time sync → Setup' : 'रियल-टाइम सिंक चालू करें → सेटअप'}
             </button>
           )}
         </div>

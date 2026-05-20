@@ -1,5 +1,8 @@
 import { useStore } from '../store/useStore';
-import { Check, Zap, Users, BarChart2, Smartphone, ShieldCheck, Star } from 'lucide-react';
+import {
+  Check, Zap, Users, BarChart2, Tag, Download,
+  ShieldCheck, Star, Lock,
+} from 'lucide-react';
 import { useState } from 'react';
 
 const PLANS = [
@@ -12,10 +15,10 @@ const PLANS = [
     periodHi: '/माह',
     color: '#8b5cf6',
     features: [
-      { icon: Users, en: 'Up to 6 family members', hi: '6 सदस्य तक' },
-      { icon: BarChart2, en: 'Full reports & analytics', hi: 'पूरी रिपोर्ट' },
-      { icon: Smartphone, en: 'Receipt scanner (OCR)', hi: 'बिल स्कैन' },
-      { icon: ShieldCheck, en: 'No ads', hi: 'कोई विज्ञापन नहीं' },
+      { icon: Users,    en: 'Family sharing (up to 6)',   hi: '6 सदस्य तक शेयरिंग' },
+      { icon: Tag,      en: 'Custom categories',           hi: 'कस्टम कैटेगरी' },
+      { icon: BarChart2,en: 'Full reports & analytics',    hi: 'पूरी रिपोर्ट' },
+      { icon: ShieldCheck, en: 'No ads',                  hi: 'कोई विज्ञापन नहीं' },
     ],
   },
   {
@@ -28,23 +31,38 @@ const PLANS = [
     color: '#f97316',
     popular: true,
     features: [
-      { icon: Users, en: 'Up to 10 family members', hi: '10 सदस्य तक' },
-      { icon: Zap, en: 'UPI auto-sync', hi: 'UPI ऑटो-सिंक' },
-      { icon: Star, en: 'AI spending advice', hi: 'AI सुझाव' },
-      { icon: BarChart2, en: 'Custom categories & CSV export', hi: 'CSV एक्सपोर्ट' },
+      { icon: Users,    en: 'Family sharing (up to 10)',   hi: '10 सदस्य तक शेयरिंग' },
+      { icon: Tag,      en: 'Custom categories',           hi: 'कस्टम कैटेगरी' },
+      { icon: Download, en: 'Backup & CSV export',         hi: 'बैकअप और CSV एक्सपोर्ट' },
+      { icon: Star,     en: 'AI spending advice',          hi: 'AI सुझाव' },
     ],
   },
 ];
 
+const FEATURE_LIST = [
+  { icon: '🔒', en: 'Bank-grade encryption',                    hi: 'बैंक-स्तरीय सुरक्षा',        tier: 'free' },
+  { icon: '🇮🇳', en: 'Data stored in India (DPDP compliant)',   hi: 'डेटा भारत में (DPDP अनुपालित)', tier: 'free' },
+  { icon: '📴', en: 'Works offline',                            hi: 'ऑफलाइन भी काम करता है',       tier: 'free' },
+  { icon: '👨‍👩‍👧', en: 'Family sharing with roles',            hi: 'परिवार साझाकरण',               tier: 'plus' },
+  { icon: '🏷️', en: 'Custom category add / edit',              hi: 'कस्टम कैटेगरी',                tier: 'plus' },
+  { icon: '💾', en: 'Backup & CSV export',                      hi: 'बैकअप और CSV एक्सपोर्ट',      tier: 'pro'  },
+] as const;
+
 const TESTIMONIALS = [
-  { name: 'Shreya M.', city: 'Mumbai', text: '"Saved ₹8,000 in first month!"', hi: '"पहले महीने ₹8,000 बचाए!"' },
-  { name: 'Vikram S.', city: 'Bangalore', text: '"Perfect for joint families"', hi: '"संयुक्त परिवार के लिए बेस्ट"' },
+  { name: 'Shreya M.', city: 'Mumbai',    text: '"Saved ₹8,000 in first month!"',   hi: '"पहले महीने ₹8,000 बचाए!"' },
+  { name: 'Vikram S.', city: 'Bangalore', text: '"Perfect for joint families"',      hi: '"संयुक्त परिवार के लिए बेस्ट"' },
 ];
+
+const tierLabel: Record<string, { en: string; hi: string; color: string }> = {
+  free: { en: 'Free',  hi: 'मुफ़्त', color: '#6b7280' },
+  plus: { en: 'Plus',  hi: 'प्लस',  color: '#8b5cf6' },
+  pro:  { en: 'Pro',   hi: 'प्रो',  color: '#f97316' },
+};
 
 export default function Premium() {
   const { language, isPremium } = useStore();
   const [selected, setSelected] = useState<'plus' | 'pro'>('pro');
-  const [buying, setBuying] = useState(false);
+  const [buying, setBuying]     = useState(false);
 
   function handleBuy() {
     setBuying(true);
@@ -56,6 +74,7 @@ export default function Premium() {
 
   return (
     <div className="flex flex-col gap-4 pb-24 pt-10">
+
       {/* Header */}
       <div className="px-5">
         <div className="flex items-center gap-2 mb-1">
@@ -76,11 +95,9 @@ export default function Premium() {
         {PLANS.map((plan) => (
           <button
             key={plan.id}
-            onClick={() => setSelected(plan.id as any)}
+            onClick={() => setSelected(plan.id as 'plus' | 'pro')}
             className={`flex-1 rounded-2xl p-4 text-left transition-all active:scale-95 relative ${
-              selected === plan.id
-                ? 'ring-2 ring-brand-500'
-                : 'bg-white'
+              selected === plan.id ? 'ring-2 ring-brand-500' : 'bg-white'
             }`}
             style={selected === plan.id ? { background: plan.color + '11' } : {}}
           >
@@ -150,7 +167,7 @@ export default function Premium() {
             </div>
             <div>
               <p className="font-bold text-green-800 text-sm">
-                {language === 'en' ? 'You\'re a Pro member!' : 'आप प्रो सदस्य हैं!'}
+                {language === 'en' ? "You're a Pro member!" : 'आप प्रो सदस्य हैं!'}
               </p>
               <p className="text-xs text-green-600">
                 {language === 'en' ? 'All features unlocked' : 'सभी फीचर अनलॉक'}
@@ -160,28 +177,61 @@ export default function Premium() {
         </div>
       )}
 
-      {/* What's included */}
+      {/* Feature comparison */}
       <div className="px-4">
         <p className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-2">
-          {language === 'en' ? 'Everything included' : 'सब कुछ शामिल'}
+          {language === 'en' ? "What's included" : 'क्या शामिल है'}
         </p>
         <div className="bg-white rounded-2xl divide-y divide-gray-50 overflow-hidden">
-          {[
-            { icon: '🔒', en: 'Bank-grade encryption', hi: 'बैंक-स्तरीय सुरक्षा' },
-            { icon: '🇮🇳', en: 'Data stored in India (DPDP Act compliant)', hi: 'डेटा भारत में (DPDP अनुपालित)' },
-            { icon: '📴', en: 'Works offline', hi: 'ऑफलाइन भी काम करता है' },
-            { icon: '🔄', en: 'UPI auto-sync (Phase 2)', hi: 'UPI ऑटो-सिंक (जल्द आ रहा)' },
-            { icon: '👨‍👩‍👧', en: 'Family sharing with roles', hi: 'परिवार साझाकरण' },
-          ].map((item) => (
-            <div key={item.en} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-lg">{item.icon}</span>
-              <span className="text-sm text-gray-700">
-                {language === 'en' ? item.en : item.hi}
-              </span>
-            </div>
-          ))}
+          {FEATURE_LIST.map((item) => {
+            const label = tierLabel[item.tier];
+            return (
+              <div key={item.en} className="flex items-center gap-3 px-4 py-3">
+                <span className="text-lg w-7 shrink-0">{item.icon}</span>
+                <span className="text-sm text-gray-700 flex-1">
+                  {language === 'en' ? item.en : item.hi}
+                </span>
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                  style={{ background: label.color + '18', color: label.color }}
+                >
+                  {language === 'en' ? label.en : label.hi}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
+
+      {/* Locked feature previews */}
+      {!isPremium && (
+        <div className="px-4">
+          <p className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-2">
+            {language === 'en' ? 'Locked features' : 'लॉक फीचर'}
+          </p>
+          <div className="flex flex-col gap-2">
+            {[
+              { icon: '👨‍👩‍👧', en: 'Family sharing',      hi: 'फ़ैमिली शेयरिंग', tier: 'Plus' },
+              { icon: '🏷️',     en: 'Custom categories', hi: 'कस्टम कैटेगरी',   tier: 'Plus' },
+              { icon: '💾',     en: 'Backup & export',   hi: 'बैकअप और एक्सपोर्ट', tier: 'Pro'  },
+            ].map((f) => (
+              <div
+                key={f.en}
+                className="bg-white rounded-xl px-4 py-3 flex items-center gap-3"
+              >
+                <span className="text-xl">{f.icon}</span>
+                <span className="text-sm text-gray-500 flex-1">
+                  {language === 'en' ? f.en : f.hi}
+                </span>
+                <div className="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1 rounded-full">
+                  <Lock className="w-3 h-3 text-gray-400" />
+                  <span className="text-[10px] font-bold text-gray-400">{f.tier}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Testimonials */}
       <div className="px-4">
@@ -201,6 +251,7 @@ export default function Premium() {
           ))}
         </div>
       </div>
+
     </div>
   );
 }

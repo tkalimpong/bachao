@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from './store/useStore';
+import { useFirestoreSync } from './hooks/useFirestoreSync';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import AddExpense from './pages/AddExpense';
@@ -17,6 +18,7 @@ const SCREENS: Record<string, React.FC> = {
 
 export default function App() {
   const { currentTab } = useStore();
+  useFirestoreSync();
   const Screen = SCREENS[currentTab] ?? Dashboard;
 
   return (

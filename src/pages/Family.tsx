@@ -138,28 +138,6 @@ export default function Family() {
         </div>
       )}
 
-      {/* UPI link banner */}
-      <div className="px-4">
-        <div className="bg-brand-500 rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-            <span className="text-xl">💳</span>
-          </div>
-          <div className="flex-1">
-            <p className="text-white font-semibold text-sm">
-              {language === 'en' ? 'Link UPI' : 'UPI जोड़ें'}
-            </p>
-            <p className="text-white/70 text-xs">
-              {language === 'en' ? 'Auto-import UPI transactions' : 'UPI लेन-देन स्वत: जोड़ें'}
-            </p>
-          </div>
-          <button
-            onClick={() => setTab('premium')}
-            className="bg-white text-brand-600 text-xs font-bold px-3 py-1.5 rounded-full active:scale-95"
-          >
-            {language === 'en' ? 'Coming Soon' : 'जल्द आ रहा'}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
