@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.vite/
+android/
+ios/
+*.local
+.env
+.env.local
