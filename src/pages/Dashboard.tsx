@@ -1,15 +1,20 @@
 import { useStore } from '../store/useStore';
-import { getCat } from '../lib/categories';
+import { getCat, CATEGORIES } from '../lib/categories';
 import { Globe, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
 }
 
+function fmtShort(n: number) {
+  if (Math.abs(n) >= 1000) return '₹' + (Math.abs(n) / 1000).toFixed(1) + 'k';
+  return '₹' + Math.abs(n);
+}
+
 function relativeDate(dateStr: string, lang: 'en' | 'hi') {
-  const today = new Date().toISOString().slice(0, 10);
+  const today     = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  if (dateStr === today) return lang === 'en' ? 'Today' : 'आज';
+  if (dateStr === today)     return lang === 'en' ? 'Today'     : 'आज';
   if (dateStr === yesterday) return lang === 'en' ? 'Yesterday' : 'कल';
   return dateStr;
 }
@@ -18,18 +23,88 @@ const SOURCE_ICONS: Record<string, string> = {
   salary: '💼', freelance: '💻', business: '🏪', gift: '🎁', rent: '🏠', other_income: '💰',
 };
 
+// ── SVG circular gauge ──────────────────────────────────────────────────────
+// リングは「残高」を表す。
+//   100% 残高 → 緑の満タンリング
+//   40% 以下  → オレンジに変わりリングが縮む
+//   0% (ちょうど使い切り) → リング消滅
+//   マイナス  → 赤リングが 0 から時計回りに伸びる（赤字が増えるほど長くなる）
+const RING_R    = 21;
+const RING_CIRC = 2 * Math.PI * RING_R;
+
+function GaugeRing({ budget, remaining }: { budget: number; remaining: number }) {
+  const isOver = remaining < 0;
+
+  // ── 緑 / オレンジ リング ──────────────────────────────────────────────
+  // strokeDasharray 4値方式：「0-長dash, spentLen-gap, remainLen-dash, 大gap」
+  //   → 最初の 0-dash ＋ gap が 12時から時計回りにギャップを作る
+  //   → 残高 arc は その後ろ（時計回り方向の後ろ = 反時計回り側）に出る
+  const remainPct  = budget > 0 ? Math.max((remaining / budget) * 100, 0) : 0;
+  const spentPct   = 100 - remainPct;
+  const spentLen   = (spentPct   / 100) * RING_CIRC;  // 12時から CW に広がるギャップ長
+  const remainLen  = (remainPct  / 100) * RING_CIRC;  // 残高 arc 長
+  const remainColor = remainPct > 40 ? '#22c55e' : '#f97316';
+
+  // ── 赤（超過）リング ──────────────────────────────────────────────────
+  // dashLen を変える方式：
+  //   dashLen = overPct/100 × CIRC、offset = 0
+  //   → 12時からそのまま「時計回り」に伸びる
+  const overPct = isOver ? Math.min((Math.abs(remaining) / budget) * 100, 100) : 0;
+  const overLen = (overPct / 100) * RING_CIRC;
+
+  return (
+    <>
+      {/* トラック（背景の薄いリング） */}
+      <circle cx="29" cy="29" r={RING_R} fill="none" stroke="#f3f4f6" strokeWidth="3.5" />
+
+      {/* 残高リング
+          dasharray = "0 {spentLen} {remainLen} {RING_CIRC}"
+          └ [0-dash][spentLen-gap][remainLen-dash][大gap]
+          → 12時から spentLen 分のギャップ(CW) → 残高 arc → 以降は非表示 */}
+      {remainLen > 0 && (
+        <circle
+          cx="29" cy="29" r={RING_R}
+          fill="none"
+          stroke={remainColor}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeDasharray={`0 ${spentLen} ${remainLen} ${RING_CIRC}`}
+          strokeDashoffset={0}
+          transform="rotate(-90 29 29)"
+          style={{ transition: 'stroke-dasharray 0.8s ease, stroke 0.5s ease' }}
+        />
+      )}
+
+      {/* 超過リング（12時から時計回りに伸びる） */}
+      {overLen > 0 && (
+        <circle
+          cx="29" cy="29" r={RING_R}
+          fill="none"
+          stroke="#f43f5e"
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeDasharray={`${overLen} ${RING_CIRC}`}
+          strokeDashoffset={0}
+          transform="rotate(-90 29 29)"
+          style={{ transition: 'stroke-dasharray 0.8s ease' }}
+        />
+      )}
+    </>
+  );
+}
+
 export default function Dashboard() {
   const { expenses, incomes, envelopes, members, language, toggleLanguage, setTab } = useStore();
 
-  const thisMonth = new Date().toISOString().slice(0, 7);
+  const thisMonth    = new Date().toISOString().slice(0, 7);
   const monthExpenses = expenses.filter((e) => e.date.startsWith(thisMonth));
-  const monthIncomes = incomes.filter((i) => i.date.startsWith(thisMonth));
+  const monthIncomes  = incomes.filter((i)  => i.date.startsWith(thisMonth));
 
-  const totalIn  = monthIncomes.reduce((s, i) => s + i.amount, 0);
+  const totalIn  = monthIncomes.reduce((s, i)  => s + i.amount, 0);
   const totalOut = monthExpenses.reduce((s, e) => s + e.amount, 0);
   const balance  = totalIn - totalOut;
 
-  // recent transactions merged and sorted
+  // merged recent transactions (latest 8)
   type TxEntry =
     | { kind: 'expense'; data: typeof expenses[0] }
     | { kind: 'income';  data: typeof incomes[0] };
@@ -39,21 +114,23 @@ export default function Dashboard() {
     ...incomes.map((i)  => ({ kind: 'income'  as const, data: i })),
   ].sort((a, b) => b.data.date.localeCompare(a.data.date)).slice(0, 8);
 
-  // Envelope summary — top 4 by % used
-  const envelopeSummary = envelopes
-    .map((env) => {
-      const spent = monthExpenses
-        .filter((e) => e.category === env.id)
-        .reduce((s, e) => s + e.amount, 0);
-      return { ...env, spent, pct: Math.min((spent / env.budget) * 100, 100) };
-    })
-    .filter((e) => e.spent > 0)
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 4);
+  // Envelope gauge data — all 10 categories
+  const gaugeData = CATEGORIES.map((cat) => {
+    const env   = envelopes.find((e) => e.id === cat.id)!;
+    const spent = monthExpenses
+      .filter((e) => e.category === cat.id)
+      .reduce((s, e) => s + e.amount, 0);
+    const remaining  = env.budget - spent;
+    const remainPct  = env.budget > 0 ? (remaining / env.budget) * 100 : 0;
+    const isLow      = remainPct > 0 && remainPct <= 40;
+    const isOver     = remaining < 0;
+    return { cat, env, spent, remaining, remainPct, isLow, isOver };
+  });
 
   return (
     <div className="flex flex-col gap-4 pb-24">
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div className="bg-white pt-10 pb-4 px-5">
         <div className="flex items-center justify-between">
           <div>
@@ -74,11 +151,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Fudget-style IN / OUT / BALANCE ── */}
+      {/* ── IN / OUT / BALANCE ── */}
       <div className="px-4">
         <div className="bg-gray-900 rounded-3xl p-5 text-white">
           <div className="grid grid-cols-2 gap-4 mb-4">
-            {/* IN */}
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <div className="w-6 h-6 rounded-full bg-emerald-400/20 flex items-center justify-center">
@@ -90,7 +166,6 @@ export default function Dashboard() {
               </div>
               <p className="text-xl font-black text-emerald-400">{fmt(totalIn)}</p>
             </div>
-            {/* OUT */}
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <div className="w-6 h-6 rounded-full bg-rose-400/20 flex items-center justify-center">
@@ -103,8 +178,6 @@ export default function Dashboard() {
               <p className="text-xl font-black text-rose-400">{fmt(totalOut)}</p>
             </div>
           </div>
-
-          {/* BALANCE */}
           <div className="border-t border-white/10 pt-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Minus className="w-4 h-4 text-white/40" />
@@ -116,8 +189,6 @@ export default function Dashboard() {
               {balance < 0 ? '−' : '+'}{fmt(balance)}
             </p>
           </div>
-
-          {/* Balance bar */}
           {totalIn > 0 && (
             <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
               <div
@@ -133,97 +204,119 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Envelope quick view ── */}
-      {envelopeSummary.length > 0 && (
-        <div className="px-4">
-          <div className="flex items-center justify-between mb-2 ml-1">
-            <p className="text-xs text-gray-400 font-semibold uppercase">
-              {language === 'en' ? 'Envelopes' : 'लिफ़ाफ़े'}
-            </p>
-            <button
-              onClick={() => setTab('envelopes')}
-              className="text-xs text-brand-500 font-semibold"
-            >
-              {language === 'en' ? 'All →' : 'सभी →'}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {envelopeSummary.map((env) => {
-              const cat = getCat(env.id as any);
-              const isLow = env.pct > 80;
-              const isOver = env.pct >= 100;
+      {/* ── アイデア1: Envelope gauge grid ─────────────────────────────────── */}
+      <div className="px-4">
+        <div className="flex items-center justify-between mb-2 ml-1">
+          <p className="text-xs text-gray-400 font-semibold uppercase">
+            {language === 'en' ? 'Envelopes' : 'लिफ़ाफ़े'}
+          </p>
+          <button
+            onClick={() => setTab('envelopes')}
+            className="text-xs text-brand-500 font-semibold"
+          >
+            {language === 'en' ? 'Details →' : 'विवरण →'}
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl p-3">
+          <div className="grid grid-cols-5 gap-1">
+            {gaugeData.map(({ cat, env, remaining, remainPct, isLow, isOver }) => {
+              const amtColor = isOver
+                ? 'text-rose-500'
+                : isLow
+                ? 'text-orange-500'
+                : 'text-emerald-500';
+
               return (
                 <button
-                  key={env.id}
+                  key={cat.id}
                   onClick={() => setTab('envelopes')}
-                  className="bg-white rounded-2xl px-4 py-3 text-left active:scale-95 transition-transform"
+                  className="flex flex-col items-center gap-0.5 py-1 active:scale-95 transition-transform"
                 >
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl">{cat.icon}</span>
-                    <span className="text-xs font-semibold text-gray-700 flex-1 truncate">
-                      {language === 'en'
-                        ? env.id.charAt(0).toUpperCase() + env.id.slice(1)
-                        : env.id}
-                    </span>
-                    {isOver && (
-                      <span className="text-[9px] bg-rose-100 text-rose-600 font-bold px-1.5 py-0.5 rounded-full">
-                        {language === 'en' ? 'OVER' : 'पार'}
-                      </span>
-                    )}
-                  </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1.5">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${env.pct}%`,
-                        background: isOver ? '#f43f5e' : isLow ? '#f59e0b' : '#22c55e',
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] text-gray-400">
-                      ₹{env.spent.toLocaleString('en-IN')}
-                    </span>
-                    <span
-                      className="text-xs font-bold"
-                      style={{ color: isOver ? '#f43f5e' : isLow ? '#f59e0b' : '#22c55e' }}
+                  {/* SVG ring + icon */}
+                  <svg width="58" height="58" viewBox="0 0 58 58">
+                    <GaugeRing budget={env.budget} remaining={remaining} />
+                    {/* icon background circle */}
+                    <circle cx="29" cy="29" r="17" fill={cat.bg} />
+                    {/* emoji */}
+                    <text
+                      x="29" y="35"
+                      textAnchor="middle"
+                      fontSize="18"
+                      style={{ fontFamily: 'system-ui' }}
                     >
-                      ₹{Math.max(env.budget - env.spent, 0).toLocaleString('en-IN')}{' '}
-                      {language === 'en' ? 'left' : 'बचा'}
-                    </span>
-                  </div>
+                      {cat.icon}
+                    </text>
+                  </svg>
+
+                  {/* remaining amount */}
+                  <span className={`text-[9px] font-black leading-tight ${amtColor}`}>
+                    {remaining >= 0
+                      ? fmtShort(remaining)
+                      : '−' + fmtShort(Math.abs(remaining))}
+                  </span>
                 </button>
               );
             })}
           </div>
-        </div>
-      )}
 
-      {/* ── Recent transactions (income + expense combined) ── */}
+          {/* legend */}
+          <div className="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-gray-50">
+            {[
+              { color: '#22c55e', en: 'Plenty',  hi: 'पर्याप्त' },
+              { color: '#f97316', en: '≤40% left', hi: '≤40% बचा' },
+              { color: '#f43f5e', en: 'Over',    hi: 'पार'       },
+            ].map((l) => (
+              <div key={l.en} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
+                <span className="text-[9px] text-gray-400">
+                  {language === 'en' ? l.en : l.hi}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── アイデア2: Visual-first recent transactions ─────────────────────── */}
       <div className="px-4">
         <p className="text-xs text-gray-400 font-semibold uppercase mb-2 ml-1">
           {language === 'en' ? 'Recent' : 'हालिया'}
         </p>
         <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-50">
           {allTx.map(({ kind, data }) => {
+            const member = members.find((m) => m.id === data.memberId);
+
             if (kind === 'expense') {
               const cat = getCat(data.category as any);
               return (
                 <div key={data.id} className="flex items-center gap-3 px-4 py-3">
+                  {/* ① 誰が — member avatar */}
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-sm"
+                    style={{ background: member?.color ?? '#9ca3af' }}
+                  >
+                    {member?.avatar ?? '?'}
+                  </div>
+
+                  {/* ② 何に — category icon badge */}
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
                     style={{ background: cat.bg }}
                   >
                     {cat.icon}
                   </div>
+
+                  {/* note + date (very subdued) */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">{data.note}</p>
-                    <p className="text-[11px] text-gray-400">
-                      {relativeDate(data.date, language)} ·{' '}
-                      {members.find((m) => m.id === data.memberId)?.name}
+                    <p className="text-[10px] text-gray-300">
+                      {relativeDate(data.date, language)}
                     </p>
                   </div>
-                  <span className="text-sm font-bold text-rose-500 shrink-0">
+
+                  {/* ③ いくら — amount */}
+                  <span className="text-sm font-black text-rose-500 shrink-0">
                     −{fmt(data.amount)}
                   </span>
                 </div>
@@ -232,17 +325,27 @@ export default function Dashboard() {
               const icon = SOURCE_ICONS[(data as any).source] ?? '💰';
               return (
                 <div key={data.id} className="flex items-center gap-3 px-4 py-3">
+                  {/* member avatar */}
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-sm"
+                    style={{ background: member?.color ?? '#9ca3af' }}
+                  >
+                    {member?.avatar ?? '?'}
+                  </div>
+
+                  {/* source icon */}
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0 bg-emerald-50">
                     {icon}
                   </div>
+
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">{data.note}</p>
-                    <p className="text-[11px] text-gray-400">
-                      {relativeDate(data.date, language)} ·{' '}
-                      {members.find((m) => m.id === data.memberId)?.name}
+                    <p className="text-[10px] text-gray-300">
+                      {relativeDate(data.date, language)}
                     </p>
                   </div>
-                  <span className="text-sm font-bold text-emerald-500 shrink-0">
+
+                  <span className="text-sm font-black text-emerald-500 shrink-0">
                     +{fmt(data.amount)}
                   </span>
                 </div>
