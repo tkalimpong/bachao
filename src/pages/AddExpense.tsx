@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore, type Category, type IncomeSource } from '../store/useStore';
 import { CATEGORIES } from '../lib/categories';
-import { Check, TrendingDown, TrendingUp } from 'lucide-react';
+import { Check, TrendingDown, TrendingUp, CalendarDays } from 'lucide-react';
 
 type Mode = 'expense' | 'income';
 
@@ -30,6 +30,7 @@ export default function AddExpense() {
   const [source, setSource]     = useState<IncomeSource>('salary');
   const [amount, setAmount]     = useState('');
   const [note, setNote]         = useState('');
+  const [date, setDate]         = useState(() => new Date().toISOString().slice(0, 10));
   const [saved, setSaved]       = useState(false);
 
   const thisMonth = new Date().toISOString().slice(0, 7);
@@ -47,21 +48,23 @@ export default function AddExpense() {
     const n = Number(amount);
     if (!n || n <= 0) return;
     if (mode === 'expense') {
-      addExpense({ category, amount: n, note, memberId: activeMemberId });
+      addExpense({ category, amount: n, note, date, memberId: activeMemberId });
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
         setAmount('');
         setNote('');
+        setDate(new Date().toISOString().slice(0, 10));
         setTab('home');
       }, 900);
     } else {
-      addIncome({ source, amount: n, note, memberId: activeMemberId });
+      addIncome({ source, amount: n, note, date, memberId: activeMemberId });
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
         setAmount('');
         setNote('');
+        setDate(new Date().toISOString().slice(0, 10));
         setTab('home');
       }, 900);
     }
@@ -208,7 +211,7 @@ export default function AddExpense() {
       </div>
 
       {/* Note */}
-      <div className="px-4 mb-4">
+      <div className="px-4 mb-3">
         <input
           type="text"
           placeholder={language === 'en' ? 'Note (optional)' : 'नोट (वैकल्पिक)'}
@@ -216,6 +219,19 @@ export default function AddExpense() {
           onChange={(e) => setNote(e.target.value)}
           className="w-full bg-white rounded-2xl px-4 h-12 text-sm text-gray-800 outline-none placeholder:text-gray-300"
         />
+      </div>
+
+      {/* Date */}
+      <div className="px-4 mb-4">
+        <div className="bg-white rounded-2xl px-4 h-12 flex items-center gap-3">
+          <CalendarDays className="w-4 h-4 text-gray-300 shrink-0" />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="flex-1 text-sm text-gray-800 bg-transparent outline-none"
+          />
+        </div>
       </div>
 
       {/* Member selector */}

@@ -82,6 +82,25 @@ export default function Envelopes() {
   const totalSpent     = rows.reduce((s, r) => s + r.spent, 0);
   const totalRemaining = totalBudget - totalSpent;
 
+  // 30-day rolling average: total all-time spending ÷ (elapsed days / 30)
+  const allTimeTotal = expenses.reduce((s, e) => s + e.amount, 0);
+  const firstExpenseDate = expenses.length > 0
+    ? new Date(expenses.map((e) => e.date).sort()[0])
+    : new Date();
+  const elapsedDays = Math.max(
+    Math.ceil((Date.now() - firstExpenseDate.getTime()) / 86400000),
+    30,
+  );
+  const avg30d = Math.round(allTimeTotal / (elapsedDays / 30));
+
+  // Per-category 30-day average
+  function catAvg30d(catId: string) {
+    const catTotal = expenses
+      .filter((e) => e.category === catId)
+      .reduce((s, e) => s + e.amount, 0);
+    return Math.round(catTotal / (elapsedDays / 30));
+  }
+
   function startEdit(id: Category, current: number) {
     setEditing(id);
     setEditVal(String(current));
@@ -135,28 +154,30 @@ export default function Envelopes() {
             <div className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-gray-400" />
               <span className="text-xs text-gray-500 font-medium">
-                {language === 'en' ? 'Total family budget' : 'कुल पारिवारिक बजट'}
+                {language === 'en' ? 'Spent this month' : 'इस माह का खर्च'}
               </span>
             </div>
             <span className="text-xs font-bold text-gray-700">
-              {fmt(totalSpent)} / {fmt(totalBudget)}
+              {fmt(totalSpent)} / {avg30d > 0 ? fmt(avg30d) : '–'}
             </span>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
               style={{
-                width: `${Math.min((totalSpent / totalBudget) * 100, 100)}%`,
-                background: totalRemaining < 0 ? '#f43f5e' : '#f97316',
+                width: avg30d > 0 ? `${Math.min((totalSpent / avg30d) * 100, 100)}%` : '0%',
+                background: totalSpent > avg30d ? '#f43f5e' : '#f97316',
               }}
             />
           </div>
           <div className="flex justify-between mt-1.5">
             <span className="text-[10px] text-gray-400">
-              {totalBudget > 0 ? `${Math.round(Math.min((totalSpent / totalBudget) * 100, 110))}% ${language === 'en' ? 'of limit' : 'सीमा का'}` : ''}
+              {avg30d > 0
+                ? `${Math.round(Math.min((totalSpent / avg30d) * 100, 110))}% ${language === 'en' ? 'of 30d avg' : '30d औसत का'}`
+                : ''}
             </span>
-            <span className="text-[11px] font-bold text-gray-700">
-              {fmt(totalSpent)} {language === 'en' ? 'spent' : 'खर्च'}
+            <span className="text-[11px] font-bold text-gray-400">
+              {language === 'en' ? '30d avg' : '30d औसत'}
             </span>
           </div>
         </div>
@@ -220,11 +241,17 @@ export default function Envelopes() {
                     />
                   </div>
                   <div className="flex justify-between items-center mt-1">
-                    <span className="text-[10px] text-gray-400">
-                      {env.budget > 0
-                        ? `${Math.round(Math.min(pct, 110))}% ${language === 'en' ? 'of limit' : 'सीमा का'}`
-                        : language === 'en' ? 'no limit set' : 'सीमा नहीं'}
-                    </span>
+                    {/* spent / 30d-avg */}
+                    {(() => {
+                      const ca = catAvg30d(cat.id);
+                      return (
+                        <span className="text-[10px] text-gray-400">
+                          {ca > 0
+                            ? `${fmt(spent)} / ${fmt(ca)} ${language === 'en' ? '30d avg' : '30d औसत'}`
+                            : language === 'en' ? 'no history' : 'कोई इतिहास नहीं'}
+                        </span>
+                      );
+                    })()}
                     {/* Budget edit */}
                     {editing === cat.id ? (
                       <input

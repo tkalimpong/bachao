@@ -68,14 +68,14 @@ interface AppState {
   // ── expenses ──────────────────────────────────────────────────
   expenses: Expense[];
   setExpenses: (expenses: Expense[]) => void;
-  addExpense: (e: Omit<Expense, 'id' | 'date'>) => void;
+  addExpense: (e: Omit<Expense, 'id'>) => void;
   updateExpense: (id: string, data: Partial<Omit<Expense, 'id'>>) => void;
   deleteExpense: (id: string) => void;
 
   // ── incomes ───────────────────────────────────────────────────
   incomes: Income[];
   setIncomes: (incomes: Income[]) => void;
-  addIncome: (i: Omit<Income, 'id' | 'date'>) => void;
+  addIncome: (i: Omit<Income, 'id'>) => void;
   updateIncome: (id: string, data: Partial<Omit<Income, 'id'>>) => void;
   deleteIncome: (id: string) => void;
 
@@ -155,18 +155,16 @@ export const useStore = create<AppState>((set, get) => ({
   expenses: isFirebaseConfigured ? [] : initialExpenses,
   setExpenses: (expenses) => set({ expenses }),
   addExpense: (e) => {
-    const today = new Date().toISOString().slice(0, 10);
     if (isFirebaseConfigured && db) {
       const { groupId } = get();
       addDoc(collection(db, `groups/${groupId}/expenses`), {
         ...e,
-        date:      today,
         createdAt: serverTimestamp(),
       });
     } else {
       set((s) => ({
         expenses: [
-          { ...e, id: Date.now().toString(), date: today },
+          { ...e, id: Date.now().toString() },
           ...s.expenses,
         ],
       }));
@@ -196,18 +194,16 @@ export const useStore = create<AppState>((set, get) => ({
   incomes: isFirebaseConfigured ? [] : initialIncomes,
   setIncomes: (incomes) => set({ incomes }),
   addIncome: (i) => {
-    const today = new Date().toISOString().slice(0, 10);
     if (isFirebaseConfigured && db) {
       const { groupId } = get();
       addDoc(collection(db, `groups/${groupId}/incomes`), {
         ...i,
-        date:      today,
         createdAt: serverTimestamp(),
       });
     } else {
       set((s) => ({
         incomes: [
-          { ...i, id: 'inc_' + Date.now(), date: today },
+          { ...i, id: 'inc_' + Date.now() },
           ...s.incomes,
         ],
       }));
