@@ -7,6 +7,7 @@ import AddExpense from './pages/AddExpense';
 import Envelopes from './pages/Envelopes';
 import Family from './pages/Family';
 import Premium from './pages/Premium';
+import History from './pages/History';
 
 const SCREENS: Record<string, React.FC> = {
   home:      Dashboard,
@@ -14,6 +15,7 @@ const SCREENS: Record<string, React.FC> = {
   envelopes: Envelopes,
   family:    Family,
   premium:   Premium,
+  history:   History,
 };
 
 export default function App() {

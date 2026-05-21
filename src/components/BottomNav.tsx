@@ -1,4 +1,4 @@
-import { Home, PlusCircle, Wallet, Users, Zap } from 'lucide-react';
+import { Home, PlusCircle, Wallet, Users, History } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 const tabs = [
@@ -6,7 +6,7 @@ const tabs = [
   { id: 'envelopes', Icon: Wallet,     en: 'Envelopes', hi: 'लिफ़ाफ़े' },
   { id: 'add',       Icon: PlusCircle, en: 'Add',       hi: 'जोड़ें'  },
   { id: 'family',    Icon: Users,      en: 'Family',    hi: 'परिवार' },
-  { id: 'premium',   Icon: Zap,        en: 'Pro',       hi: 'प्रो'   },
+  { id: 'history',   Icon: History,    en: 'History',   hi: 'इतिहास' },
 ] as const;
 
 export default function BottomNav() {
@@ -18,7 +18,7 @@ export default function BottomNav() {
         {tabs.map(({ id, Icon, en, hi }) => {
           const active = currentTab === id;
           const isAdd  = id === 'add';
-          const isPro  = id === 'premium';
+          const isPro  = false;
           const label  = language === 'en' ? en : hi;
 
           if (isAdd) {

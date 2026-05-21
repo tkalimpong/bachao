@@ -80,7 +80,7 @@ export default function Envelopes() {
 
   const totalBudget    = rows.reduce((s, r) => s + r.env.budget, 0);
   const totalSpent     = rows.reduce((s, r) => s + r.spent, 0);
-  const totalRemaining = totalBudget - totalSpent;
+  const totalRemaining = totalBudget - totalSpent; void totalRemaining;
 
   // 30-day rolling average: total all-time spending ÷ (elapsed days / 30)
   const allTimeTotal = expenses.reduce((s, e) => s + e.amount, 0);

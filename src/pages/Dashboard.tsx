@@ -305,9 +305,17 @@ export default function Dashboard() {
 
       {/* ── アイデア2: Visual-first recent transactions ─────────────────────── */}
       <div className="px-4">
-        <p className="text-xs text-gray-400 font-semibold uppercase mb-2 ml-1">
-          {language === 'en' ? 'Recent' : 'हालिया'}
-        </p>
+        <div className="flex items-center justify-between mb-2 ml-1">
+          <p className="text-xs text-gray-400 font-semibold uppercase">
+            {language === 'en' ? 'Recent' : 'हालिया'}
+          </p>
+          <button
+            onClick={() => setTab('history')}
+            className="text-xs text-brand-500 font-semibold"
+          >
+            {language === 'en' ? 'See all →' : 'सभी देखें →'}
+          </button>
+        </div>
         <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-50">
           {allTx.map(({ kind, data }) => {
             const member = members.find((m) => m.id === data.memberId);
