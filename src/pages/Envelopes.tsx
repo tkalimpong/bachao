@@ -463,7 +463,7 @@ export default function Envelopes() {
 
       {/* Real-time family activity feed */}
       <div className="px-4">
-        <div className="bg-gray-900 rounded-2xl p-4">
+        <div className="bg-ink rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
             <p className="text-xs text-white/60 font-semibold uppercase">

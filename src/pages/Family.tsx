@@ -1,15 +1,19 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import {
-  ChevronLeft, ChevronRight, ChevronDown, X, Check, History,
+  ChevronLeft, ChevronRight, ChevronDown, X, Check, History, ArrowRightLeft,
 } from 'lucide-react';
 import {
   ROLE_ICONS,
   canViewGroupFinances,
   getMemberRole,
   roleLabel,
+  roleBadgeStyle,
 } from '../lib/permissions';
 import { TRUST_BLUE } from '../lib/theme';
+import { memberEarned, memberSpent, transferReceived, transferSent } from '../lib/memberBalance';
+import type { Transfer } from '../store/useStore';
+import TransferSheet from '../components/TransferSheet';
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -23,10 +27,12 @@ function formatMonthKey(key: string, lang: 'en' | 'hi') {
 
 export default function Family() {
   const {
-    members, expenses, incomes, language, setTab,
+    members, expenses, incomes, transfers, language, setTab,
     setHistoryNavigateMonth, currentUserId, setCurrentUserId,
   } = useStore();
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [editTransfer, setEditTransfer] = useState<Transfer | null>(null);
 
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
   const myRole = getMemberRole(members, currentUserId);
@@ -34,10 +40,10 @@ export default function Family() {
 
   const allMonths = useMemo(() => {
     const seen = new Set<string>();
-    [...expenses, ...incomes].forEach((t) => seen.add(t.date.slice(0, 7)));
+    [...expenses, ...incomes, ...transfers].forEach((t) => seen.add(t.date.slice(0, 7)));
     seen.add(new Date().toISOString().slice(0, 7));
     return Array.from(seen).sort((a, b) => b.localeCompare(a));
-  }, [expenses, incomes]);
+  }, [expenses, incomes, transfers]);
 
   const [monthIdx, setMonthIdx] = useState(0);
   const selectedMonth = allMonths[monthIdx] ?? new Date().toISOString().slice(0, 7);
@@ -54,26 +60,49 @@ export default function Family() {
   }, [allMonths]);
 
   const memberStats = useMemo(() => {
-    const monthExp = expenses.filter((e) => e.date.startsWith(selectedMonth));
-    const monthInc = incomes.filter((i) => i.date.startsWith(selectedMonth));
+    const monthTr = transfers.filter((t) => t.date.startsWith(selectedMonth));
     const list = showGroup
       ? members
       : members.filter((m) => m.id === currentUserId);
     return list.map((m) => {
-      const earned = monthInc.filter((i) => i.memberId === m.id).reduce((s, i) => s + i.amount, 0);
-      const spent = monthExp.filter((e) => e.memberId === m.id).reduce((s, e) => s + e.amount, 0);
+      const income = memberEarned(incomes, m.id, selectedMonth);
+      const expense = memberSpent(expenses, m.id, selectedMonth);
+      const earned = income + transferReceived(monthTr, m.id);
+      const spent = expense + transferSent(monthTr, m.id);
       const count =
-        monthExp.filter((e) => e.memberId === m.id).length +
-        monthInc.filter((i) => i.memberId === m.id).length;
-      return { member: m, earned, spent, balance: earned - spent, count };
+        expenses.filter((e) => e.memberId === m.id && e.date.startsWith(selectedMonth)).length +
+        incomes.filter((i) => i.memberId === m.id && i.date.startsWith(selectedMonth)).length;
+      return {
+        member: m,
+        earned,
+        spent,
+        balance: earned - spent,
+        count,
+      };
     });
-  }, [members, expenses, incomes, selectedMonth, showGroup, currentUserId]);
+  }, [members, expenses, incomes, transfers, selectedMonth, showGroup, currentUserId]);
 
   const familyTotal = useMemo(() => {
-    const earned = memberStats.reduce((s, r) => s + r.earned, 0);
-    const spent = memberStats.reduce((s, r) => s + r.spent, 0);
-    return { earned, spent, balance: earned - spent };
-  }, [memberStats]);
+    const earned = incomes
+      .filter((i) => i.date.startsWith(selectedMonth))
+      .reduce((s, i) => s + i.amount, 0);
+    const spent = expenses
+      .filter((e) => e.date.startsWith(selectedMonth))
+      .reduce((s, e) => s + e.amount, 0);
+    const balance = memberStats.reduce((s, r) => s + r.balance, 0);
+    return { earned, spent, balance };
+  }, [expenses, incomes, selectedMonth, memberStats]);
+
+  const monthTransfers = useMemo(() => {
+    const list = transfers
+      .filter((t) => t.date.startsWith(selectedMonth))
+      .filter((t) =>
+        showGroup
+          ? true
+          : t.fromMemberId === currentUserId || t.toMemberId === currentUserId,
+      );
+    return [...list].sort((a, b) => b.date.localeCompare(a.date));
+  }, [transfers, selectedMonth, showGroup, currentUserId]);
 
   function goToHistory() {
     setHistoryNavigateMonth(selectedMonth);
@@ -97,7 +126,7 @@ export default function Family() {
               key={m.id}
               onClick={() => setCurrentUserId(m.id)}
               className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all active:scale-95 ${
-                currentUserId === m.id ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 shadow-sm'
+                currentUserId === m.id ? 'bg-ink text-white' : 'bg-white text-gray-600 shadow-sm'
               }`}
             >
               <div
@@ -149,7 +178,7 @@ export default function Family() {
       {/* Family total — owner & partner only */}
       {showGroup && (
         <div className="px-4">
-          <div className="bg-gray-900 rounded-2xl p-4 text-white">
+          <div className="bg-ink rounded-2xl p-4 text-white">
             <p className="text-[10px] text-white/50 font-semibold uppercase mb-2">
               {L('Family total', 'परिवार कुल')}
             </p>
@@ -224,11 +253,7 @@ export default function Family() {
                         return (
                           <div
                             className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-0.5"
-                            style={
-                              m.role === 'owner'
-                                ? { background: m.color + '22', color: m.color }
-                                : { background: '#f3f4f6', color: '#6b7280' }
-                            }
+                            style={roleBadgeStyle(m.role, m.color)}
                           >
                             <RoleIcon className="w-2.5 h-2.5" />
                             {roleLabel(m.role, language)}
@@ -267,6 +292,51 @@ export default function Family() {
         </div>
       </div>
 
+      {members.length >= 2 && (
+        <div className="px-4">
+          <button
+            onClick={() => setShowTransfer(true)}
+            className="w-full bg-brand-500 text-white rounded-2xl px-4 py-3.5 flex items-center justify-center gap-2 font-bold text-sm shadow-sm active:scale-[0.98] transition-transform"
+          >
+            <ArrowRightLeft className="w-5 h-5" />
+            {L('Record transfer', 'पैसे भेजें')}
+          </button>
+        </div>
+      )}
+
+      {monthTransfers.length > 0 && (
+        <div className="px-4">
+          <p className="text-xs text-gray-400 font-semibold uppercase mb-2 ml-1">
+            {L('Transfers this month', 'इस महीने भेजा')}
+          </p>
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-50">
+            {monthTransfers.map((tr) => {
+              const from = members.find((m) => m.id === tr.fromMemberId);
+              const to = members.find((m) => m.id === tr.toMemberId);
+              return (
+                <button
+                  key={tr.id}
+                  onClick={() => setEditTransfer(tr)}
+                  className="w-full flex items-center gap-3 px-4 py-3 active:bg-gray-50 text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate">
+                      {from?.name} → {to?.name}
+                    </p>
+                    <p className="text-[10px] text-gray-400 truncate">
+                      {tr.note || L('Transfer', 'ट्रांसफर')} · {tr.date}
+                    </p>
+                  </div>
+                  <span className="text-sm font-black text-gray-700 tabular-nums shrink-0">
+                    {fmt(tr.amount)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Link to History */}
       <div className="px-4">
         <button
@@ -291,6 +361,16 @@ export default function Family() {
           <ChevronRight className="w-5 h-5 text-brand-400 shrink-0" />
         </button>
       </div>
+
+      {showTransfer && (
+        <TransferSheet onClose={() => setShowTransfer(false)} />
+      )}
+      {editTransfer && (
+        <TransferSheet
+          transfer={editTransfer}
+          onClose={() => setEditTransfer(null)}
+        />
+      )}
 
       {showMonthPicker && (
         <>
@@ -327,7 +407,7 @@ export default function Family() {
                             setShowMonthPicker(false);
                           }}
                           className={`h-10 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5 active:scale-95 ${
-                            isSelected ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'
+                            isSelected ? 'bg-ink text-white' : 'bg-gray-100 text-gray-600'
                           }`}
                         >
                           {isSelected && <Check className="w-3 h-3 shrink-0" />}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat, CATEGORIES } from '../lib/categories';
+import { SOURCE_ICONS } from '../lib/incomeSources';
 import AppLogo from '../components/AppLogo';
 import { TRUST_BLUE } from '../lib/theme';
 import { Globe, TrendingDown, TrendingUp, Minus, PiggyBank, Pencil } from 'lucide-react';
@@ -23,10 +24,6 @@ function relativeDate(dateStr: string, lang: 'en' | 'hi') {
   if (dateStr === yesterday) return lang === 'en' ? 'Yesterday' : 'कल';
   return dateStr;
 }
-
-const SOURCE_ICONS: Record<string, string> = {
-  salary: '💼', freelance: '💻', business: '🏪', gift: '🎁', rent: '🏠', other_income: '💰',
-};
 
 // ── SVG circular gauge（加算式）──────────────────────────────────────────────
 // 支出が増えると 12時から時計回りにリングが伸びていく。
@@ -154,7 +151,7 @@ export default function Dashboard() {
 
       {/* ── IN / OUT / BALANCE ── */}
       <div className="px-4">
-        <div className="bg-gray-900 rounded-3xl p-5 text-white">
+        <div className="bg-ink rounded-3xl p-5 text-white">
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
@@ -378,7 +375,7 @@ export default function Dashboard() {
                 </button>
               );
             } else {
-              const icon = SOURCE_ICONS[(data as any).source] ?? '💰';
+              const icon = SOURCE_ICONS[(data as Income).source] ?? '💸';
               return (
                 <button
                   key={data.id}

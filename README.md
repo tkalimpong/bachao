@@ -1,4 +1,26 @@
-# React + TypeScript + Vite
+# Bachao — Family Budget
+
+Vite + React の家計簿アプリ。Android 端末で外出先から使う手順は **[docs/ANDROID.md](docs/ANDROID.md)** を参照。
+
+## 開発
+
+```bash
+npm install
+npm run dev
+```
+
+## Android（APK をスマホに入れる）
+
+```bash
+npm run cap:sync    # Web をビルドして android に反映
+npm run cap:open    # Android Studio で APK ビルド
+```
+
+詳細: [docs/ANDROID.md](docs/ANDROID.md)
+
+---
+
+# React + TypeScript + Vite（テンプレート由来）
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

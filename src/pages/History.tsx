@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat } from '../lib/categories';
+import { SOURCE_ICONS } from '../lib/incomeSources';
 import { Search, X, ChevronLeft, ChevronRight, Pencil, ChevronDown, Check } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
 import { TRUST_BLUE } from '../lib/theme';
@@ -9,10 +10,6 @@ import {
   canViewGroupFinances,
   getMemberRole,
 } from '../lib/permissions';
-
-const SOURCE_ICONS: Record<string, string> = {
-  salary: '💼', freelance: '💻', business: '🏪', gift: '🎁', rent: '🏠', other_income: '💰',
-};
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -62,7 +59,7 @@ function TxList({
   txs, members, showMember, onEdit, L,
 }: {
   txs: TxEntry[];
-  members: { id: string; avatar: string; color: string }[];
+  members: { id: string; name: string; avatar: string; color: string }[];
   showMember: boolean;
   onEdit: (t: EditTarget) => void;
   L: (en: string, hi: string) => string;
@@ -142,7 +139,7 @@ function TxList({
 
 export default function History() {
   const {
-    expenses, incomes, members, language,
+    expenses, incomes, transfers, members, language,
     currentTab, historyNavigateMonth, setHistoryNavigateMonth,
     currentUserId,
   } = useStore();
@@ -159,12 +156,12 @@ export default function History() {
   // Build sorted list of unique months (desc)
   const allMonths = useMemo(() => {
     const seen = new Set<string>();
-    [...expenses, ...incomes].forEach((t) => {
+    [...expenses, ...incomes, ...transfers].forEach((t) => {
       seen.add(t.date.slice(0, 7));
     });
     seen.add(new Date().toISOString().slice(0, 7));
     return Array.from(seen).sort((a, b) => b.localeCompare(a));
-  }, [expenses, incomes]);
+  }, [expenses, incomes, transfers]);
 
   const [monthIdx, setMonthIdx] = useState(0);
   const selectedMonth = allMonths[monthIdx] ?? new Date().toISOString().slice(0, 7);
@@ -201,12 +198,11 @@ export default function History() {
             t.data.note.toLowerCase().includes(q) ||
             t.data.category.toLowerCase().includes(q)
           );
-        } else {
-          return (
-            t.data.note.toLowerCase().includes(q) ||
-            (t.data as Income).source.toLowerCase().includes(q)
-          );
         }
+        return (
+          t.data.note.toLowerCase().includes(q) ||
+          t.data.source.toLowerCase().includes(q)
+        );
       })
       .sort((a, b) => b.data.date.localeCompare(a.data.date));
   }, [expenses, incomes, selectedMonth, typeFilter, effectiveMemberFilter, search]);
@@ -309,7 +305,7 @@ export default function History() {
                     ? 'bg-rose-500 text-white'
                     : t === 'income'
                     ? 'bg-emerald-500 text-white'
-                    : 'bg-gray-900 text-white'
+                    : 'bg-ink text-white'
                   : 'bg-gray-100 text-gray-400'
               }`}
             >
@@ -331,7 +327,7 @@ export default function History() {
           <button
             onClick={() => setMemberFilter('all')}
             className={`shrink-0 h-7 px-3 rounded-full text-xs font-semibold transition-all active:scale-95 ${
-              memberFilter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-400'
+              memberFilter === 'all' ? 'bg-ink text-white' : 'bg-gray-100 text-gray-400'
             }`}
           >
             {L('All', 'सभी')}
@@ -475,7 +471,7 @@ export default function History() {
                           }}
                           className={`h-10 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
                             isSelected
-                              ? 'bg-gray-900 text-white'
+                              ? 'bg-ink text-white'
                               : 'bg-gray-100 text-gray-600'
                           }`}
                         >

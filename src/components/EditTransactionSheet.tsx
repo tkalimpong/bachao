@@ -2,16 +2,8 @@ import { useState } from 'react';
 import { useStore, type Expense, type Income, type Category, type IncomeSource } from '../store/useStore';
 import { canEditTransaction, getMemberRole } from '../lib/permissions';
 import { CATEGORIES } from '../lib/categories';
+import { INCOME_SOURCES } from '../lib/incomeSources';
 import { Check, Trash2, X } from 'lucide-react';
-
-const INCOME_SOURCES: { id: IncomeSource; icon: string; en: string; hi: string }[] = [
-  { id: 'salary',       icon: '💼', en: 'Salary',    hi: 'तनख्वाह' },
-  { id: 'freelance',    icon: '💻', en: 'Freelance',  hi: 'फ्रीलांस' },
-  { id: 'business',     icon: '🏪', en: 'Business',   hi: 'व्यापार' },
-  { id: 'gift',         icon: '🎁', en: 'Gift',       hi: 'उपहार' },
-  { id: 'rent',         icon: '🏠', en: 'Rent',       hi: 'किराया' },
-  { id: 'other_income', icon: '💰', en: 'Other',      hi: 'अन्य' },
-];
 
 type EditTarget =
   | { kind: 'expense'; data: Expense }
@@ -187,7 +179,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
                   key={m.id}
                   onClick={() => setMemberId(m.id)}
                   className={`flex items-center gap-2 rounded-full px-3 py-1.5 transition-all active:scale-95 ${
-                    memberId === m.id ? 'bg-gray-900' : 'bg-white'
+                    memberId === m.id ? 'bg-ink' : 'bg-white'
                   }`}
                 >
                   <div

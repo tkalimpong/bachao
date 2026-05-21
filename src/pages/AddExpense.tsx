@@ -2,16 +2,8 @@ import { useState, useEffect } from 'react';
 import { useStore, type Category, type IncomeSource } from '../store/useStore';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
 import { CATEGORIES, defaultCategoryNote } from '../lib/categories';
+import { INCOME_SOURCES } from '../lib/incomeSources';
 import { Check, TrendingDown, TrendingUp, CalendarDays } from 'lucide-react';
-
-const INCOME_SOURCES: { id: IncomeSource; icon: string; en: string; hi: string }[] = [
-  { id: 'salary',       icon: '💼', en: 'Salary',    hi: 'तनख्वाह' },
-  { id: 'freelance',    icon: '💻', en: 'Freelance',  hi: 'फ्रीलांस' },
-  { id: 'business',     icon: '🏪', en: 'Business',   hi: 'व्यापार' },
-  { id: 'gift',         icon: '🎁', en: 'Gift',       hi: 'उपहार' },
-  { id: 'rent',         icon: '🏠', en: 'Rent',       hi: 'किराया' },
-  { id: 'other_income', icon: '💰', en: 'Other',      hi: 'अन्य' },
-];
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -252,7 +244,7 @@ export default function AddExpense() {
               key={m.id}
               onClick={() => setActiveMember(m.id)}
               className={`flex items-center gap-2 rounded-full px-3 py-1.5 transition-all active:scale-95 ${
-                activeMemberId === m.id ? 'bg-gray-900' : 'bg-white'
+                activeMemberId === m.id ? 'bg-ink' : 'bg-white'
               }`}
             >
               <div

@@ -3,9 +3,11 @@ import { useStore } from '../store/useStore';
 import {
   EDITABLE_ROLES,
   ROLE_ICONS,
+  ROLE_COLORS,
   canManageMembers,
   canUsePremium,
   getMemberRole,
+  roleBadgeStyle,
   roleLabel,
 } from '../lib/permissions';
 import SubScreenHeader from '../components/SubScreenHeader';
@@ -83,7 +85,7 @@ export default function Members() {
                 {m.role === 'owner' ? (
                   <div
                     className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-1.5"
-                    style={{ background: m.color + '22', color: m.color }}
+                    style={roleBadgeStyle('owner', m.color)}
                   >
                     <RoleIcon className="w-2.5 h-2.5" />
                     {roleLabel('owner', language)}
@@ -94,16 +96,25 @@ export default function Members() {
                       {EDITABLE_ROLES.map((role) => {
                         const Icon = ROLE_ICONS[role];
                         const active = m.role === role;
+                        const rc = ROLE_COLORS[role];
                         return (
                           <button
                             key={role}
                             type="button"
                             onClick={() => updateMemberRole(m.id, role)}
                             className={`flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-semibold transition-all active:scale-95 ${
-                              active ? 'bg-white shadow-sm text-gray-800' : 'text-gray-400'
+                              active ? 'shadow-sm' : 'text-gray-400'
                             }`}
+                            style={
+                              active
+                                ? { background: '#fff', color: rc.main }
+                                : undefined
+                            }
                           >
-                            <Icon className="w-3 h-3" style={active ? { color: m.color } : {}} />
+                            <Icon
+                              className="w-3 h-3"
+                              style={active ? { color: rc.main } : { color: '#9ca3af' }}
+                            />
                             {roleLabel(role, language)}
                           </button>
                         );
@@ -119,7 +130,10 @@ export default function Members() {
                     </button>
                   </div>
                 ) : (
-                  <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-1.5 bg-gray-100 text-gray-500">
+                  <div
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-1.5"
+                    style={roleBadgeStyle(m.role, m.color)}
+                  >
                     <RoleIcon className="w-2.5 h-2.5" />
                     {roleLabel(m.role, language)}
                   </div>

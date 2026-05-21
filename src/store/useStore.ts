@@ -40,6 +40,15 @@ export interface Income {
   memberId: string;
 }
 
+export interface Transfer {
+  id: string;
+  fromMemberId: string;
+  toMemberId: string;
+  amount: number;
+  note: string;
+  date: string;
+}
+
 export interface Envelope {
   id: Category;
   budget: number;
@@ -91,6 +100,13 @@ interface AppState {
   updateIncome: (id: string, data: Partial<Omit<Income, 'id'>>) => void;
   deleteIncome: (id: string) => void;
 
+  // ── transfers (member-to-member, not family income/expense) ───
+  transfers: Transfer[];
+  setTransfers: (transfers: Transfer[]) => void;
+  addTransfer: (t: Omit<Transfer, 'id'>) => void;
+  updateTransfer: (id: string, data: Partial<Omit<Transfer, 'id'>>) => void;
+  deleteTransfer: (id: string) => void;
+
   // ── envelopes ─────────────────────────────────────────────────
   envelopes: Envelope[];
   setEnvelopes: (envelopes: Envelope[]) => void;
@@ -135,6 +151,17 @@ const initialIncomes: Income[] = [
   { id: 'i2', source: 'salary',    amount: 32000, note: 'May salary',     date: '2026-05-01', memberId: 'm2' },
   { id: 'i3', source: 'freelance', amount: 8500,  note: 'Design project', date: '2026-05-08', memberId: 'm2' },
   { id: 'i4', source: 'gift',      amount: 2000,  note: 'Birthday gift',  date: '2026-05-12', memberId: 'm3' },
+];
+
+const initialTransfers: Transfer[] = [
+  {
+    id: 't1',
+    fromMemberId: 'm1',
+    toMemberId: 'm3',
+    amount: 1500,
+    note: 'Pocket money',
+    date: '2026-05-14',
+  },
 ];
 
 const initialEnvelopes: Envelope[] = [
@@ -255,6 +282,43 @@ export const useStore = create<AppState>((set, get) => ({
       deleteDoc(doc(db, `groups/${groupId}/incomes/${id}`));
     } else {
       set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));
+    }
+  },
+
+  // ── transfers ─────────────────────────────────────────────────
+  transfers: isFirebaseConfigured ? [] : initialTransfers,
+  setTransfers: (transfers) => set({ transfers }),
+  addTransfer: (t) => {
+    if (t.fromMemberId === t.toMemberId) return;
+    if (isFirebaseConfigured && db) {
+      const { groupId } = get();
+      addDoc(collection(db, `groups/${groupId}/transfers`), {
+        ...t,
+        createdAt: serverTimestamp(),
+      });
+    } else {
+      set((s) => ({
+        transfers: [{ ...t, id: 'tr_' + Date.now() }, ...s.transfers],
+      }));
+    }
+  },
+  updateTransfer: (id, data) => {
+    if (data.fromMemberId && data.toMemberId && data.fromMemberId === data.toMemberId) return;
+    if (isFirebaseConfigured && db) {
+      const { groupId } = get();
+      updateDoc(doc(db, `groups/${groupId}/transfers/${id}`), data);
+    } else {
+      set((s) => ({
+        transfers: s.transfers.map((t) => (t.id === id ? { ...t, ...data } : t)),
+      }));
+    }
+  },
+  deleteTransfer: (id) => {
+    if (isFirebaseConfigured && db) {
+      const { groupId } = get();
+      deleteDoc(doc(db, `groups/${groupId}/transfers/${id}`));
+    } else {
+      set((s) => ({ transfers: s.transfers.filter((t) => t.id !== id) }));
     }
   },
 

@@ -10,7 +10,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
-import { useStore, type Envelope, type Expense, type Income } from '../store/useStore';
+import { useStore, type Envelope, type Expense, type Income, type Transfer } from '../store/useStore';
 
 const DEFAULT_ENVELOPES: Envelope[] = [
   { id: 'food',          budget: 8000 },
@@ -40,7 +40,8 @@ function currentMonthStart(): string {
  * Falls back silently to local-only mode when Firebase is not configured.
  */
 export function useFirestoreSync() {
-  const { groupId, setExpenses, setIncomes, setEnvelopes, setSyncStatus } = useStore();
+  const { groupId, setExpenses, setIncomes, setTransfers, setEnvelopes, setSyncStatus } =
+    useStore();
 
   // Re-subscribe automatically when the calendar month rolls over.
   const monthStart = useMemo(() => currentMonthStart(), [
@@ -118,6 +119,29 @@ export function useFirestoreSync() {
           };
         });
         setIncomes(incomes);
+      }),
+    );
+
+    // --- transfers（当月分のみ） ---
+    const trQuery = query(
+      collection(db, `${groupBase}/transfers`),
+      where('date', '>=', monthStart),
+      orderBy('date', 'desc'),
+    );
+    unsubscribers.push(
+      onSnapshot(trQuery, (snap) => {
+        const transfers: Transfer[] = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            fromMemberId: data.fromMemberId,
+            toMemberId: data.toMemberId,
+            amount: data.amount,
+            note: data.note,
+            date: data.date,
+          };
+        });
+        setTransfers(transfers);
       }),
     );
 

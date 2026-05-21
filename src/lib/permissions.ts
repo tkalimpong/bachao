@@ -15,6 +15,24 @@ export const ROLE_LABELS: Record<MemberRole, { en: string; hi: string }> = {
   helper:  { en: 'Helper',  hi: 'Helper' },
 };
 
+/** Role badge colors (owner uses member avatar color when provided) */
+export const ROLE_COLORS: Record<MemberRole, { main: string; bg: string }> = {
+  owner:   { main: '#2563eb', bg: '#eff6ff' },
+  partner: { main: '#7c3aed', bg: '#ede9fe' },
+  helper:  { main: '#059669', bg: '#d1fae5' },
+};
+
+export function roleBadgeStyle(
+  role: MemberRole,
+  memberColor?: string,
+): { background: string; color: string } {
+  if (role === 'owner' && memberColor) {
+    return { background: memberColor + '22', color: memberColor };
+  }
+  const c = ROLE_COLORS[role];
+  return { background: c.bg, color: c.main };
+}
+
 /** Roles that managers can assign (not owner) */
 export const EDITABLE_ROLES: ('partner' | 'helper')[] = ['partner', 'helper'];
 
@@ -52,6 +70,17 @@ export function canEditTransaction(
 ): boolean {
   if (canViewGroupFinances(role)) return true;
   return txMemberId === currentUserId;
+}
+
+/** 家族間の移動 — 関係者またはグループ閲覧者が編集可 */
+export function canEditTransfer(
+  role: MemberRole,
+  fromMemberId: string,
+  toMemberId: string,
+  currentUserId: string,
+): boolean {
+  if (canViewGroupFinances(role)) return true;
+  return fromMemberId === currentUserId || toMemberId === currentUserId;
 }
 
 export function getMemberRole(

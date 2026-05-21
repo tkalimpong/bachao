@@ -4,6 +4,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Vite build may omit custom `ink` from Tailwind scan — keep panel color explicit */
+@layer utilities {
+  .bg-ink {
+    background-color: #0d1f42;
+  }
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
 }
