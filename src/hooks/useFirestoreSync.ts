@@ -10,9 +10,15 @@ import {
   where,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
-import { useStore, type Envelope, type Expense, type Income, type Transfer } from '../store/useStore';
+import {
+  useStore,
+  type CategoryBudget,
+  type Expense,
+  type Income,
+  type Transfer,
+} from '../store/useStore';
 
-const DEFAULT_ENVELOPES: Envelope[] = [
+const DEFAULT_CATEGORY_BUDGETS: CategoryBudget[] = [
   { id: 'food',          budget: 8000 },
   { id: 'transport',     budget: 3000 },
   { id: 'shopping',      budget: 5000 },
@@ -40,7 +46,7 @@ function currentMonthStart(): string {
  * Falls back silently to local-only mode when Firebase is not configured.
  */
 export function useFirestoreSync() {
-  const { groupId, setExpenses, setIncomes, setTransfers, setEnvelopes, setSyncStatus } =
+  const { groupId, setExpenses, setIncomes, setTransfers, setCategoryBudgets, setSyncStatus } =
     useStore();
 
   // Re-subscribe automatically when the calendar month rolls over.
@@ -60,18 +66,25 @@ export function useFirestoreSync() {
     const unsubscribers: Array<() => void> = [];
     const groupBase = `groups/${groupId}`;
 
-    // Seed default envelopes the very first time a group is used.
-    const envelopesCol = collection(db, `${groupBase}/envelopes`);
-    getDocs(envelopesCol).then((snap) => {
-      if (snap.empty) {
-        DEFAULT_ENVELOPES.forEach((env) => {
-          setDoc(doc(db!, `${groupBase}/envelopes/${env.id}`), { budget: env.budget });
+    const categoryBudgetsCol = collection(db, `${groupBase}/categoryBudgets`);
+    const legacyEnvelopesCol = collection(db, `${groupBase}/envelopes`);
+
+    // Seed category budgets; migrate legacy envelopes collection if present.
+    getDocs(categoryBudgetsCol).then(async (snap) => {
+      if (!snap.empty) return;
+      const legacy = await getDocs(legacyEnvelopesCol);
+      if (!legacy.empty) {
+        legacy.docs.forEach((d) => {
+          setDoc(doc(db!, `${groupBase}/categoryBudgets/${d.id}`), d.data());
         });
+        return;
       }
+      DEFAULT_CATEGORY_BUDGETS.forEach((b) => {
+        setDoc(doc(db!, `${groupBase}/categoryBudgets/${b.id}`), { budget: b.budget });
+      });
     });
 
     // --- expenses（当月分のみ） ---
-    // where + orderBy が同一フィールド（date）なので複合インデックス不要。
     const expQuery = query(
       collection(db, `${groupBase}/expenses`),
       where('date', '>=', monthStart),
@@ -145,15 +158,15 @@ export function useFirestoreSync() {
       }),
     );
 
-    // --- envelopes（全件・10件固定なので常に軽量） ---
+    // --- category budgets（全件・10件固定なので常に軽量） ---
     unsubscribers.push(
-      onSnapshot(envelopesCol, (snap) => {
+      onSnapshot(categoryBudgetsCol, (snap) => {
         if (!snap.empty) {
-          const envelopes: Envelope[] = snap.docs.map((d) => ({
-            id:     d.id as Envelope['id'],
+          const categoryBudgets: CategoryBudget[] = snap.docs.map((d) => ({
+            id:     d.id as CategoryBudget['id'],
             budget: d.data().budget as number,
           }));
-          setEnvelopes(envelopes);
+          setCategoryBudgets(categoryBudgets);
         }
       }),
     );

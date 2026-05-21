@@ -6,6 +6,7 @@ import {
   ShieldCheck, Star, Lock,
 } from 'lucide-react';
 import SubScreenHeader from '../components/SubScreenHeader';
+import { goBackToTab } from '../lib/mainScroll';
 
 const PLANS = [
   {
@@ -62,7 +63,7 @@ const tierLabel: Record<string, { en: string; hi: string; color: string }> = {
 };
 
 export default function Premium() {
-  const { language, isPremium, members, currentUserId, setTab } = useStore();
+  const { language, isPremium, members, currentUserId } = useStore();
   const [selected, setSelected] = useState<'plus' | 'pro'>('pro');
   const [buying, setBuying]     = useState(false);
 
@@ -83,7 +84,7 @@ export default function Premium() {
         <p className="text-sm font-semibold text-gray-600">
           {L('Only the owner can manage premium.', 'Premium केवल Owner प्रबंधित कर सकता है।')}
         </p>
-        <button onClick={() => setTab('settings')} className="text-sm font-bold text-brand-500">
+        <button onClick={() => goBackToTab('settings')} className="text-sm font-bold text-brand-500">
           {L('Back to Settings →', 'सेटिंग पर वापस →')}
         </button>
       </div>
@@ -94,7 +95,7 @@ export default function Premium() {
     <div className="flex flex-col gap-4 pb-24">
       <SubScreenHeader
         title={language === 'en' ? 'Plan' : 'प्लान'}
-        onBack={() => setTab('settings')}
+        onBack={() => goBackToTab('settings')}
       />
 
       <div className="px-5 -mt-2">

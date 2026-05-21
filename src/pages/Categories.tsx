@@ -8,6 +8,7 @@ import {
   resolveCategoryLabel,
 } from '../lib/categories';
 import SubScreenHeader from '../components/SubScreenHeader';
+import { goBackToTab } from '../lib/mainScroll';
 
 export default function Categories() {
   const {
@@ -44,7 +45,7 @@ export default function Categories() {
     <div className="flex flex-col pb-24">
       <SubScreenHeader
         title={L('Categories', 'कैटेगरी')}
-        onBack={() => setTab('settings')}
+        onBack={() => goBackToTab('settings')}
       />
 
       {!isPremium && (

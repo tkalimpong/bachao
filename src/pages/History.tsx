@@ -4,6 +4,7 @@ import { getCat } from '../lib/categories';
 import { SOURCE_ICONS } from '../lib/incomeSources';
 import { Search, X, ChevronLeft, ChevronRight, Pencil, ChevronDown, Check } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
+import CategoryPanel from '../components/CategoryPanel';
 import { TRUST_BLUE } from '../lib/theme';
 import {
   canViewAllHistory,
@@ -137,10 +138,14 @@ function TxList({
   );
 }
 
+type HistoryTopView = 'history' | 'category';
+
 export default function History() {
   const {
     expenses, incomes, transfers, members, language,
     currentTab, historyNavigateMonth, setHistoryNavigateMonth,
+    historyView, setHistoryView,
+    categoryExpandCategory,
     currentUserId,
   } = useStore();
 
@@ -226,8 +231,20 @@ export default function History() {
   }, [currentTab, historyNavigateMonth, allMonths, setHistoryNavigateMonth]);
 
   useEffect(() => {
+    if (currentTab !== 'history' || !categoryExpandCategory || !showGroup) return;
+    setHistoryView('category');
+  }, [currentTab, categoryExpandCategory, showGroup, setHistoryView]);
+
+  useEffect(() => {
     if (ownOnly) setMemberFilter(currentUserId);
   }, [ownOnly, currentUserId]);
+
+  useEffect(() => {
+    if (!showGroup && historyView === 'category') setHistoryView('history');
+  }, [showGroup, historyView, setHistoryView]);
+
+  const topView: HistoryTopView = showGroup ? historyView : 'history';
+  const monthLabel = formatMonthKey(selectedMonth, language);
 
   // Monthly totals (filtered by type/member/search)
   const totalOut = filtered
@@ -243,11 +260,25 @@ export default function History() {
   return (
     <div className="flex flex-col pb-24">
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
+      {/* ── Sticky header ───────────────────────────────────────────────── */}
       <div className="bg-white pt-10 pb-3 px-5 sticky top-0 z-20 shadow-sm">
-        <h1 className="text-lg font-bold text-gray-900 mb-3">
-          {L('History', 'इतिहास')}
-        </h1>
+        {showGroup && (
+          <div className="flex gap-2 mb-3">
+            {(['history', 'category'] as HistoryTopView[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setHistoryView(v)}
+                className={`flex-1 h-9 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+                  topView === v ? 'bg-ink text-white' : 'bg-gray-100 text-gray-400'
+                }`}
+              >
+                {v === 'history'
+                  ? L('History', 'इतिहास')
+                  : L('Category', 'कैटेगरी')}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Month navigator */}
         <div className="flex items-center justify-between bg-gray-50 rounded-2xl px-3 py-2 mb-3">
@@ -276,6 +307,8 @@ export default function History() {
           </button>
         </div>
 
+        {topView === 'history' && (
+        <>
         {/* Search */}
         <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-3 h-10 mb-3">
           <Search className="w-4 h-4 text-gray-300 shrink-0" />
@@ -351,8 +384,16 @@ export default function History() {
             </button>
           ))}
         </div>
+        </>
+        )}
       </div>
 
+      {topView === 'category' ? (
+        <div className="pt-4">
+          <CategoryPanel selectedMonth={selectedMonth} monthLabel={monthLabel} />
+        </div>
+      ) : (
+      <>
       {/* ── Monthly summary ─────────────────────────────────────────────── */}
       <div className="px-4 pt-4">
         <div className="grid grid-cols-3 gap-2">
@@ -417,6 +458,8 @@ export default function History() {
           ))
         )}
       </div>
+      </>
+      )}
 
       {/* Edit sheet */}
       {editTarget && (

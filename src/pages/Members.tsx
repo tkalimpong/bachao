@@ -11,6 +11,7 @@ import {
   roleLabel,
 } from '../lib/permissions';
 import SubScreenHeader from '../components/SubScreenHeader';
+import { goBackToTab } from '../lib/mainScroll';
 
 export default function Members() {
   const {
@@ -32,7 +33,7 @@ export default function Members() {
     <div className="flex flex-col pb-24">
       <SubScreenHeader
         title={L('Members', 'सदस्य')}
-        onBack={() => setTab('settings')}
+        onBack={() => goBackToTab('settings')}
       />
 
       {canManage && (

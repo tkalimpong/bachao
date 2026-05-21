@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useStore, type Expense, type Income } from '../store/useStore';
+import { useStore, type Category, type Expense, type Income } from '../store/useStore';
 import { getCat, CATEGORIES } from '../lib/categories';
 import { SOURCE_ICONS } from '../lib/incomeSources';
 import AppLogo from '../components/AppLogo';
 import { TRUST_BLUE } from '../lib/theme';
-import { Globe, TrendingDown, TrendingUp, Minus, PiggyBank, Pencil } from 'lucide-react';
+import { Globe, TrendingDown, TrendingUp, Minus, PiggyBank, Pencil, ChevronDown } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
+import { categoryMonthProgress } from '../lib/categoryAverage';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
 
 function fmt(n: number) {
@@ -30,14 +31,14 @@ function relativeDate(dateStr: string, lang: 'en' | 'hi') {
 //   0%          → リングなし（グレーの背景のみ）
 //   1〜74%      → 緑リングが時計回りに伸びる
 //   75〜99%     → オレンジ（上限に近い警告色）
-//   100%〜      → 赤（上限超過）、最大 110% 分まで伸びて止まる
-//   budget = 0  → グレーの細いリングで「記録あり」を示すだけ
+//   100%〜      → 赤（月平均超過）、最大 110% 分まで伸びて止まる
+//   前月までの月平均 = 0 → グレーの細いリングで「記録あり」を示すだけ
 const RING_R    = 21;
 const RING_CIRC = 2 * Math.PI * RING_R;
 
-function GaugeRing({ budget, spent }: { budget: number; spent: number }) {
-  const hasBudget = budget > 0;
-  const fillPct   = hasBudget ? Math.min((spent / budget) * 100, 110) : 0;
+function GaugeRing({ baseline, spent }: { baseline: number; spent: number }) {
+  const hasBaseline = baseline > 0;
+  const fillPct   = hasBaseline ? Math.min((spent / baseline) * 100, 110) : 0;
   const fillLen   = (fillPct / 100) * RING_CIRC;
   const color     = fillPct >= 100 ? '#f43f5e' : fillPct >= 75 ? '#f59e0b' : '#22c55e';
 
@@ -47,7 +48,7 @@ function GaugeRing({ budget, spent }: { budget: number; spent: number }) {
       <circle cx="29" cy="29" r={RING_R} fill="none" stroke="#f3f4f6" strokeWidth="3.5" />
 
       {/* 支出リング：12時（-90°）から時計回りに伸びる */}
-      {hasBudget && fillLen > 0 ? (
+      {hasBaseline && fillLen > 0 ? (
         <circle
           cx="29" cy="29" r={RING_R}
           fill="none"
@@ -59,7 +60,7 @@ function GaugeRing({ budget, spent }: { budget: number; spent: number }) {
           transform="rotate(-90 29 29)"
           style={{ transition: 'stroke-dasharray 0.8s ease, stroke 0.5s ease' }}
         />
-      ) : !hasBudget && spent > 0 ? (
+      ) : !hasBaseline && spent > 0 ? (
         /* 上限未設定でも支出があれば細いグレーリングで示す */
         <circle
           cx="29" cy="29" r={RING_R}
@@ -79,27 +80,36 @@ type EditTarget =
   | { kind: 'income';  data: Income };
 
 export default function Dashboard() {
-  const { expenses, incomes, envelopes, members, language, toggleLanguage, setTab, currentUserId } =
+  const {
+    expenses, incomes, members, language, toggleLanguage, setTab,
+    setHistoryView, setCategoryExpandCategory, setCategoryScrollTarget, currentUserId,
+  } =
     useStore();
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [savingsExpanded, setSavingsExpanded] = useState(false);
 
   const thisMonth    = new Date().toISOString().slice(0, 7);
   const myRole = getMemberRole(members, currentUserId);
   const showGroup = myRole ? canViewGroupFinances(myRole) : true;
+  const L = (en: string, hi: string) => (language === 'en' ? en : hi);
 
-  const monthExpenses = expenses.filter((e) => e.date.startsWith(thisMonth));
-  const monthIncomes  = incomes.filter((i)  => i.date.startsWith(thisMonth));
+  const memberExpenses = showGroup
+    ? expenses
+    : expenses.filter((e) => e.memberId === currentUserId);
+  const memberIncomes = showGroup
+    ? incomes
+    : incomes.filter((i) => i.memberId === currentUserId);
 
-  const scopedExpenses = showGroup
-    ? monthExpenses
-    : monthExpenses.filter((e) => e.memberId === currentUserId);
-  const scopedIncomes = showGroup
-    ? monthIncomes
-    : monthIncomes.filter((i) => i.memberId === currentUserId);
+  const monthExpenses = memberExpenses.filter((e) => e.date.startsWith(thisMonth));
+  const monthIncomes  = memberIncomes.filter((i) => i.date.startsWith(thisMonth));
 
-  const totalIn  = scopedIncomes.reduce((s, i)  => s + i.amount, 0);
-  const totalOut = scopedExpenses.reduce((s, e) => s + e.amount, 0);
-  const balance  = totalIn - totalOut;
+  const monthIn  = monthIncomes.reduce((s, i)  => s + i.amount, 0);
+  const monthOut = monthExpenses.reduce((s, e) => s + e.amount, 0);
+  const monthBalance = monthIn - monthOut;
+
+  const allTimeIn  = memberIncomes.reduce((s, i) => s + i.amount, 0);
+  const allTimeOut = memberExpenses.reduce((s, e) => s + e.amount, 0);
+  const allTimeBalance = allTimeIn - allTimeOut;
 
   // merged recent transactions (latest 8)
   type TxEntry =
@@ -107,19 +117,17 @@ export default function Dashboard() {
     | { kind: 'income';  data: typeof incomes[0] };
 
   const allTx: TxEntry[] = [
-    ...scopedExpenses.map((e) => ({ kind: 'expense' as const, data: e })),
-    ...scopedIncomes.map((i)  => ({ kind: 'income'  as const, data: i })),
+    ...monthExpenses.map((e) => ({ kind: 'expense' as const, data: e })),
+    ...monthIncomes.map((i)  => ({ kind: 'income'  as const, data: i })),
   ].sort((a, b) => b.data.date.localeCompare(a.data.date)).slice(0, 8);
 
   const gaugeData = CATEGORIES.map((cat) => {
-    const env   = envelopes.find((e) => e.id === cat.id)!;
-    const spent = scopedExpenses
-      .filter((e) => e.category === cat.id)
-      .reduce((s, e) => s + e.amount, 0);
-    const fillPct = env.budget > 0 ? (spent / env.budget) * 100 : 0;
-    const isOver  = env.budget > 0 && spent > env.budget;
-    const isWarn  = env.budget > 0 && fillPct >= 75 && !isOver;
-    return { cat, env, spent, fillPct, isWarn, isOver };
+    const { spent, avg, pct, isWarn, isOver } = categoryMonthProgress(
+      expenses,
+      thisMonth,
+      cat.id,
+    );
+    return { cat, spent, avg, pct, isWarn, isOver };
   });
 
   return (
@@ -149,14 +157,17 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── IN / OUT / BALANCE ── */}
+      {/* ── IN / OUT / BALANCE（全期間）── */}
       <div className="px-4">
         <div className="bg-ink rounded-3xl p-5 text-white">
           {!showGroup && (
             <p className="text-[10px] text-white/50 font-semibold uppercase mb-3">
-              {language === 'en' ? 'Your summary' : 'आपका सारांश'}
+              {L('Your summary', 'आपका सारांश')}
             </p>
           )}
+          <p className="text-[10px] text-white/40 font-semibold uppercase mb-3">
+            {L('All time', 'कुल')}
+          </p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
@@ -167,7 +178,7 @@ export default function Dashboard() {
                   {language === 'en' ? 'Money In' : 'आया'}
                 </span>
               </div>
-              <p className="text-xl font-black text-emerald-400">{fmt(totalIn)}</p>
+              <p className="text-xl font-black text-emerald-400">{fmt(allTimeIn)}</p>
             </div>
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
@@ -178,7 +189,7 @@ export default function Dashboard() {
                   {language === 'en' ? 'Money Out' : 'गया'}
                 </span>
               </div>
-              <p className="text-xl font-black text-rose-400">{fmt(totalOut)}</p>
+              <p className="text-xl font-black text-rose-400">{fmt(allTimeOut)}</p>
             </div>
           </div>
           <div className="border-t border-white/10 pt-4 flex items-center justify-between">
@@ -192,87 +203,208 @@ export default function Dashboard() {
               className="text-2xl font-black"
               style={{
                 color:
-                  balance > 0
+                  allTimeBalance > 0
                     ? TRUST_BLUE[400]
-                    : balance < 0
+                    : allTimeBalance < 0
                     ? undefined
                     : 'rgba(255,255,255,0.5)',
               }}
             >
-              {balance < 0 ? (
-                <span className="text-rose-400">−{fmt(Math.abs(balance))}</span>
+              {allTimeBalance < 0 ? (
+                <span className="text-rose-400">−{fmt(Math.abs(allTimeBalance))}</span>
               ) : (
-                <>+{fmt(balance)}</>
+                <>+{fmt(allTimeBalance)}</>
               )}
             </p>
           </div>
-          {totalIn > 0 && (
+          {allTimeIn > 0 && (
             <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full bg-rose-400 rounded-full transition-all duration-700"
-                style={{ width: `${Math.min((totalOut / totalIn) * 100, 100)}%` }}
+                style={{ width: `${Math.min((allTimeOut / allTimeIn) * 100, 100)}%` }}
               />
             </div>
           )}
           <p className="text-[10px] text-white/30 mt-1 text-right">
-            {totalIn > 0 ? Math.round((totalOut / totalIn) * 100) : 0}%{' '}
+            {allTimeIn > 0 ? Math.round((allTimeOut / allTimeIn) * 100) : 0}%{' '}
             {language === 'en' ? 'of income spent' : 'आय का खर्च'}
           </p>
         </div>
       </div>
 
-      {/* ── 貯蓄カード（自動計算）─────────────────────────────────────────── */}
+      {/* ── 貯蓄カード（今月・タップで下に展開）──────────────────────────── */}
       <div className="px-4">
-        {balance >= 0 ? (
-          <div
-            className="rounded-2xl px-4 py-3 flex items-center gap-3"
-            style={{ background: `linear-gradient(to right, ${TRUST_BLUE[500]}, ${TRUST_BLUE[600]})` }}
+        <div
+          className={`rounded-2xl overflow-hidden ${
+            monthBalance >= 0
+              ? ''
+              : 'bg-rose-50 border border-rose-100'
+          }`}
+          style={
+            monthBalance >= 0
+              ? { background: `linear-gradient(to right, ${TRUST_BLUE[500]}, ${TRUST_BLUE[600]})` }
+              : undefined
+          }
+        >
+          <button
+            type="button"
+            onClick={() => setSavingsExpanded((v) => !v)}
+            className="w-full px-4 py-3 flex items-center gap-3 text-left active:opacity-90 transition-opacity"
           >
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <PiggyBank className="w-5 h-5 text-white" />
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                monthBalance >= 0 ? 'bg-white/20' : 'bg-rose-100'
+              }`}
+            >
+              <PiggyBank
+                className={`w-5 h-5 ${monthBalance >= 0 ? 'text-white' : 'text-rose-400'}`}
+              />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-white/70 font-medium">
-                {language === 'en' ? 'Savings this month' : 'इस महीने की बचत'}
+              <p
+                className={`text-xs font-medium ${
+                  monthBalance >= 0 ? 'text-white/70' : 'text-rose-400'
+                }`}
+              >
+                {monthBalance >= 0
+                  ? L('Savings this month', 'इस महीने की बचत')
+                  : L('Overspending this month', 'इस महीने ज़्यादा खर्च')}
               </p>
-              <p className="text-xl font-black text-white">
-                +{fmt(balance)}
+              <p
+                className={`text-[10px] ${
+                  monthBalance >= 0 ? 'text-white/50' : 'text-rose-300'
+                }`}
+              >
+                {L('This month', 'इस महीने')}
+              </p>
+              <p
+                className={`text-xl font-black mt-0.5 ${
+                  monthBalance >= 0 ? 'text-white' : 'text-rose-500'
+                }`}
+              >
+                {monthBalance >= 0
+                  ? `+${fmt(monthBalance)}`
+                  : `−${fmt(Math.abs(monthBalance))}`}
               </p>
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-xs text-white/70">
-                {language === 'en' ? 'of income' : 'आय का'}
-              </p>
-              <p className="text-sm font-bold text-white">
-                {totalIn > 0 ? Math.round((balance / totalIn) * 100) : 0}%
-              </p>
+            <div className="text-right shrink-0 flex flex-col items-end gap-1">
+              <div>
+                <p
+                  className={`text-xs ${
+                    monthBalance >= 0 ? 'text-white/70' : 'text-rose-400'
+                  }`}
+                >
+                  {L('of income', 'आय का')}
+                </p>
+                <p
+                  className={`text-sm font-bold ${
+                    monthBalance >= 0 ? 'text-white' : 'text-rose-500'
+                  }`}
+                >
+                  {monthIn > 0 ? Math.round((monthBalance / monthIn) * 100) : 0}%
+                </p>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 transition-transform duration-300 ${
+                  monthBalance >= 0 ? 'text-white/60' : 'text-rose-300'
+                } ${savingsExpanded ? 'rotate-180' : ''}`}
+              />
+            </div>
+          </button>
+
+          <div
+            className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+              savingsExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div
+                className={`px-4 pb-4 pt-1 border-t ${
+                  monthBalance >= 0 ? 'border-white/20' : 'border-rose-100'
+                }`}
+              >
+                <p
+                  className={`text-[10px] font-semibold uppercase mb-2 ${
+                    monthBalance >= 0 ? 'text-white/50' : 'text-rose-300'
+                  }`}
+                >
+                  {L('This month', 'इस महीने')}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div
+                    className={`rounded-xl px-3 py-2.5 ${
+                      monthBalance >= 0 ? 'bg-white/15' : 'bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1 mb-0.5">
+                      <TrendingUp className="w-3 h-3 text-emerald-400" />
+                      <span
+                        className={`text-[10px] font-semibold ${
+                          monthBalance >= 0 ? 'text-white/80' : 'text-emerald-600'
+                        }`}
+                      >
+                        {L('Money In', 'आया')}
+                      </span>
+                    </div>
+                    <p
+                      className={`text-sm font-black ${
+                        monthBalance >= 0 ? 'text-emerald-300' : 'text-emerald-600'
+                      }`}
+                    >
+                      {monthIn > 0 ? `+${fmt(monthIn)}` : '—'}
+                    </p>
+                  </div>
+                  <div
+                    className={`rounded-xl px-3 py-2.5 ${
+                      monthBalance >= 0 ? 'bg-white/15' : 'bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1 mb-0.5">
+                      <TrendingDown className="w-3 h-3 text-rose-400" />
+                      <span
+                        className={`text-[10px] font-semibold ${
+                          monthBalance >= 0 ? 'text-white/80' : 'text-rose-500'
+                        }`}
+                      >
+                        {L('Money Out', 'गया')}
+                      </span>
+                    </div>
+                    <p
+                      className={`text-sm font-black ${
+                        monthBalance >= 0 ? 'text-rose-300' : 'text-rose-500'
+                      }`}
+                    >
+                      {monthOut > 0 ? `−${fmt(monthOut)}` : '—'}
+                    </p>
+                  </div>
+                </div>
+                {monthIn > 0 && (
+                  <p
+                    className={`text-[10px] text-right mt-2 ${
+                      monthBalance >= 0 ? 'text-white/40' : 'text-rose-300'
+                    }`}
+                  >
+                    {Math.round((monthOut / monthIn) * 100)}%{' '}
+                    {L('of income spent', 'आय का खर्च')}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="bg-rose-50 border border-rose-100 rounded-2xl px-4 py-3 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
-              <PiggyBank className="w-5 h-5 text-rose-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-rose-400 font-medium">
-                {language === 'en' ? 'Overspending this month' : 'इस महीने ज़्यादा खर्च'}
-              </p>
-              <p className="text-xl font-black text-rose-500">
-                −{fmt(Math.abs(balance))}
-              </p>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {showGroup && (
       <div className="px-4">
         <div className="flex items-center justify-between mb-2 ml-1">
           <p className="text-xs text-gray-400 font-semibold uppercase">
-            {language === 'en' ? 'Envelopes' : 'लिफ़ाफ़े'}
+            {language === 'en' ? 'Category' : 'कैटेगरी'}
           </p>
           <button
-            onClick={() => setTab('envelopes')}
+            onClick={() => {
+              setHistoryView('category');
+              setTab('history');
+            }}
             className="text-xs text-brand-500 font-semibold"
           >
             {language === 'en' ? 'Details →' : 'विवरण →'}
@@ -281,18 +413,23 @@ export default function Dashboard() {
 
         <div className="bg-white rounded-2xl p-3">
           <div className="grid grid-cols-5 gap-1">
-            {gaugeData.map(({ cat, env, spent, isWarn, isOver }) => {
+            {gaugeData.map(({ cat, spent, avg, isWarn, isOver }) => {
               const amtColor = isOver ? 'text-rose-500' : isWarn ? 'text-orange-500' : 'text-gray-600';
 
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setTab('envelopes')}
+                  onClick={() => {
+                    setHistoryView('category');
+                    setCategoryExpandCategory(cat.id as Category);
+                    setCategoryScrollTarget(cat.id as Category);
+                    setTab('history');
+                  }}
                   className="flex flex-col items-center gap-0.5 py-1 active:scale-95 transition-transform"
                 >
                   {/* SVG ring + icon */}
                   <svg width="58" height="58" viewBox="0 0 58 58">
-                    <GaugeRing budget={env.budget} spent={spent} />
+                    <GaugeRing baseline={avg} spent={spent} />
                     <circle cx="29" cy="29" r="17" fill={cat.bg} />
                     <text
                       x="29" y="35"

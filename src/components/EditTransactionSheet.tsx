@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useUiOverlay } from '../hooks/useUiOverlay';
 import { useStore, type Expense, type Income, type Category, type IncomeSource } from '../store/useStore';
 import { canEditTransaction, getMemberRole } from '../lib/permissions';
 import { CATEGORIES } from '../lib/categories';
@@ -15,6 +16,8 @@ interface Props {
 }
 
 export default function EditTransactionSheet({ target, onClose }: Props) {
+  useUiOverlay();
+
   const {
     language, members, currentUserId,
     updateExpense, deleteExpense,

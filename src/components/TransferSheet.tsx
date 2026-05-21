@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useUiOverlay } from '../hooks/useUiOverlay';
 import { useStore, type Transfer } from '../store/useStore';
 import { canEditTransfer, getMemberRole } from '../lib/permissions';
 import { ArrowRightLeft, CalendarDays, Check, Trash2, X } from 'lucide-react';
@@ -16,6 +17,8 @@ export default function TransferSheet({
   initialToId,
   onClose,
 }: Props) {
+  useUiOverlay();
+
   const {
     language,
     members,

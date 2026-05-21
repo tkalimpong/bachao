@@ -8,12 +8,13 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../lib/firebase';
+import { isFirebaseConfigured, db } from '../lib/firebase';
 import {
   canEditMemberRole,
   canManageMembers,
   type MemberRole,
 } from '../lib/permissions';
+import { seedExpenses, seedIncomes, seedTransfers } from '../lib/seedData';
 
 export type Category =
   | 'food' | 'transport' | 'shopping' | 'health' | 'entertainment'
@@ -49,10 +50,20 @@ export interface Transfer {
   date: string;
 }
 
-export interface Envelope {
+export interface CategoryBudget {
   id: Category;
   budget: number;
 }
+
+export type HistoryView = 'history' | 'category';
+
+/** Where to return when cancelling Add from Category tab */
+export type AddReturnContext = {
+  tab: string;
+  historyView?: HistoryView;
+  categoryExpandCategory?: Category;
+  historyNavigateMonth?: string;
+};
 
 export interface FamilyMember {
   id: string;
@@ -75,8 +86,32 @@ interface AppState {
   currentTab: string;
   addMode: 'expense' | 'income';
   setTab: (tab: string, addMode?: 'expense' | 'income') => void;
+  /** 次のタブ表示で save した scrollTop を復元（戻る・キャンセル用） */
+  restoreScrollTab: string | null;
+  tabScrollTops: Partial<Record<string, number>>;
+  saveTabScrollTop: (tab: string, top: number) => void;
+  requestRestoreScroll: (tab: string) => void;
   historyNavigateMonth: string | null;
   setHistoryNavigateMonth: (month: string | null) => void;
+  historyView: HistoryView;
+  setHistoryView: (view: HistoryView) => void;
+  categoryExpandCategory: Category | null;
+  setCategoryExpandCategory: (category: Category | null) => void;
+  /** History でカテゴリへ scrollIntoView するまで App の scroll リセットを抑止 */
+  categoryScrollTarget: Category | null;
+  setCategoryScrollTarget: (category: Category | null) => void;
+  addPrefillCategory: Category | null;
+  addReturnContext: AddReturnContext | null;
+  /** Bumps when opening Add so the screen remounts and scroll resets */
+  addNavigationKey: number;
+  openAddExpenseFromCategory: (category: Category, selectedMonth: string) => void;
+  clearAddPrefill: () => void;
+  clearAddNavigation: () => void;
+
+  /** EditTransactionSheet / TransferSheet など */
+  uiOverlayDepth: number;
+  pushUiOverlay: () => void;
+  popUiOverlay: () => void;
 
   // ── settings ──────────────────────────────────────────────────
   isPremium: boolean;
@@ -107,10 +142,10 @@ interface AppState {
   updateTransfer: (id: string, data: Partial<Omit<Transfer, 'id'>>) => void;
   deleteTransfer: (id: string) => void;
 
-  // ── envelopes ─────────────────────────────────────────────────
-  envelopes: Envelope[];
-  setEnvelopes: (envelopes: Envelope[]) => void;
-  updateEnvelopeBudget: (id: Category, budget: number) => void;
+  // ── category budgets (monthly limits per expense category) ────
+  categoryBudgets: CategoryBudget[];
+  setCategoryBudgets: (budgets: CategoryBudget[]) => void;
+  updateCategoryBudget: (id: Category, budget: number) => void;
 
   // ── members ───────────────────────────────────────────────────
   members: FamilyMember[];
@@ -124,43 +159,13 @@ interface AppState {
 
 // ── local seed data (used when Firebase is NOT configured) ────────────────
 
-const initialExpenses: Expense[] = [
-  { id: '1',  category: 'food',          amount: 450,  note: 'Lunch at office',     date: '2026-05-20', memberId: 'm1' },
-  { id: '2',  category: 'transport',     amount: 120,  note: 'Auto rickshaw',        date: '2026-05-20', memberId: 'm1' },
-  { id: '3',  category: 'shopping',      amount: 1200, note: 'New shirt',            date: '2026-05-19', memberId: 'm2' },
-  { id: '4',  category: 'food',          amount: 380,  note: 'Groceries',            date: '2026-05-19', memberId: 'm2' },
-  { id: '5',  category: 'utilities',     amount: 850,  note: 'Electricity bill',     date: '2026-05-18', memberId: 'm1' },
-  { id: '6',  category: 'entertainment', amount: 499,  note: 'Netflix subscription', date: '2026-05-17', memberId: 'm2' },
-  { id: '7',  category: 'health',        amount: 600,  note: 'Medicine',             date: '2026-05-16', memberId: 'm3' },
-  { id: '8',  category: 'education',     amount: 2500, note: 'Tuition fee',          date: '2026-05-15', memberId: 'm3' },
-  { id: '9',  category: 'food',          amount: 250,  note: 'Chai & snacks',        date: '2026-05-15', memberId: 'm1' },
-  { id: '10', category: 'transport',     amount: 200,  note: 'Petrol',               date: '2026-05-14', memberId: 'm2' },
-  { id: '11', category: 'home',          amount: 800,  note: 'Vegetables & fruits',  date: '2026-05-13', memberId: 'm1' },
-  { id: '12', category: 'other',         amount: 3200, note: 'Miscellaneous',         date: '2026-05-12', memberId: 'm1' },
-  { id: '13', category: 'food',          amount: 320,  note: 'Dinner out',           date: '2026-05-11', memberId: 'm2' },
-  { id: '14', category: 'shopping',      amount: 2200, note: 'Kurta for festival',   date: '2026-05-10', memberId: 'm1' },
-  { id: '15', category: 'health',        amount: 400,  note: 'Doctor visit',         date: '2026-05-09', memberId: 'm3' },
-];
+const initialExpenses: Expense[] = seedExpenses;
 
-const initialIncomes: Income[] = [
-  { id: 'i1', source: 'salary',    amount: 45000, note: 'May salary',     date: '2026-05-01', memberId: 'm1' },
-  { id: 'i2', source: 'salary',    amount: 32000, note: 'May salary',     date: '2026-05-01', memberId: 'm2' },
-  { id: 'i3', source: 'freelance', amount: 8500,  note: 'Design project', date: '2026-05-08', memberId: 'm2' },
-  { id: 'i4', source: 'gift',      amount: 2000,  note: 'Birthday gift',  date: '2026-05-12', memberId: 'm3' },
-];
+const initialIncomes: Income[] = seedIncomes;
 
-const initialTransfers: Transfer[] = [
-  {
-    id: 't1',
-    fromMemberId: 'm1',
-    toMemberId: 'm3',
-    amount: 1500,
-    note: 'Pocket money',
-    date: '2026-05-14',
-  },
-];
+const initialTransfers: Transfer[] = seedTransfers;
 
-const initialEnvelopes: Envelope[] = [
+const initialCategoryBudgets: CategoryBudget[] = [
   { id: 'food',          budget: 8000 },
   { id: 'transport',     budget: 3000 },
   { id: 'shopping',      budget: 5000 },
@@ -175,6 +180,12 @@ const initialEnvelopes: Envelope[] = [
 
 // ── store ─────────────────────────────────────────────────────────────────
 
+function captureCurrentTabScroll() {
+  const { currentTab, saveTabScrollTop } = useStore.getState();
+  const el = document.querySelector<HTMLElement>('[data-main-scroll]');
+  if (el) saveTabScrollTop(currentTab, el.scrollTop);
+}
+
 export const useStore = create<AppState>((set, get) => ({
   // ── sync ──────────────────────────────────────────────────────
   groupId: 'family-default',
@@ -184,10 +195,49 @@ export const useStore = create<AppState>((set, get) => ({
   // ── navigation ────────────────────────────────────────────────
   currentTab: 'home',
   addMode: 'expense',
-  setTab: (tab, addMode) =>
-    set(addMode !== undefined ? { currentTab: tab, addMode } : { currentTab: tab }),
+  setTab: (tab, addMode) => {
+    const { currentTab } = get();
+    if (tab !== currentTab) captureCurrentTabScroll();
+    set(addMode !== undefined ? { currentTab: tab, addMode } : { currentTab: tab });
+  },
+  restoreScrollTab: null,
+  tabScrollTops: {},
+  saveTabScrollTop: (tab, top) =>
+    set((s) => ({ tabScrollTops: { ...s.tabScrollTops, [tab]: top } })),
+  requestRestoreScroll: (tab) => set({ restoreScrollTab: tab }),
   historyNavigateMonth: null,
   setHistoryNavigateMonth: (historyNavigateMonth) => set({ historyNavigateMonth }),
+  historyView: 'history',
+  setHistoryView: (historyView) => set({ historyView }),
+  categoryExpandCategory: null,
+  setCategoryExpandCategory: (categoryExpandCategory) => set({ categoryExpandCategory }),
+  categoryScrollTarget: null,
+  setCategoryScrollTarget: (categoryScrollTarget) => set({ categoryScrollTarget }),
+  addPrefillCategory: null,
+  addReturnContext: null,
+  addNavigationKey: 0,
+  openAddExpenseFromCategory: (category, selectedMonth) => {
+    captureCurrentTabScroll();
+    set((s) => ({
+      addPrefillCategory: category,
+      addReturnContext: {
+        tab: 'history',
+        historyView: 'category',
+        categoryExpandCategory: category,
+        historyNavigateMonth: selectedMonth,
+      },
+      // 戻るときだけ展開（ここで set すると Category の scrollIntoView が先に走る）
+      categoryExpandCategory: null,
+      currentTab: 'add',
+      addMode: 'expense',
+      addNavigationKey: s.addNavigationKey + 1,
+    }));
+  },
+  clearAddPrefill: () => set({ addPrefillCategory: null }),
+  clearAddNavigation: () => set({ addPrefillCategory: null, addReturnContext: null }),
+  uiOverlayDepth: 0,
+  pushUiOverlay: () => set((s) => ({ uiOverlayDepth: s.uiOverlayDepth + 1 })),
+  popUiOverlay: () => set((s) => ({ uiOverlayDepth: Math.max(0, s.uiOverlayDepth - 1) })),
 
   // ── settings ──────────────────────────────────────────────────
   isPremium: false,
@@ -318,21 +368,21 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  // ── envelopes ─────────────────────────────────────────────────
-  envelopes: initialEnvelopes,
-  setEnvelopes: (envelopes) => set({ envelopes }),
+  // ── category budgets ──────────────────────────────────────────
+  categoryBudgets: initialCategoryBudgets,
+  setCategoryBudgets: (categoryBudgets) => set({ categoryBudgets }),
 
-  updateEnvelopeBudget: (id, budget) => {
+  updateCategoryBudget: (id, budget) => {
     if (isFirebaseConfigured && db) {
       const { groupId } = get();
       setDoc(
-        doc(db, `groups/${groupId}/envelopes/${id}`),
+        doc(db, `groups/${groupId}/categoryBudgets/${id}`),
         { budget },
         { merge: true },
       );
     } else {
       set((s) => ({
-        envelopes: s.envelopes.map((e) => (e.id === id ? { ...e, budget } : e)),
+        categoryBudgets: s.categoryBudgets.map((e) => (e.id === id ? { ...e, budget } : e)),
       }));
     }
   },

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
+import { resetMainScroll, resetMainScrollThoroughly } from '../lib/mainScroll';
 import { useStore, type Category, type IncomeSource } from '../store/useStore';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
 import { CATEGORIES, defaultCategoryNote } from '../lib/categories';
@@ -13,7 +14,13 @@ export default function AddExpense() {
   const {
     addExpense, addIncome, setTab, addMode: mode, language,
     members, activeMemberId, setActiveMember,
-    envelopes, expenses, currentUserId,
+    categoryBudgets, expenses, currentUserId,
+    addPrefillCategory, addReturnContext,
+    setHistoryView, setCategoryExpandCategory, setHistoryNavigateMonth,
+    setCategoryScrollTarget,
+    requestRestoreScroll,
+    clearAddPrefill,
+    clearAddNavigation,
   } = useStore();
 
   const myRole = getMemberRole(members, currentUserId);
@@ -24,7 +31,25 @@ export default function AddExpense() {
     if (!showGroup) setActiveMember(currentUserId);
   }, [showGroup, currentUserId, setActiveMember]);
 
-  const [category, setCategory] = useState<Category>('food');
+  useLayoutEffect(() => {
+    resetMainScrollThoroughly();
+  }, []);
+
+  useEffect(() => {
+    resetMainScrollThoroughly();
+    const t = window.setTimeout(resetMainScroll, 50);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (mode !== 'expense' || !addPrefillCategory) return;
+    setCategory(addPrefillCategory);
+    clearAddPrefill();
+  }, [mode, addPrefillCategory, clearAddPrefill]);
+
+  const [category, setCategory] = useState<Category>(
+    () => useStore.getState().addPrefillCategory ?? 'food',
+  );
   const [source, setSource]     = useState<IncomeSource>('salary');
   const [amount, setAmount]     = useState('');
   const [note, setNote]         = useState('');
@@ -37,7 +62,7 @@ export default function AddExpense() {
   const catSpent  = expenses
     .filter((e) => e.date.startsWith(thisMonth) && e.category === category)
     .reduce((s, e) => s + e.amount, 0);
-  const catBudget = envelopes.find((e) => e.id === category)?.budget ?? 0;
+  const catBudget = categoryBudgets.find((e) => e.id === category)?.budget ?? 0;
   const catFill   = catBudget > 0 ? Math.min((catSpent / catBudget) * 100, 110) : 0;
   const catOver   = catBudget > 0 && catSpent > catBudget;
   const catWarn   = catBudget > 0 && catFill >= 75 && !catOver;
@@ -49,6 +74,27 @@ export default function AddExpense() {
     const src = INCOME_SOURCES.find((s) => s.id === source)!;
     const label = language === 'en' ? src.en : src.hi;
     return `(${label})`;
+  }
+
+  function navigateAfterAdd() {
+    const ctx = addReturnContext;
+    clearAddNavigation();
+    if (ctx) {
+      if (ctx.historyView) setHistoryView(ctx.historyView);
+      if (ctx.categoryExpandCategory) {
+        setCategoryExpandCategory(ctx.categoryExpandCategory);
+        setCategoryScrollTarget(ctx.categoryExpandCategory);
+      }
+      if (ctx.historyNavigateMonth) setHistoryNavigateMonth(ctx.historyNavigateMonth);
+      requestRestoreScroll(ctx.tab);
+      setTab(ctx.tab);
+      return;
+    }
+    setTab(showGroup ? 'home' : 'history');
+  }
+
+  function handleCancel() {
+    navigateAfterAdd();
   }
 
   function handleSave() {
@@ -63,7 +109,7 @@ export default function AddExpense() {
         setAmount('');
         setNote('');
         setDate(new Date().toISOString().slice(0, 10));
-        setTab(showGroup ? 'home' : 'history');
+        navigateAfterAdd();
       }, 900);
     } else {
       addIncome({ source, amount: n, note: savedNote, date, memberId: recordAsId });
@@ -73,7 +119,7 @@ export default function AddExpense() {
         setAmount('');
         setNote('');
         setDate(new Date().toISOString().slice(0, 10));
-        setTab(showGroup ? 'home' : 'history');
+        navigateAfterAdd();
       }, 900);
     }
   }
@@ -111,7 +157,7 @@ export default function AddExpense() {
         {mode === 'expense' ? (
           <div className="grid grid-cols-5 gap-2">
             {CATEGORIES.map((cat) => {
-              const env     = envelopes.find((e) => e.id === cat.id);
+              const env     = categoryBudgets.find((e) => e.id === cat.id);
               const spent   = expenses
                 .filter((e) => e.date.startsWith(thisMonth) && e.category === cat.id)
                 .reduce((s, e) => s + e.amount, 0);
@@ -285,7 +331,7 @@ export default function AddExpense() {
             <><TrendingUp className="w-5 h-5" />{language === 'en' ? 'Add Income' : 'आय जोड़ें'}</>
           )}
         </button>
-        <button onClick={() => setTab('home')} className="w-full h-10 text-sm text-gray-400 mt-1">
+        <button onClick={handleCancel} className="w-full h-10 text-sm text-gray-400 mt-1">
           {language === 'en' ? 'Cancel' : 'रद्द'}
         </button>
       </div>

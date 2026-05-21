@@ -1,17 +1,16 @@
 import {
-  Wallet, Tag, Zap, Users, ChevronRight, Globe, Lock,
+  Tag, Zap, Users, ChevronRight, Globe, Lock,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import {
   canManageMembers,
   canUsePremium,
-  canViewGroupFinances,
   getMemberRole,
 } from '../lib/permissions';
 
 type MenuItem = {
   id: string;
-  Icon: typeof Wallet;
+  Icon: typeof Tag;
   color: string;
   bg: string;
   en: string;
@@ -27,7 +26,6 @@ export default function Settings() {
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
 
   const role = getMemberRole(members, currentUserId);
-  const showEnvelopes = role ? canViewGroupFinances(role) : true;
   const showPlan = role ? canUsePremium(role) : true;
   const canManage = role ? canManageMembers(role) : false;
 
@@ -43,19 +41,6 @@ export default function Settings() {
       subHi: canManage ? 'भूमिका बदलें और जोड़ें' : 'सदस्य भूमिका देखें',
       onClick: () => setTab('members'),
     },
-    ...(showEnvelopes
-      ? [{
-          id: 'envelopes',
-          Icon: Wallet,
-          color: '#2563eb',
-          bg: '#eff6ff',
-          en: 'Envelopes',
-          hi: 'लिफ़ाफ़े',
-          subEn: 'Category spending this month',
-          subHi: 'इस महीने का कैटेगरी खर्च',
-          onClick: () => setTab('envelopes'),
-        }]
-      : []),
     {
       id: 'categories',
       Icon: Tag,
@@ -89,7 +74,7 @@ export default function Settings() {
           {L('Settings', 'सेटिंग')}
         </h1>
         <p className="text-xs text-gray-400 mt-0.5">
-          {L('Manage members, envelopes & plan', 'सदस्य, लिफ़ाफ़े और प्लान')}
+          {L('Manage members, categories & plan', 'सदस्य, कैटेगरी और प्लान')}
         </p>
       </div>
 
