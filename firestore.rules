@@ -55,6 +55,9 @@ service cloud.firestore {
       match /envelopes/{docId} {
         allow read, write: if isMember(groupId);
       }
+      match /settings/{docId} {
+        allow read, write: if isMember(groupId);
+      }
     }
   }
 }

@@ -51,8 +51,8 @@ export default function Settings() {
       bg: '#f5f3ff',
       en: 'Categories',
       hi: 'कैटेगरी',
-      subEn: isPremium ? 'Edit icons and names' : 'View categories · Plus to edit',
-      subHi: isPremium ? 'आइकन और नाम बदलें' : 'देखें · संपादन के लिए Plus',
+      subEn: 'Edit names and icons',
+      subHi: 'नाम और आइकन बदलें',
       onClick: () => setTab('categories'),
     },
     ...(showPlan

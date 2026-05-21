@@ -11,6 +11,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { isLiveFirebase } from '../lib/appMode';
+import { saveStoredCategoryOverrides } from '../lib/categoryOverridesStorage';
+import type { CategoryOverrides } from '../lib/categories';
 import {
   useStore,
   type CategoryBudget,
@@ -55,6 +57,7 @@ export function useFirestoreSync(enabled = true) {
     setTransfers,
     setCategoryBudgets,
     setMembers,
+    setCategoryOverrides,
     setSyncStatus,
   } = useStore();
 
@@ -194,6 +197,19 @@ export function useFirestoreSync(enabled = true) {
           };
         });
         setMembers(members);
+      }),
+    );
+
+    // --- category name/icon overrides (family shared) ---
+    unsubscribers.push(
+      onSnapshot(doc(db, `${groupBase}/settings/main`), (snap) => {
+        if (!snap.exists()) return;
+        const raw = snap.data().categoryOverrides;
+        if (raw && typeof raw === 'object') {
+          const categoryOverrides = raw as CategoryOverrides;
+          setCategoryOverrides(categoryOverrides);
+          saveStoredCategoryOverrides(categoryOverrides);
+        }
       }),
     );
 

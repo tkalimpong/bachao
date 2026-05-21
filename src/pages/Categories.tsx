@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, Check, RotateCcw } from 'lucide-react';
+import { Check, RotateCcw } from 'lucide-react';
 import { useStore, type Category } from '../store/useStore';
 import {
   CATEGORIES,
@@ -12,8 +12,7 @@ import { goBackToTab } from '../lib/mainScroll';
 
 export default function Categories() {
   const {
-    language, isPremium, setTab,
-    categoryOverrides, setCategoryOverride, resetCategoryOverride,
+    language, categoryOverrides, setCategoryOverride, resetCategoryOverride,
   } = useStore();
 
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
@@ -23,10 +22,6 @@ export default function Categories() {
   const [hi, setHi] = useState('');
 
   function startEdit(id: Category) {
-    if (!isPremium) {
-      setTab('premium');
-      return;
-    }
     const base = CATEGORY_LABELS[id];
     const o = categoryOverrides[id];
     setEditing(id);
@@ -48,30 +43,26 @@ export default function Categories() {
         onBack={() => goBackToTab('settings')}
       />
 
-      {!isPremium && (
-        <div className="mx-4 mb-4 bg-violet-50 border border-violet-100 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <Lock className="w-4 h-4 text-violet-400 shrink-0" />
-          <p className="text-xs text-violet-700 flex-1">
-            {L('Upgrade to Plus to edit categories', 'संपादन के लिए Plus अपग्रेड करें')}
-          </p>
-          <button
-            onClick={() => setTab('premium')}
-            className="text-xs font-bold text-violet-600 shrink-0"
-          >
-            {L('Upgrade', 'अपग्रेड')}
-          </button>
-        </div>
-      )}
+      <div className="mx-4 mb-4 bg-violet-50 border border-violet-100 rounded-2xl px-4 py-3">
+        <p className="text-xs text-violet-700 leading-relaxed">
+          {L(
+            'Tap a category to edit its name and icon. Changes apply across the app for your family.',
+            'नाम और आइकन बदलने के लिए कैटेगरी पर टैप करें। बदलाव पूरे ऐप में दिखेंगे।',
+          )}
+        </p>
+      </div>
 
       <div className="px-4 flex flex-col gap-2">
         {CATEGORIES.map((cat) => {
           const label = resolveCategoryLabel(cat.id, language, categoryOverrides);
           const iconDisplay = resolveCategoryIcon(cat.id, categoryOverrides);
           const customized = !!categoryOverrides[cat.id];
+          const defaultLabel = CATEGORY_LABELS[cat.id][language];
 
           return (
             <button
               key={cat.id}
+              type="button"
               onClick={() => startEdit(cat.id)}
               className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 active:bg-gray-50 transition-colors text-left"
             >
@@ -83,7 +74,11 @@ export default function Categories() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900">{label}</p>
-                <p className="text-[10px] text-gray-400 capitalize">{cat.id}</p>
+                <p className="text-[10px] text-gray-400">
+                  {customized && label !== defaultLabel
+                    ? L(`Default: ${defaultLabel}`, `डिफ़ॉल्ट: ${defaultLabel}`)
+                    : cat.id}
+                </p>
               </div>
               {customized && (
                 <span className="text-[9px] font-bold bg-brand-50 text-brand-500 px-2 py-0.5 rounded-full shrink-0">
@@ -101,9 +96,12 @@ export default function Categories() {
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-w-sm mx-auto">
             <div className="pt-3 pb-4 px-5">
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-              <h3 className="text-base font-bold text-gray-900 mb-4">
+              <h3 className="text-base font-bold text-gray-900 mb-1">
                 {L('Edit category', 'कैटेगरी संपादित करें')}
               </h3>
+              <p className="text-[11px] text-gray-400 mb-4">
+                {L('Set names for English and Hindi UI', 'अंग्रेज़ी और हिन्दी दोनों के नाम')}
+              </p>
 
               <div className="flex flex-col gap-3 mb-4">
                 <div>
@@ -114,33 +112,36 @@ export default function Categories() {
                     value={icon}
                     onChange={(e) => setIcon(e.target.value)}
                     maxLength={4}
-                    className="w-full bg-gray-50 rounded-xl px-4 h-12 text-2xl text-center outline-none"
+                    className="w-full bg-gray-50 rounded-xl px-4 h-12 text-2xl text-center outline-none focus:ring-2 focus:ring-brand-200"
                   />
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-1 block">
-                    English
+                    {L('Name (English)', 'नाम (English)')}
                   </label>
                   <input
                     value={en}
                     onChange={(e) => setEn(e.target.value)}
-                    className="w-full bg-gray-50 rounded-xl px-4 h-11 text-sm outline-none"
+                    placeholder={CATEGORY_LABELS[editing].en}
+                    className="w-full bg-gray-50 rounded-xl px-4 h-11 text-sm outline-none focus:ring-2 focus:ring-brand-200"
                   />
                 </div>
                 <div>
                   <label className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-1 block">
-                    हिन्दी
+                    {L('Name (Hindi)', 'नाम (हिन्दी)')}
                   </label>
                   <input
                     value={hi}
                     onChange={(e) => setHi(e.target.value)}
-                    className="w-full bg-gray-50 rounded-xl px-4 h-11 text-sm outline-none"
+                    placeholder={CATEGORY_LABELS[editing].hi}
+                    className="w-full bg-gray-50 rounded-xl px-4 h-11 text-sm outline-none focus:ring-2 focus:ring-brand-200"
                   />
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => {
                     resetCategoryOverride(editing);
                     setEditing(null);
@@ -151,6 +152,7 @@ export default function Categories() {
                   {L('Reset', 'रीसेट')}
                 </button>
                 <button
+                  type="button"
                   onClick={saveEdit}
                   className="flex-[2] h-12 rounded-2xl bg-brand-500 text-white font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95"
                 >

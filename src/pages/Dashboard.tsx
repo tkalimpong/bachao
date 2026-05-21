@@ -94,6 +94,20 @@ export default function Dashboard() {
   const showGroup = myRole ? canViewGroupFinances(myRole) : true;
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
 
+  function goToHistoryTab() {
+    setHistoryView('history');
+    setCategoryExpandCategory(null);
+    setCategoryScrollTarget(null);
+    setTab('history');
+  }
+
+  function goToHistoryCategoryTab() {
+    setHistoryView('category');
+    setCategoryExpandCategory(null);
+    setCategoryScrollTarget(null);
+    setTab('history');
+  }
+
   const memberExpenses = showGroup
     ? expenses
     : expenses.filter((e) => e.memberId === currentUserId);
@@ -403,10 +417,8 @@ export default function Dashboard() {
             {language === 'en' ? 'Category' : 'कैटेगरी'}
           </p>
           <button
-            onClick={() => {
-              setHistoryView('category');
-              setTab('history');
-            }}
+            type="button"
+            onClick={goToHistoryCategoryTab}
             className="text-xs text-brand-500 font-semibold"
           >
             {language === 'en' ? 'Details →' : 'विवरण →'}
@@ -480,7 +492,8 @@ export default function Dashboard() {
               : (language === 'en' ? 'Your recent' : 'आपका हालिया')}
           </p>
           <button
-            onClick={() => setTab('history')}
+            type="button"
+            onClick={goToHistoryTab}
             className="text-xs text-brand-500 font-semibold"
           >
             {language === 'en' ? 'See all →' : 'सभी देखें →'}

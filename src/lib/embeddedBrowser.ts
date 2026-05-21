@@ -9,12 +9,3 @@ export function isEmbeddedPreviewBrowser(): boolean {
   }
   return false;
 }
-
-export function externalAppUrl(): string {
-  const { protocol, hostname, port } = window.location;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    const p = port || '5173';
-    return `${protocol}//localhost:${p}/`;
-  }
-  return window.location.href;
-}

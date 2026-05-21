@@ -4,7 +4,7 @@ import { canAccessTab, getMemberRole, shouldShowBottomNav } from './lib/permissi
 import { applyScrollForTab, scrollMainToTop, restoreMainScrollTop } from './lib/mainScroll';
 import { useFirestoreSync } from './hooks/useFirestoreSync';
 import { useAuth } from './context/AuthContext';
-import { isLiveFirebase, isPreviewUiMode } from './lib/appMode';
+import { isLiveFirebase } from './lib/appMode';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import AddExpense from './pages/AddExpense';
@@ -15,7 +15,6 @@ import Family from './pages/Family';
 import Premium from './pages/Premium';
 import History from './pages/History';
 import Login from './pages/Login';
-import PreviewBrowserBanner from './components/PreviewBrowserBanner';
 
 const SCREENS: Record<string, React.FC> = {
   home:       Dashboard,
@@ -105,36 +104,20 @@ function AppShell() {
 
 export default function App() {
   const auth = useAuth();
-  const previewUi = isPreviewUiMode();
 
   if (auth.isRequired) {
     if (!auth.ready || auth.loading) {
       const message = auth.user
         ? 'Setting up your family…'
         : 'Signing you in…';
-      return (
-        <>
-          <PreviewBrowserBanner />
-          <LoadingScreen message={message} />
-        </>
-      );
+      return <LoadingScreen message={message} />;
     }
     if (!auth.user || !auth.sessionReady) {
       return (
-        <>
-          <PreviewBrowserBanner />
-          <Login loading={auth.loading} error={auth.error} onSignIn={auth.signIn} />
-        </>
+        <Login loading={auth.loading} error={auth.error} onSignIn={auth.signIn} />
       );
     }
   }
 
-  return (
-    <>
-      <PreviewBrowserBanner />
-      <div className={previewUi ? 'pt-20' : undefined}>
-        <AppShell />
-      </div>
-    </>
-  );
+  return <AppShell />;
 }

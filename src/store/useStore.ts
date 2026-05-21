@@ -9,6 +9,10 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { isLiveFirebase } from '../lib/appMode';
+import {
+  loadStoredCategoryOverrides,
+  saveStoredCategoryOverrides,
+} from '../lib/categoryOverridesStorage';
 import { db } from '../lib/firebase';
 import {
   canEditMemberRole,
@@ -120,6 +124,9 @@ interface AppState {
   language: 'en' | 'hi';
   toggleLanguage: () => void;
   categoryOverrides: Partial<Record<Category, { icon: string; en: string; hi: string }>>;
+  setCategoryOverrides: (
+    overrides: Partial<Record<Category, { icon: string; en: string; hi: string }>>,
+  ) => void;
   setCategoryOverride: (id: Category, data: { icon: string; en: string; hi: string }) => void;
   resetCategoryOverride: (id: Category) => void;
 
@@ -189,6 +196,22 @@ function captureCurrentTabScroll() {
   if (el) saveTabScrollTop(currentTab, el.scrollTop);
 }
 
+function persistCategoryOverrides(
+  categoryOverrides: Partial<Record<Category, { icon: string; en: string; hi: string }>>,
+) {
+  saveStoredCategoryOverrides(categoryOverrides);
+  if (isLiveFirebase() && db) {
+    const { groupId } = useStore.getState();
+    if (groupId) {
+      setDoc(
+        doc(db, `groups/${groupId}/settings/main`),
+        { categoryOverrides },
+        { merge: true },
+      );
+    }
+  }
+}
+
 export const useStore = create<AppState>((set, get) => ({
   // ── sync ──────────────────────────────────────────────────────
   groupId: isLiveFirebase() ? '' : 'family-default',
@@ -247,13 +270,22 @@ export const useStore = create<AppState>((set, get) => ({
   isPremium: false,
   language: 'en',
   toggleLanguage: () => set((s) => ({ language: s.language === 'en' ? 'hi' : 'en' })),
-  categoryOverrides: {},
+  categoryOverrides: loadStoredCategoryOverrides(),
+  setCategoryOverrides: (categoryOverrides) => {
+    saveStoredCategoryOverrides(categoryOverrides);
+    set({ categoryOverrides });
+  },
   setCategoryOverride: (id, data) =>
-    set((s) => ({ categoryOverrides: { ...s.categoryOverrides, [id]: data } })),
+    set((s) => {
+      const categoryOverrides = { ...s.categoryOverrides, [id]: data };
+      persistCategoryOverrides(categoryOverrides);
+      return { categoryOverrides };
+    }),
   resetCategoryOverride: (id) =>
     set((s) => {
       const next = { ...s.categoryOverrides };
       delete next[id];
+      persistCategoryOverrides(next);
       return { categoryOverrides: next };
     }),
 
