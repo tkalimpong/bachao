@@ -3,6 +3,8 @@ import { useStore } from './store/useStore';
 import { canAccessTab, getMemberRole, shouldShowBottomNav } from './lib/permissions';
 import { applyScrollForTab, scrollMainToTop, restoreMainScrollTop } from './lib/mainScroll';
 import { useFirestoreSync } from './hooks/useFirestoreSync';
+import { useAuth } from './hooks/useAuth';
+import { isFirebaseConfigured } from './lib/firebase';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import AddExpense from './pages/AddExpense';
@@ -12,6 +14,7 @@ import Members from './pages/Members';
 import Family from './pages/Family';
 import Premium from './pages/Premium';
 import History from './pages/History';
+import Login from './pages/Login';
 
 const SCREENS: Record<string, React.FC> = {
   home:       Dashboard,
@@ -24,7 +27,17 @@ const SCREENS: Record<string, React.FC> = {
   history:    History,
 };
 
-export default function App() {
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="w-full max-w-sm min-h-screen bg-surface flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-brand-200 border-t-brand-500 animate-spin" />
+      </div>
+    </div>
+  );
+}
+
+function AppShell() {
   const {
     currentTab,
     addNavigationKey,
@@ -32,9 +45,11 @@ export default function App() {
     setTab,
     members,
     currentUserId,
+    groupId,
   } = useStore();
   const showBottomNav = shouldShowBottomNav(currentTab, uiOverlayDepth);
-  useFirestoreSync();
+  const syncEnabled = !isFirebaseConfigured || Boolean(groupId && currentUserId);
+  useFirestoreSync(syncEnabled);
 
   useEffect(() => {
     const role = getMemberRole(members, currentUserId);
@@ -51,7 +66,6 @@ export default function App() {
     applyScrollForTab(currentTab);
   }, [currentTab, addNavigationKey]);
 
-  // 通常遷移: 子の mount 後も先頭を維持 / 復元遷移: scrollIntoView 後に位置を再適用
   useEffect(() => {
     if (didRestoreScrollRef.current) {
       const top = useStore.getState().tabScrollTops[currentTab] ?? 0;
@@ -59,7 +73,6 @@ export default function App() {
       didRestoreScrollRef.current = false;
       return;
     }
-    // カテゴリジャンプ中は scrollIntoView のあとにリセットしない
     if (currentTab === 'history' && useStore.getState().categoryScrollTarget) {
       scrollMainToTop();
       return;
@@ -86,4 +99,21 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+export default function App() {
+  const auth = useAuth();
+
+  if (auth.isRequired) {
+    if (!auth.ready || (auth.loading && !auth.user)) {
+      return <LoadingScreen />;
+    }
+    if (!auth.user) {
+      return (
+        <Login loading={auth.loading} error={auth.error} onSignIn={auth.signIn} />
+      );
+    }
+  }
+
+  return <AppShell />;
 }

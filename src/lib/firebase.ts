@@ -1,4 +1,5 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -19,12 +20,13 @@ export const isFirebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId,
 );
 
+export let app: FirebaseApp | null = null;
+export let auth: Auth | null = null;
 export let db: Firestore | null = null;
 
 if (isFirebaseConfigured) {
-  const app = initializeApp(firebaseConfig);
-  // Enable offline persistence with multi-tab support so writes are
-  // reflected locally before the server round-trip completes.
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
   db = initializeFirestore(app, {
     localCache: persistentLocalCache({
       tabManager: persistentMultipleTabManager(),

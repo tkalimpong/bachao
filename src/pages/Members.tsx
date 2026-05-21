@@ -1,5 +1,8 @@
-import { UserPlus, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { UserPlus, Trash2, Copy, Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { fetchGroupInviteCode } from '../lib/authProfile';
+import { isFirebaseConfigured } from '../lib/firebase';
 import {
   EDITABLE_ROLES,
   ROLE_ICONS,
@@ -16,16 +19,38 @@ import { goBackToTab } from '../lib/mainScroll';
 export default function Members() {
   const {
     members, language, isPremium, setTab,
-    updateMemberRole, removeMember, currentUserId,
+    updateMemberRole, removeMember, currentUserId, groupId,
   } = useStore();
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
   const myRole = getMemberRole(members, currentUserId);
   const canManage = myRole ? canManageMembers(myRole) : false;
   const canPremium = myRole ? canUsePremium(myRole) : false;
 
+  useEffect(() => {
+    if (!isFirebaseConfigured || !canManage || !groupId) return;
+    fetchGroupInviteCode(groupId).then(setInviteCode);
+  }, [canManage, groupId]);
+
+  async function copyInviteCode() {
+    if (!inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+
   function handleInvite() {
     if (!canManage) return;
+    if (isFirebaseConfigured && inviteCode) {
+      copyInviteCode();
+      return;
+    }
     if (canPremium && !isPremium) setTab('premium');
   }
 
@@ -36,7 +61,34 @@ export default function Members() {
         onBack={() => goBackToTab('settings')}
       />
 
-      {canManage && (
+      {canManage && isFirebaseConfigured && inviteCode && (
+        <div className="px-4 mb-4">
+          <div className="bg-brand-50 rounded-2xl px-4 py-4">
+            <p className="text-[10px] font-bold uppercase text-brand-600 mb-2">
+              {L('Family invite code', 'परिवार कोड')}
+            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-2xl font-black tracking-[0.3em] text-brand-700">{inviteCode}</p>
+              <button
+                type="button"
+                onClick={copyInviteCode}
+                className="shrink-0 flex items-center gap-1.5 bg-white text-brand-600 text-xs font-bold px-3 py-2 rounded-xl active:scale-95"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? L('Copied', 'कॉपी') : L('Copy', 'कॉपी')}
+              </button>
+            </div>
+            <p className="text-[11px] text-brand-700/70 mt-2 leading-relaxed">
+              {L(
+                'Share this code. Family members sign in with Google on Login and enter it to join.',
+                'यह कोड साझा करें। परिवार Google से साइन इन करके Login पर कोड दर्ज करें।',
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {canManage && !isFirebaseConfigured && (
         <div className="px-4 mb-4">
           <button
             onClick={handleInvite}

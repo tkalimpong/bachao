@@ -19,22 +19,25 @@ Bachao は **Vite + Capacitor** の Web アプリです。
 ## 家族で使う — 全体の流れ
 
 1. **Firebase プロジェクトを1つ**用意する（代表者が1回だけ）
-2. **`.env.local`** に Firebase の設定を書く
-3. PC で **APK をビルド**する（設定はビルド時に APK へ焼き込まれる）
-4. できた APK を **家族全員の Android** に配布・インストールする
-5. 各端末でアプリを開き、**メンバー（自分）を切り替え**て記録する
+2. **Authentication で Google ログイン**を有効化し、**Firestore ルール**をデプロイ
+3. **`.env.local`** に Firebase の設定を書く
+4. PC で **APK をビルド**する（設定はビルド時に APK へ焼き込まれる）
+5. できた APK を **家族全員の Android** に配布・インストールする
+6. **代表者**が Google でサインイン → **Settings → Members** の招待コードを共有
+7. **家族**は各自 Google でサインインし、Login 画面で **招待コード** を入力して参加
 
-全員 **同じ `.env.local` でビルドした同じ APK** を入れれば、同じ `family-default` グループのデータを共有します。
+全員 **同じ `.env.local` でビルドした同じ APK** を入れ、**各自の Google アカウント**でログインします。
 
 ---
 
 ## 1. Firebase を用意する（家族共有のとき必須）
 
 1. [Firebase Console](https://console.firebase.google.com/) でプロジェクトを作成
-2. **Firestore Database** を有効化  
-   - 初回はテストモードでも可（後述のセキュリティに注意）
-3. **プロジェクトの設定 → マイアプリ → ウェブアプリを追加**
-4. 表示された設定値をコピー
+2. **Authentication** → Sign-in method → **Google** を有効化
+3. **Firestore Database** を有効化
+4. リポジトリの **`firestore.rules`** を Firebase Console の Firestore → ルール に貼り付けて公開
+5. **プロジェクトの設定 → マイアプリ → ウェブアプリを追加**
+6. 表示された設定値をコピー
 
 リポジトリ直下で:
 
@@ -51,13 +54,18 @@ npm install
 npm run dev
 ```
 
-ブラウザで支出を追加し、Firestore コンソールにデータが出るか確認する。
+ブラウザで **Google サインイン** → 支出を追加し、Firestore コンソールにデータが出るか確認する。
 
-### 注意（本番運用）
+### Android APK で Google ログイン
 
-- 現状、アプリに **ログイン（Firebase Auth）は未実装** です
-- Firestore を **テストモードのまま** にすると、設定値が漏れた場合に第三者も読み書きできる可能性があります
-- 家族だけで使う場合でも、使い始める前に **Firestore セキュリティルール** を見直すことを推奨します
+Capacitor APK では **リダイレクト方式** の Google サインインを使います。  
+うまく戻ってこない場合は Firebase Console → Authentication → Settings →  
+**Authorized domains** に `localhost` が含まれているか確認してください。
+
+### セキュリティ
+
+- **`firestore.rules`** により、ログイン済みメンバーだけが自分の家族グループを読み書きできます
+- 招待コードは Settings → Members で Owner / Partner が確認・コピーできます
 
 ---
 
@@ -117,9 +125,11 @@ adb install android\app\build\outputs\apk\debug\app-debug.apk
 ## 5. 日常の使い方
 
 - APK 内に Web アプリが同梱されるため、**PC の dev サーバーは不要**
+- 初回起動時に **Google でサインイン**（家族参加時は招待コードを入力）
 - 同期時は **Wi‑Fi またはモバイルデータ** が必要（Firestore のオフラインキャッシュで、一時的な圏外でも直近データは見られることが多い）
-- アプリ内 **Family / Members** で、誰の支出・収入か **メンバーを選んで** 記録する
-- 誰かが入力すると、同じ Firebase に接続した全端末の画面が更新される（Firebase 設定済みの場合）
+- 各端末は **自分の Google アカウント** でログインし、自分の名前で支出・収入を記録
+- Owner / Partner は **Settings → Members** で他メンバーの役割を変更可能
+- 誰かが入力すると、同じ家族グループに接続した全端末の画面が更新される
 
 ---
 

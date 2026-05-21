@@ -81,6 +81,7 @@ interface AppState {
   groupId: string;
   syncStatus: SyncStatus;
   setSyncStatus: (s: SyncStatus) => void;
+  setGroupId: (groupId: string) => void;
 
   // ── navigation ────────────────────────────────────────────────
   currentTab: string;
@@ -149,6 +150,7 @@ interface AppState {
 
   // ── members ───────────────────────────────────────────────────
   members: FamilyMember[];
+  setMembers: (members: FamilyMember[]) => void;
   currentUserId: string;
   setCurrentUserId: (id: string) => void;
   activeMemberId: string;
@@ -188,9 +190,10 @@ function captureCurrentTabScroll() {
 
 export const useStore = create<AppState>((set, get) => ({
   // ── sync ──────────────────────────────────────────────────────
-  groupId: 'family-default',
+  groupId: isFirebaseConfigured ? '' : 'family-default',
   syncStatus: isFirebaseConfigured ? 'connecting' : 'offline',
   setSyncStatus: (syncStatus) => set({ syncStatus }),
+  setGroupId: (groupId) => set({ groupId }),
 
   // ── navigation ────────────────────────────────────────────────
   currentTab: 'home',
@@ -388,43 +391,58 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // ── members ───────────────────────────────────────────────────
-  members: [
-    { id: 'm1', name: 'Rahul', avatar: 'R', role: 'owner', color: '#2563eb' },
-    { id: 'm2', name: 'Priya', avatar: 'P', role: 'partner', color: '#8b5cf6' },
-    { id: 'm3', name: 'Arjun', avatar: 'A', role: 'helper', color: '#22c55e' },
-  ],
-  currentUserId: 'm1',
+  members: isFirebaseConfigured
+    ? []
+    : [
+        { id: 'm1', name: 'Rahul', avatar: 'R', role: 'owner', color: '#2563eb' },
+        { id: 'm2', name: 'Priya', avatar: 'P', role: 'partner', color: '#8b5cf6' },
+        { id: 'm3', name: 'Arjun', avatar: 'A', role: 'helper', color: '#22c55e' },
+      ],
+  setMembers: (members) => set({ members }),
+  currentUserId: isFirebaseConfigured ? '' : 'm1',
   setCurrentUserId: (id) => {
+    if (isFirebaseConfigured) {
+      set({ currentUserId: id, activeMemberId: id });
+      return;
+    }
     const member = get().members.find((m) => m.id === id);
     if (!member) return;
     set({ currentUserId: id, activeMemberId: id });
   },
-  activeMemberId: 'm1',
+  activeMemberId: isFirebaseConfigured ? '' : 'm1',
   setActiveMember: (id) => set({ activeMemberId: id }),
   updateMemberRole: (id, role) => {
-    const { members, currentUserId } = get();
+    const { members, currentUserId, groupId } = get();
     const me = members.find((m) => m.id === currentUserId);
     if (!me || !canEditMemberRole(me.role)) return;
-    set((s) => ({
-      members: s.members.map((m) =>
-        m.id === id && m.role !== 'owner' ? { ...m, role } : m,
-      ),
-    }));
+    if (isFirebaseConfigured && db) {
+      setDoc(doc(db, `groups/${groupId}/members/${id}`), { role }, { merge: true });
+    } else {
+      set((s) => ({
+        members: s.members.map((m) =>
+          m.id === id && m.role !== 'owner' ? { ...m, role } : m,
+        ),
+      }));
+    }
   },
   removeMember: (id) => {
-    const { members, currentUserId } = get();
+    const { members, currentUserId, groupId } = get();
     const me = members.find((m) => m.id === currentUserId);
     const target = members.find((m) => m.id === id);
     if (!me || !canManageMembers(me.role) || !target || target.role === 'owner') return;
     if (members.length <= 1) return;
-    set((s) => {
-      const nextMembers = s.members.filter((m) => m.id !== id);
-      const fallback = nextMembers[0]?.id ?? 'm1';
-      return {
-        members: nextMembers,
-        currentUserId: s.currentUserId === id ? fallback : s.currentUserId,
-        activeMemberId: s.activeMemberId === id ? fallback : s.activeMemberId,
-      };
-    });
+    if (isFirebaseConfigured && db) {
+      deleteDoc(doc(db, `groups/${groupId}/members/${id}`));
+    } else {
+      set((s) => {
+        const nextMembers = s.members.filter((m) => m.id !== id);
+        const fallback = nextMembers[0]?.id ?? 'm1';
+        return {
+          members: nextMembers,
+          currentUserId: s.currentUserId === id ? fallback : s.currentUserId,
+          activeMemberId: s.activeMemberId === id ? fallback : s.activeMemberId,
+        };
+      });
+    }
   },
 }));

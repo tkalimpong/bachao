@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
+import { isFirebaseConfigured } from '../lib/firebase';
 import {
   ChevronLeft, ChevronRight, ChevronDown, X, Check, History, ArrowRightLeft,
 } from 'lucide-react';
@@ -115,30 +116,54 @@ export default function Family() {
         <h2 className="text-xl font-bold text-gray-900">{L('Family', 'परिवार')}</h2>
       </div>
 
-      {/* Current user (demo / multi-role testing) */}
+      {/* Signed-in account */}
       <div className="px-4">
         <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
           {L('Signed in as', 'लॉगिन')}
         </p>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {members.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setCurrentUserId(m.id)}
-              className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all active:scale-95 ${
-                currentUserId === m.id ? 'bg-ink text-white' : 'bg-white text-gray-600 shadow-sm'
-              }`}
-            >
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black text-white"
-                style={{ background: m.color }}
-              >
-                {m.avatar}
+        {isFirebaseConfigured ? (
+          (() => {
+            const me = members.find((m) => m.id === currentUserId);
+            return (
+              <div className="flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0"
+                  style={{ background: me?.color ?? '#2563eb' }}
+                >
+                  {me?.avatar ?? '?'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">
+                    {me?.name ?? L('Loading…', 'लोड…')}
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    {L('Google account', 'Google खाता')}
+                  </p>
+                </div>
               </div>
-              <span className="text-xs font-bold">{m.name}</span>
-            </button>
-          ))}
-        </div>
+            );
+          })()
+        ) : (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {members.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setCurrentUserId(m.id)}
+                className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl transition-all active:scale-95 ${
+                  currentUserId === m.id ? 'bg-ink text-white' : 'bg-white text-gray-600 shadow-sm'
+                }`}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black text-white"
+                  style={{ background: m.color }}
+                >
+                  {m.avatar}
+                </div>
+                <span className="text-xs font-bold">{m.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Month navigator */}

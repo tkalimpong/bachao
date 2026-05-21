@@ -1,7 +1,9 @@
 import {
-  Tag, Zap, Users, ChevronRight, Globe, Lock,
+  Tag, Zap, Users, ChevronRight, Globe, Lock, LogOut,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { isFirebaseConfigured } from '../lib/firebase';
+import { useAuth } from '../hooks/useAuth';
 import {
   canManageMembers,
   canUsePremium,
@@ -23,6 +25,7 @@ type MenuItem = {
 
 export default function Settings() {
   const { language, isPremium, toggleLanguage, setTab, members, currentUserId } = useStore();
+  const auth = useAuth();
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
 
   const role = getMemberRole(members, currentUserId);
@@ -77,6 +80,47 @@ export default function Settings() {
           {L('Manage members, categories & plan', 'सदस्य, कैटेगरी और प्लान')}
         </p>
       </div>
+
+      {isFirebaseConfigured && auth.user && (
+        <div className="px-4">
+          <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
+            {auth.user.photoURL ? (
+              <img
+                src={auth.user.photoURL}
+                alt=""
+                className="w-11 h-11 rounded-xl shrink-0 object-cover"
+              />
+            ) : (
+              <div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center shrink-0 text-sm font-black text-brand-600">
+                {(auth.user.displayName?.[0] ?? auth.user.email?.[0] ?? '?').toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {auth.user.displayName ?? L('Google account', 'Google खाता')}
+              </p>
+              <p className="text-xs text-gray-400 truncate">{auth.user.email}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => auth.signOut()}
+            className="w-full mt-2 bg-white rounded-2xl p-4 flex items-center gap-3 active:bg-gray-50 transition-colors text-left"
+          >
+            <div className="w-11 h-11 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+              <LogOut className="w-5 h-5 text-rose-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-900">
+                {L('Sign out', 'साइन आउट')}
+              </p>
+              <p className="text-xs text-gray-400">
+                {L('Switch Google account', 'Google खाता बदलें')}
+              </p>
+            </div>
+          </button>
+        </div>
+      )}
 
       <div className="px-4 flex flex-col gap-2">
         {items.map(({ id, Icon, color, bg, en, hi, subEn, subHi, locked, onClick }) => (

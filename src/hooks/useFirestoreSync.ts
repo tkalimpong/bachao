@@ -14,6 +14,7 @@ import {
   useStore,
   type CategoryBudget,
   type Expense,
+  type FamilyMember,
   type Income,
   type Transfer,
 } from '../store/useStore';
@@ -45,9 +46,16 @@ function currentMonthStart(): string {
  *
  * Falls back silently to local-only mode when Firebase is not configured.
  */
-export function useFirestoreSync() {
-  const { groupId, setExpenses, setIncomes, setTransfers, setCategoryBudgets, setSyncStatus } =
-    useStore();
+export function useFirestoreSync(enabled = true) {
+  const {
+    groupId,
+    setExpenses,
+    setIncomes,
+    setTransfers,
+    setCategoryBudgets,
+    setMembers,
+    setSyncStatus,
+  } = useStore();
 
   // Re-subscribe automatically when the calendar month rolls over.
   const monthStart = useMemo(() => currentMonthStart(), [
@@ -56,8 +64,8 @@ export function useFirestoreSync() {
   ]);
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !db) {
-      setSyncStatus('offline');
+    if (!enabled || !isFirebaseConfigured || !db || !groupId) {
+      if (!isFirebaseConfigured) setSyncStatus('offline');
       return;
     }
 
@@ -171,6 +179,23 @@ export function useFirestoreSync() {
       }),
     );
 
+    // --- members ---
+    unsubscribers.push(
+      onSnapshot(collection(db, `${groupBase}/members`), (snap) => {
+        const members: FamilyMember[] = snap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            name: data.name,
+            avatar: data.avatar,
+            role: data.role,
+            color: data.color,
+          };
+        });
+        setMembers(members);
+      }),
+    );
+
     return () => unsubscribers.forEach((u) => u());
-  }, [groupId, monthStart]);
+  }, [groupId, monthStart, enabled]);
 }
