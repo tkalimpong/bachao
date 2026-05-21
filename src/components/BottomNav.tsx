@@ -1,5 +1,6 @@
 import { Home, PlusCircle, Wallet, Users, History } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { getMemberRole, visibleTabs } from '../lib/permissions';
 
 const tabs = [
   { id: 'home',      Icon: Home,       en: 'Home',      hi: 'होम'    },
@@ -10,15 +11,16 @@ const tabs = [
 ] as const;
 
 export default function BottomNav() {
-  const { currentTab, setTab, language } = useStore();
+  const { currentTab, setTab, language, members, currentUserId } = useStore();
+  const role = getMemberRole(members, currentUserId);
+  const allowed = role ? visibleTabs(role) : ['home', 'add', 'family', 'history'];
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm bg-white border-t border-gray-100">
       <div className="flex items-center justify-around px-2 py-1 pb-2">
-        {tabs.map(({ id, Icon, en, hi }) => {
+        {tabs.filter(({ id }) => allowed.includes(id)).map(({ id, Icon, en, hi }) => {
           const active = currentTab === id;
           const isAdd  = id === 'add';
-          const isPro  = false;
           const label  = language === 'en' ? en : hi;
 
           if (isAdd) {
@@ -47,12 +49,7 @@ export default function BottomNav() {
                 active ? 'text-brand-500' : 'text-gray-400'
               }`}
             >
-              <div className="relative">
-                <Icon className="w-5 h-5" />
-                {isPro && !active && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" />
-                )}
-              </div>
+              <Icon className="w-5 h-5" />
               <span className="text-[10px] font-medium">{label}</span>
             </button>
           );

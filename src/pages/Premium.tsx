@@ -1,4 +1,5 @@
 import { useStore } from '../store/useStore';
+import { canUsePremium, getMemberRole } from '../lib/permissions';
 import {
   Check, Zap, Users, BarChart2, Tag, Download,
   ShieldCheck, Star, Lock,
@@ -60,7 +61,7 @@ const tierLabel: Record<string, { en: string; hi: string; color: string }> = {
 };
 
 export default function Premium() {
-  const { language, isPremium } = useStore();
+  const { language, isPremium, members, currentUserId, setTab } = useStore();
   const [selected, setSelected] = useState<'plus' | 'pro'>('pro');
   const [buying, setBuying]     = useState(false);
 
@@ -70,6 +71,22 @@ export default function Premium() {
       setBuying(false);
       useStore.setState({ isPremium: true });
     }, 1500);
+  }
+
+  const myRole = getMemberRole(members, currentUserId);
+  if (myRole && !canUsePremium(myRole)) {
+    const L = (en: string, hi: string) => (language === 'en' ? en : hi);
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 px-6 pt-24 pb-24 text-center">
+        <Lock className="w-12 h-12 text-gray-300" />
+        <p className="text-sm font-semibold text-gray-600">
+          {L('Only the owner can manage premium.', 'Premium केवल Owner प्रबंधित कर सकता है।')}
+        </p>
+        <button onClick={() => setTab('family')} className="text-sm font-bold text-brand-500">
+          {L('Back to Family →', 'परिवार पर वापस →')}
+        </button>
+      </div>
+    );
   }
 
   return (

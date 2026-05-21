@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore, type Expense, type Income, type Category, type IncomeSource } from '../store/useStore';
+import { canEditTransaction, getMemberRole } from '../lib/permissions';
 import { CATEGORIES } from '../lib/categories';
 import { Check, Trash2, X } from 'lucide-react';
 
@@ -23,13 +24,18 @@ interface Props {
 
 export default function EditTransactionSheet({ target, onClose }: Props) {
   const {
-    language, members,
+    language, members, currentUserId,
     updateExpense, deleteExpense,
     updateIncome,  deleteIncome,
   } = useStore();
 
   const isExpense = target.kind === 'expense';
   const original  = target.data;
+
+  const myRole = getMemberRole(members, currentUserId);
+  const canEdit = myRole
+    ? canEditTransaction(myRole, original.memberId, currentUserId)
+    : true;
 
   const [category,   setCategory]   = useState<Category>(isExpense ? (original as Expense).category : 'food');
   const [source,     setSource]     = useState<IncomeSource>(!isExpense ? (original as Income).source : 'salary');
@@ -41,6 +47,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
   const [saved,      setSaved]      = useState(false);
 
   function handleSave() {
+    if (!canEdit) return;
     const n = Number(amount);
     if (!n || n <= 0) return;
     if (isExpense) {
@@ -53,6 +60,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
   }
 
   function handleDelete() {
+    if (!canEdit) return;
     if (!confirmDel) { setConfirmDel(true); return; }
     if (isExpense) deleteExpense(original.id);
     else           deleteIncome(original.id);
@@ -196,11 +204,22 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
             </div>
           </div>
 
+          {!canEdit && (
+            <p className="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2 text-center">
+              {language === 'en'
+                ? 'You can only edit your own transactions.'
+                : 'आप केवल अपने लेनदेन संपादित कर सकते हैं।'}
+            </p>
+          )}
+
           {/* Action buttons */}
           <div className="flex gap-2 pt-2">
             <button
               onClick={handleDelete}
+              disabled={!canEdit}
               className={`flex items-center justify-center gap-2 h-12 rounded-2xl font-bold text-sm transition-all active:scale-95 px-4 ${
+                !canEdit ? 'opacity-40 pointer-events-none' : ''
+              } ${
                 confirmDel
                   ? 'bg-rose-500 text-white flex-1'
                   : 'bg-rose-50 text-rose-500 w-12'
@@ -212,7 +231,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
 
             <button
               onClick={handleSave}
-              disabled={!amount || saved}
+              disabled={!amount || saved || !canEdit}
               className={`flex-1 h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 ${
                 saved
                   ? 'bg-emerald-500 text-white'

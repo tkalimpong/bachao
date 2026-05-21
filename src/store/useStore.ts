@@ -9,6 +9,11 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
+import {
+  canEditMemberRole,
+  canManageMembers,
+  type MemberRole,
+} from '../lib/permissions';
 
 export type Category =
   | 'food' | 'transport' | 'shopping' | 'health' | 'entertainment'
@@ -44,11 +49,12 @@ export interface FamilyMember {
   id: string;
   name: string;
   avatar: string;
-  role: 'owner' | 'adult' | 'child';
+  role: MemberRole;
   color: string;
 }
 
 export type SyncStatus = 'offline' | 'connecting' | 'live';
+export type { MemberRole } from '../lib/permissions';
 
 interface AppState {
   // ── sync ──────────────────────────────────────────────────────
@@ -59,6 +65,8 @@ interface AppState {
   // ── navigation ────────────────────────────────────────────────
   currentTab: string;
   setTab: (tab: string) => void;
+  historyNavigateMonth: string | null;
+  setHistoryNavigateMonth: (month: string | null) => void;
 
   // ── settings ──────────────────────────────────────────────────
   isPremium: boolean;
@@ -90,8 +98,12 @@ interface AppState {
 
   // ── members ───────────────────────────────────────────────────
   members: FamilyMember[];
+  currentUserId: string;
+  setCurrentUserId: (id: string) => void;
   activeMemberId: string;
   setActiveMember: (id: string) => void;
+  updateMemberRole: (id: string, role: 'partner' | 'helper') => void;
+  removeMember: (id: string) => void;
 }
 
 // ── local seed data (used when Firebase is NOT configured) ────────────────
@@ -145,6 +157,8 @@ export const useStore = create<AppState>((set, get) => ({
   // ── navigation ────────────────────────────────────────────────
   currentTab: 'home',
   setTab: (tab) => set({ currentTab: tab }),
+  historyNavigateMonth: null,
+  setHistoryNavigateMonth: (historyNavigateMonth) => set({ historyNavigateMonth }),
 
   // ── settings ──────────────────────────────────────────────────
   isPremium: false,
@@ -267,9 +281,41 @@ export const useStore = create<AppState>((set, get) => ({
   // ── members ───────────────────────────────────────────────────
   members: [
     { id: 'm1', name: 'Rahul', avatar: 'R', role: 'owner', color: '#f97316' },
-    { id: 'm2', name: 'Priya', avatar: 'P', role: 'adult', color: '#8b5cf6' },
-    { id: 'm3', name: 'Arjun', avatar: 'A', role: 'child', color: '#22c55e' },
+    { id: 'm2', name: 'Priya', avatar: 'P', role: 'partner', color: '#8b5cf6' },
+    { id: 'm3', name: 'Arjun', avatar: 'A', role: 'helper', color: '#22c55e' },
   ],
+  currentUserId: 'm1',
+  setCurrentUserId: (id) => {
+    const member = get().members.find((m) => m.id === id);
+    if (!member) return;
+    set({ currentUserId: id, activeMemberId: id });
+  },
   activeMemberId: 'm1',
   setActiveMember: (id) => set({ activeMemberId: id }),
+  updateMemberRole: (id, role) => {
+    const { members, currentUserId } = get();
+    const me = members.find((m) => m.id === currentUserId);
+    if (!me || !canEditMemberRole(me.role)) return;
+    set((s) => ({
+      members: s.members.map((m) =>
+        m.id === id && m.role !== 'owner' ? { ...m, role } : m,
+      ),
+    }));
+  },
+  removeMember: (id) => {
+    const { members, currentUserId } = get();
+    const me = members.find((m) => m.id === currentUserId);
+    const target = members.find((m) => m.id === id);
+    if (!me || !canManageMembers(me.role) || !target || target.role === 'owner') return;
+    if (members.length <= 1) return;
+    set((s) => {
+      const nextMembers = s.members.filter((m) => m.id !== id);
+      const fallback = nextMembers[0]?.id ?? 'm1';
+      return {
+        members: nextMembers,
+        currentUserId: s.currentUserId === id ? fallback : s.currentUserId,
+        activeMemberId: s.activeMemberId === id ? fallback : s.activeMemberId,
+      };
+    });
+  },
 }));

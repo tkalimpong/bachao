@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore, type Category, type IncomeSource } from '../store/useStore';
-import { CATEGORIES } from '../lib/categories';
+import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
+import { CATEGORIES, defaultCategoryNote } from '../lib/categories';
 import { Check, TrendingDown, TrendingUp, CalendarDays } from 'lucide-react';
 
 type Mode = 'expense' | 'income';
@@ -22,8 +23,16 @@ export default function AddExpense() {
   const {
     addExpense, addIncome, setTab, language,
     members, activeMemberId, setActiveMember,
-    envelopes, expenses,
+    envelopes, expenses, currentUserId,
   } = useStore();
+
+  const myRole = getMemberRole(members, currentUserId);
+  const showGroup = myRole ? canViewGroupFinances(myRole) : true;
+  const recordAsId = showGroup ? activeMemberId : currentUserId;
+
+  useEffect(() => {
+    if (!showGroup) setActiveMember(currentUserId);
+  }, [showGroup, currentUserId, setActiveMember]);
 
   const [mode, setMode]         = useState<Mode>('expense');
   const [category, setCategory] = useState<Category>('food');
@@ -44,28 +53,38 @@ export default function AddExpense() {
   const catOver   = catBudget > 0 && catSpent > catBudget;
   const catWarn   = catBudget > 0 && catFill >= 75 && !catOver;
 
+  function resolveNote(): string {
+    const trimmed = note.trim();
+    if (trimmed) return trimmed;
+    if (mode === 'expense') return defaultCategoryNote(category, language);
+    const src = INCOME_SOURCES.find((s) => s.id === source)!;
+    const label = language === 'en' ? src.en : src.hi;
+    return `(${label})`;
+  }
+
   function handleSave() {
     const n = Number(amount);
     if (!n || n <= 0) return;
+    const savedNote = resolveNote();
     if (mode === 'expense') {
-      addExpense({ category, amount: n, note, date, memberId: activeMemberId });
+      addExpense({ category, amount: n, note: savedNote, date, memberId: recordAsId });
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
         setAmount('');
         setNote('');
         setDate(new Date().toISOString().slice(0, 10));
-        setTab('home');
+        setTab(showGroup ? 'home' : 'history');
       }, 900);
     } else {
-      addIncome({ source, amount: n, note, date, memberId: activeMemberId });
+      addIncome({ source, amount: n, note: savedNote, date, memberId: recordAsId });
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
         setAmount('');
         setNote('');
         setDate(new Date().toISOString().slice(0, 10));
-        setTab('home');
+        setTab(showGroup ? 'home' : 'history');
       }, 900);
     }
   }
@@ -169,7 +188,7 @@ export default function AddExpense() {
       </div>
 
       {/* Spending progress hint (expense mode, if budget set) */}
-      {mode === 'expense' && catBudget > 0 && (
+      {showGroup && mode === 'expense' && catBudget > 0 && (
         <div className="px-4 mb-2">
           <div className="bg-white rounded-xl px-4 py-2.5">
             <div className="flex justify-between text-xs mb-1.5">
@@ -234,7 +253,7 @@ export default function AddExpense() {
         </div>
       </div>
 
-      {/* Member selector */}
+      {showGroup && (
       <div className="px-4 mb-6">
         <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
           {language === 'en' ? 'Who?' : 'कौन?'}
@@ -261,6 +280,7 @@ export default function AddExpense() {
           ))}
         </div>
       </div>
+      )}
 
       {/* Save */}
       <div className="px-4">

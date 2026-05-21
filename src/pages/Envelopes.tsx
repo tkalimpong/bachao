@@ -1,22 +1,12 @@
 import { useState } from 'react';
 import { useStore, type Category, type Expense } from '../store/useStore';
 import { isFirebaseConfigured } from '../lib/firebase';
-import { getCat, CATEGORIES } from '../lib/categories';
+import { getCat, CATEGORIES, CATEGORY_LABELS } from '../lib/categories';
 import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Tag, Lock, Percent, PiggyBank, Pencil } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
+import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
 
-const CAT_LABELS: Record<string, { en: string; hi: string }> = {
-  food:          { en: 'Food',          hi: 'खाना' },
-  transport:     { en: 'Transport',     hi: 'यातायात' },
-  shopping:      { en: 'Shopping',      hi: 'शॉपिंग' },
-  health:        { en: 'Health',        hi: 'स्वास्थ्य' },
-  entertainment: { en: 'Entertainment', hi: 'मनोरंजन' },
-  utilities:     { en: 'Utilities',     hi: 'बिल' },
-  education:     { en: 'Education',     hi: 'शिक्षा' },
-  home:          { en: 'Home',          hi: 'घर' },
-  other:         { en: 'Other',         hi: 'अन्य' },
-  telecom:       { en: 'Telecom',       hi: 'टेलिकॉम' },
-};
+const CAT_LABELS = CATEGORY_LABELS;
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -36,8 +26,9 @@ export default function Envelopes() {
   const {
     expenses, envelopes, members, language,
     updateEnvelopeBudget, syncStatus, isPremium, setTab,
-    allocationRules, setAllocationRule,
+    allocationRules, setAllocationRule, currentUserId,
   } = useStore();
+
   const [expanded, setExpanded]       = useState<Category | null>(null);
   const [editing, setEditing]         = useState<Category | null>(null);
   const [editVal, setEditVal]         = useState('');
@@ -109,6 +100,25 @@ export default function Envelopes() {
     const v = Number(editVal);
     if (v > 0) updateEnvelopeBudget(id, v);
     setEditing(null);
+  }
+
+  const myRole = getMemberRole(members, currentUserId);
+  if (myRole && !canViewGroupFinances(myRole)) {
+    const L = (en: string, hi: string) => (language === 'en' ? en : hi);
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 px-6 pt-24 pb-24 text-center">
+        <Lock className="w-12 h-12 text-gray-300" />
+        <p className="text-sm font-semibold text-gray-600">
+          {L('Group budgets are not available for your role.', 'आपकी भूमिका के लिए समूह बजट उपलब्ध नहीं है।')}
+        </p>
+        <button
+          onClick={() => setTab('add')}
+          className="text-sm font-bold text-brand-500 active:opacity-70"
+        >
+          {L('Record a transaction →', 'लेनदेन दर्ज करें →')}
+        </button>
+      </div>
+    );
   }
 
   return (

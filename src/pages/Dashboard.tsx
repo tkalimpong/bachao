@@ -3,6 +3,7 @@ import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat, CATEGORIES } from '../lib/categories';
 import { Globe, TrendingDown, TrendingUp, Minus, PiggyBank, Pencil } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
+import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -79,15 +80,26 @@ type EditTarget =
   | { kind: 'income';  data: Income };
 
 export default function Dashboard() {
-  const { expenses, incomes, envelopes, members, language, toggleLanguage, setTab } = useStore();
+  const { expenses, incomes, envelopes, members, language, toggleLanguage, setTab, currentUserId } =
+    useStore();
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
 
   const thisMonth    = new Date().toISOString().slice(0, 7);
+  const myRole = getMemberRole(members, currentUserId);
+  const showGroup = myRole ? canViewGroupFinances(myRole) : true;
+
   const monthExpenses = expenses.filter((e) => e.date.startsWith(thisMonth));
   const monthIncomes  = incomes.filter((i)  => i.date.startsWith(thisMonth));
 
-  const totalIn  = monthIncomes.reduce((s, i)  => s + i.amount, 0);
-  const totalOut = monthExpenses.reduce((s, e) => s + e.amount, 0);
+  const scopedExpenses = showGroup
+    ? monthExpenses
+    : monthExpenses.filter((e) => e.memberId === currentUserId);
+  const scopedIncomes = showGroup
+    ? monthIncomes
+    : monthIncomes.filter((i) => i.memberId === currentUserId);
+
+  const totalIn  = scopedIncomes.reduce((s, i)  => s + i.amount, 0);
+  const totalOut = scopedExpenses.reduce((s, e) => s + e.amount, 0);
   const balance  = totalIn - totalOut;
 
   // merged recent transactions (latest 8)
@@ -96,14 +108,13 @@ export default function Dashboard() {
     | { kind: 'income';  data: typeof incomes[0] };
 
   const allTx: TxEntry[] = [
-    ...expenses.map((e) => ({ kind: 'expense' as const, data: e })),
-    ...incomes.map((i)  => ({ kind: 'income'  as const, data: i })),
+    ...scopedExpenses.map((e) => ({ kind: 'expense' as const, data: e })),
+    ...scopedIncomes.map((i)  => ({ kind: 'income'  as const, data: i })),
   ].sort((a, b) => b.data.date.localeCompare(a.data.date)).slice(0, 8);
 
-  // Envelope gauge data — all 10 categories（加算式）
   const gaugeData = CATEGORIES.map((cat) => {
     const env   = envelopes.find((e) => e.id === cat.id)!;
-    const spent = monthExpenses
+    const spent = scopedExpenses
       .filter((e) => e.category === cat.id)
       .reduce((s, e) => s + e.amount, 0);
     const fillPct = env.budget > 0 ? (spent / env.budget) * 100 : 0;
@@ -237,7 +248,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ── アイデア1: Envelope gauge grid ─────────────────────────────────── */}
+      {showGroup && (
       <div className="px-4">
         <div className="flex items-center justify-between mb-2 ml-1">
           <p className="text-xs text-gray-400 font-semibold uppercase">
@@ -302,6 +313,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      )}
 
       {/* ── アイデア2: Visual-first recent transactions ─────────────────────── */}
       <div className="px-4">

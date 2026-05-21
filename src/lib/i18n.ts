@@ -40,8 +40,8 @@ export const T = {
     upiLinked: 'UPI Linked',
     linkUPI: 'Link UPI',
     owner: 'Owner',
-    adult: 'Adult',
-    child: 'Child',
+    partner: 'Partner',
+    helper: 'Helper',
   },
   hi: {
     appName: 'बचाओ',
@@ -83,9 +83,9 @@ export const T = {
     weekly: 'साप्ताहिक',
     upiLinked: 'UPI जुड़ा',
     linkUPI: 'UPI जोड़ें',
-    owner: 'मुखिया',
-    adult: 'बड़े',
-    child: 'बच्चा',
+    owner: 'Owner',
+    partner: 'Partner',
+    helper: 'Helper',
   },
 } as const;
 

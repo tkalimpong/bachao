@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore } from './store/useStore';
+import { getMemberRole, visibleTabs } from './lib/permissions';
 import { useFirestoreSync } from './hooks/useFirestoreSync';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
@@ -19,8 +20,15 @@ const SCREENS: Record<string, React.FC> = {
 };
 
 export default function App() {
-  const { currentTab } = useStore();
+  const { currentTab, setTab, members, currentUserId } = useStore();
   useFirestoreSync();
+
+  useEffect(() => {
+    const role = getMemberRole(members, currentUserId);
+    if (!role || visibleTabs(role).includes(currentTab)) return;
+    setTab(visibleTabs(role)[0] ?? 'add');
+  }, [currentTab, currentUserId, members, setTab]);
+
   const Screen = SCREENS[currentTab] ?? Dashboard;
 
   return (

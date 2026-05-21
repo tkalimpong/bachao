@@ -18,6 +18,24 @@ export const CATEGORIES: {
   { id: 'telecom',       icon: '📱', color: '#6b7280', bg: '#f9fafb' },
 ];
 
+export const CATEGORY_LABELS: Record<Category, { en: string; hi: string }> = {
+  food:          { en: 'Food',          hi: 'खाना' },
+  transport:     { en: 'Transport',     hi: 'यातायात' },
+  shopping:      { en: 'Shopping',      hi: 'शॉपिंग' },
+  health:        { en: 'Health',        hi: 'स्वास्थ्य' },
+  entertainment: { en: 'Entertainment', hi: 'मनोरंजन' },
+  utilities:     { en: 'Utilities',     hi: 'बिल' },
+  education:     { en: 'Education',     hi: 'शिक्षा' },
+  home:          { en: 'Home',          hi: 'घर' },
+  other:         { en: 'Other',         hi: 'अन्य' },
+  telecom:       { en: 'Telecom',       hi: 'टेलिकॉम' },
+};
+
 export function getCat(id: Category) {
   return CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[CATEGORIES.length - 1];
+}
+
+/** Default note when user leaves Note empty: "(Category name)" */
+export function defaultCategoryNote(category: Category, lang: 'en' | 'hi'): string {
+  return `(${CATEGORY_LABELS[category][lang]})`;
 }
