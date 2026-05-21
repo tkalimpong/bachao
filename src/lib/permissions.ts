@@ -94,8 +94,8 @@ export function roleLabel(role: MemberRole, lang: 'en' | 'hi'): string {
   return ROLE_LABELS[role][lang];
 }
 
-export function visibleTabs(role: MemberRole): string[] {
-  if (role === 'helper') return ['add', 'family', 'history', 'settings'];
+/** Bottom nav tabs — same for every role; data scope differs by permission helpers */
+export function visibleTabs(_role: MemberRole): string[] {
   return ['home', 'settings', 'add', 'family', 'history'];
 }
 

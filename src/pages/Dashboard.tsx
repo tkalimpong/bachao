@@ -152,6 +152,11 @@ export default function Dashboard() {
       {/* ── IN / OUT / BALANCE ── */}
       <div className="px-4">
         <div className="bg-ink rounded-3xl p-5 text-white">
+          {!showGroup && (
+            <p className="text-[10px] text-white/50 font-semibold uppercase mb-3">
+              {language === 'en' ? 'Your summary' : 'आपका सारांश'}
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
@@ -331,7 +336,9 @@ export default function Dashboard() {
       <div className="px-4">
         <div className="flex items-center justify-between mb-2 ml-1">
           <p className="text-xs text-gray-400 font-semibold uppercase">
-            {language === 'en' ? 'Recent' : 'हालिया'}
+            {showGroup
+              ? (language === 'en' ? 'Recent' : 'हालिया')
+              : (language === 'en' ? 'Your recent' : 'आपका हालिया')}
           </p>
           <button
             onClick={() => setTab('history')}
@@ -352,12 +359,14 @@ export default function Dashboard() {
                   onClick={() => setEditTarget({ kind: 'expense', data: data as Expense })}
                   className="w-full flex items-center gap-3 px-4 py-3 active:bg-gray-50 transition-colors text-left"
                 >
+                  {showGroup && (
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-sm"
                     style={{ background: member?.color ?? '#9ca3af' }}
                   >
                     {member?.avatar ?? '?'}
                   </div>
+                  )}
                   <div
                     className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
                     style={{ background: cat.bg }}
@@ -382,12 +391,14 @@ export default function Dashboard() {
                   onClick={() => setEditTarget({ kind: 'income', data: data as Income })}
                   className="w-full flex items-center gap-3 px-4 py-3 active:bg-gray-50 transition-colors text-left"
                 >
+                  {showGroup && (
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-sm shrink-0 shadow-sm"
                     style={{ background: member?.color ?? '#9ca3af' }}
                   >
                     {member?.avatar ?? '?'}
                   </div>
+                  )}
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0 bg-emerald-50">
                     {icon}
                   </div>

@@ -112,10 +112,6 @@ interface AppState {
   setEnvelopes: (envelopes: Envelope[]) => void;
   updateEnvelopeBudget: (id: Category, budget: number) => void;
 
-  // ── allocation rules (% per category for auto-split) ──────────
-  allocationRules: Record<Category, number>;
-  setAllocationRule: (id: Category, pct: number) => void;
-
   // ── members ───────────────────────────────────────────────────
   members: FamilyMember[];
   currentUserId: string;
@@ -340,22 +336,6 @@ export const useStore = create<AppState>((set, get) => ({
       }));
     }
   },
-
-  // ── allocation rules ──────────────────────────────────────────
-  allocationRules: {
-    food:          25,
-    transport:     10,
-    shopping:      10,
-    health:         8,
-    entertainment:  5,
-    utilities:     12,
-    education:     10,
-    home:          10,
-    other:          5,
-    telecom:        5,
-  },
-  setAllocationRule: (id, pct) =>
-    set((s) => ({ allocationRules: { ...s.allocationRules, [id]: pct } })),
 
   // ── members ───────────────────────────────────────────────────
   members: [

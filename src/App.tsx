@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useStore } from './store/useStore';
-import { canAccessTab, getMemberRole, visibleTabs } from './lib/permissions';
+import { canAccessTab, getMemberRole } from './lib/permissions';
 import { useFirestoreSync } from './hooks/useFirestoreSync';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
@@ -32,7 +32,7 @@ export default function App() {
   useEffect(() => {
     const role = getMemberRole(members, currentUserId);
     if (!role || canAccessTab(role, currentTab)) return;
-    setTab(visibleTabs(role)[0] ?? 'add');
+    setTab('home');
   }, [currentTab, currentUserId, members, setTab]);
 
   const Screen = SCREENS[currentTab] ?? Dashboard;

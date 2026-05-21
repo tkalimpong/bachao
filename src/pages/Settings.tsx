@@ -51,8 +51,8 @@ export default function Settings() {
           bg: '#eff6ff',
           en: 'Envelopes',
           hi: 'लिफ़ाफ़े',
-          subEn: 'Category spending & allocation rules',
-          subHi: 'कैटेगरी खर्च और आय वितरण',
+          subEn: 'Category spending this month',
+          subHi: 'इस महीने का कैटेगरी खर्च',
           onClick: () => setTab('envelopes'),
         }]
       : []),
