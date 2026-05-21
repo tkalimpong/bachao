@@ -1,6 +1,9 @@
 # Bachao — Family Budget
 
-Vite + React の家計簿アプリ。Android 端末で外出先から使う手順は **[docs/ANDROID.md](docs/ANDROID.md)** を参照。
+Vite + React の家計簿アプリ。
+
+- **PC で開発:** `npm run dev`
+- **Android で自分・家族が使う:** [docs/ANDROID.md](docs/ANDROID.md)（Firebase 設定 → APK ビルド → 端末へ配布）
 
 ## 開発
 
@@ -9,14 +12,16 @@ npm install
 npm run dev
 ```
 
-## Android（APK をスマホに入れる）
+## Android（家族の端末に入れる）
 
 ```bash
 npm run cap:sync    # Web をビルドして android に反映
 npm run cap:open    # Android Studio で APK ビルド
+# または
+npm run android:apk
 ```
 
-詳細: [docs/ANDROID.md](docs/ANDROID.md)
+手順の詳細（Firebase・家族共有・インストール）: **[docs/ANDROID.md](docs/ANDROID.md)**
 
 ---
 
