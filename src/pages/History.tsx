@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat } from '../lib/categories';
-import { Search, X, ChevronLeft, ChevronRight, Pencil, ChevronDown, Check, Clock, Users } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, Pencil, ChevronDown, Check } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
 import {
   canViewAllHistory,
@@ -39,8 +39,6 @@ function formatDayHeader(dateStr: string, lang: 'en' | 'hi') {
     weekday: 'short', day: 'numeric', month: 'short',
   });
 }
-
-type ViewMode = 'timeline' | 'member';
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 
@@ -156,8 +154,6 @@ export default function History() {
   const [memberFilter, setMemberFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('timeline');
-  const [focusedMemberId, setFocusedMemberId] = useState<'all' | string>('all');
 
   // Build sorted list of unique months (desc)
   const allMonths = useMemo(() => {
@@ -225,55 +221,15 @@ export default function History() {
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
-  // Per-member stats for member mode (all members, including zero activity)
-  const memberSummaries = useMemo(() => {
-    return members
-      .map((m) => {
-        const txs = filtered
-          .filter((t) => t.data.memberId === m.id)
-          .sort((a, b) => b.data.date.localeCompare(a.data.date));
-        const out = txs.filter((t) => t.kind === 'expense').reduce((s, t) => s + t.data.amount, 0);
-        const inc = txs.filter((t) => t.kind === 'income').reduce((s, t) => s + t.data.amount, 0);
-        return { member: m, txs, out, inc };
-      })
-      .sort((a, b) => b.out - a.out || b.inc - a.inc);
-  }, [filtered, members]);
-
-  const focusedMember = useMemo(
-    () =>
-      focusedMemberId === 'all'
-        ? null
-        : memberSummaries.find((g) => g.member.id === focusedMemberId) ?? null,
-    [memberSummaries, focusedMemberId],
-  );
-
-  useEffect(() => {
-    if (viewMode !== 'member') return;
-    setFocusedMemberId((prev) => {
-      if (prev === 'all') return 'all';
-      return members.some((m) => m.id === prev) ? prev : 'all';
-    });
-  }, [viewMode, selectedMonth, members]);
-
   useEffect(() => {
     if (currentTab !== 'history' || !historyNavigateMonth) return;
     const idx = allMonths.indexOf(historyNavigateMonth);
     if (idx >= 0) setMonthIdx(idx);
-    if (ownOnly) {
-      setViewMode('timeline');
-      setFocusedMemberId(currentUserId);
-    } else {
-      setViewMode('member');
-      setFocusedMemberId('all');
-    }
     setHistoryNavigateMonth(null);
-  }, [currentTab, historyNavigateMonth, allMonths, setHistoryNavigateMonth, ownOnly, currentUserId]);
+  }, [currentTab, historyNavigateMonth, allMonths, setHistoryNavigateMonth]);
 
   useEffect(() => {
-    if (ownOnly) {
-      setViewMode('timeline');
-      setMemberFilter(currentUserId);
-    }
+    if (ownOnly) setMemberFilter(currentUserId);
   }, [ownOnly, currentUserId]);
 
   // Monthly totals (filtered by type/member/search)
@@ -291,33 +247,9 @@ export default function History() {
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="bg-white pt-10 pb-3 px-5 sticky top-0 z-20 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-lg font-bold text-gray-900">
-            {L('History', 'इतिहास')}
-          </h1>
-          {showGroup && (
-            <div className="flex bg-gray-100 rounded-xl p-0.5 gap-0.5">
-              <button
-                onClick={() => setViewMode('timeline')}
-                className={`flex items-center gap-1 px-3 h-7 rounded-[10px] text-xs font-bold transition-all active:scale-95 ${
-                  viewMode === 'timeline' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
-                }`}
-              >
-                <Clock className="w-3 h-3" />
-                {L('Time', 'समय')}
-              </button>
-              <button
-                onClick={() => setViewMode('member')}
-                className={`flex items-center gap-1 px-3 h-7 rounded-[10px] text-xs font-bold transition-all active:scale-95 ${
-                  viewMode === 'member' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
-                }`}
-              >
-                <Users className="w-3 h-3" />
-                {L('Member', 'सदस्य')}
-              </button>
-            </div>
-          )}
-        </div>
+        <h1 className="text-lg font-bold text-gray-900 mb-3">
+          {L('History', 'इतिहास')}
+        </h1>
 
         {/* Month navigator */}
         <div className="flex items-center justify-between bg-gray-50 rounded-2xl px-3 py-2 mb-3">
@@ -388,58 +320,10 @@ export default function History() {
           ))}
         </div>
 
-        {/* Member picker — All overview + individual members */}
-        {showGroup && viewMode === 'member' && (
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-3 no-scrollbar">
-            <button
-              onClick={() => setFocusedMemberId('all')}
-              className={`shrink-0 flex flex-col items-center gap-1 px-2 py-1.5 rounded-2xl transition-all active:scale-95 min-w-[4.5rem] ${
-                focusedMemberId === 'all' ? 'bg-gray-900' : 'bg-gray-100'
-              }`}
-            >
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  focusedMemberId === 'all' ? 'bg-white/20' : 'bg-gray-200'
-                }`}
-              >
-                <Users className={`w-5 h-5 ${focusedMemberId === 'all' ? 'text-white' : 'text-gray-500'}`} />
-              </div>
-              <span className={`text-[10px] font-bold ${focusedMemberId === 'all' ? 'text-white' : 'text-gray-500'}`}>
-                {L('All', 'सभी')}
-              </span>
-            </button>
-            {memberSummaries.map(({ member, txs }) => {
-              const active = member.id === focusedMemberId;
-              return (
-                <button
-                  key={member.id}
-                  onClick={() => setFocusedMemberId(member.id)}
-                  className={`shrink-0 flex flex-col items-center gap-1 px-2 py-1.5 rounded-2xl transition-all active:scale-95 min-w-[4.5rem] ${
-                    active ? 'bg-gray-900' : 'bg-gray-100'
-                  }`}
-                >
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shadow-sm"
-                    style={{ background: member.color }}
-                  >
-                    {member.avatar}
-                  </div>
-                  <span className={`text-[10px] font-bold truncate max-w-[4rem] ${active ? 'text-white' : 'text-gray-500'}`}>
-                    {member.name}
-                  </span>
-                  <span className={`text-[9px] font-medium ${active ? 'text-white/60' : 'text-gray-300'}`}>
-                    {txs.length}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Member filter — timeline mode, group viewers only */}
+        {/* Member filter — group viewers only */}
         <div
           className={`flex gap-2 overflow-x-auto pb-0.5 no-scrollbar ${
-            !showGroup || viewMode === 'member' ? 'hidden' : ''
+            !showGroup ? 'hidden' : ''
           }`}
         >
           <button
@@ -492,106 +376,17 @@ export default function History() {
       {/* ── Transaction list ────────────────────────────────────────────── */}
       <div className="px-4 pt-4 flex flex-col gap-4">
 
-        {viewMode === 'timeline' ? (
-          /* ── Timeline view ── */
-          grouped.length === 0 ? (
-            <EmptyState L={L} />
-          ) : (
-            grouped.map(([date, txs]) => (
-              <div key={date}>
-                <div className="mb-2 px-1">
-                  <span className="text-xs font-bold text-gray-400">{formatDayHeader(date, language)}</span>
-                </div>
-                <TxList txs={txs} members={members} showMember onEdit={setEditTarget} L={L} />
-              </div>
-            ))
-          )
-        ) : focusedMemberId === 'all' ? (
-          /* ── All members overview ── */
-          memberSummaries.every((g) => g.txs.length === 0) ? (
-            <EmptyState L={L} />
-          ) : (
-            <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-50">
-              {memberSummaries.map(({ member, txs, out, inc }) => (
-                <button
-                  key={member.id}
-                  onClick={() => setFocusedMemberId(member.id)}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-gray-50 transition-colors text-left"
-                >
-                  <div
-                    className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0 shadow-sm"
-                    style={{ background: member.color }}
-                  >
-                    {member.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-800">{member.name}</p>
-                    <p className="text-[10px] text-gray-400">
-                      {txs.length === 0
-                        ? L('No transactions', 'कोई लेनदेन नहीं')
-                        : `${txs.length} ${L('transactions', 'लेनदेन')}`}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-0.5 shrink-0">
-                    {inc > 0 && (
-                      <span className="text-xs font-bold text-emerald-500">+{fmt(inc)}</span>
-                    )}
-                    {out > 0 && (
-                      <span className="text-xs font-bold text-rose-500">−{fmt(out)}</span>
-                    )}
-                    {inc === 0 && out === 0 && (
-                      <span className="text-xs text-gray-300">—</span>
-                    )}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-200 shrink-0" />
-                </button>
-              ))}
-            </div>
-          )
-        ) : focusedMember ? (
-          /* ── Single member detail ── */
-          <div>
-            <div
-              className="rounded-t-2xl px-4 py-3 flex items-center gap-3"
-              style={{ background: focusedMember.member.color + '18' }}
-            >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shrink-0 shadow-sm"
-                style={{ background: focusedMember.member.color }}
-              >
-                {focusedMember.member.avatar}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-gray-800">{focusedMember.member.name}</p>
-                <p className="text-[10px] text-gray-400">
-                  {focusedMember.txs.length} {L('transactions', 'लेनदेन')}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-0.5">
-                {focusedMember.inc > 0 && (
-                  <span className="text-xs font-bold text-emerald-500">+{fmt(focusedMember.inc)}</span>
-                )}
-                {focusedMember.out > 0 && (
-                  <span className="text-xs font-bold text-rose-500">−{fmt(focusedMember.out)}</span>
-                )}
-              </div>
-            </div>
-            {focusedMember.txs.length === 0 ? (
-              <div className="bg-white rounded-b-2xl px-4 py-8 text-center">
-                <p className="text-sm text-gray-400">{L('No transactions', 'कोई लेनदेन नहीं')}</p>
-              </div>
-            ) : (
-              <TxList
-                txs={focusedMember.txs}
-                members={members}
-                showMember={false}
-                onEdit={setEditTarget}
-                L={L}
-              />
-            )}
-          </div>
-        ) : (
+        {grouped.length === 0 ? (
           <EmptyState L={L} />
+        ) : (
+          grouped.map(([date, txs]) => (
+            <div key={date}>
+              <div className="mb-2 px-1">
+                <span className="text-xs font-bold text-gray-400">{formatDayHeader(date, language)}</span>
+              </div>
+              <TxList txs={txs} members={members} showMember onEdit={setEditTarget} L={L} />
+            </div>
+          ))
         )}
       </div>
 

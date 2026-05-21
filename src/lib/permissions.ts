@@ -66,6 +66,21 @@ export function roleLabel(role: MemberRole, lang: 'en' | 'hi'): string {
 }
 
 export function visibleTabs(role: MemberRole): string[] {
-  if (role === 'helper') return ['add', 'family', 'history'];
-  return ['home', 'envelopes', 'add', 'family', 'history'];
+  if (role === 'helper') return ['add', 'family', 'history', 'settings'];
+  return ['home', 'settings', 'add', 'family', 'history'];
+}
+
+export const SETTINGS_SCREENS = ['settings', 'envelopes', 'categories', 'premium', 'members'] as const;
+
+export function isSettingsArea(tab: string): boolean {
+  return (SETTINGS_SCREENS as readonly string[]).includes(tab);
+}
+
+export function canAccessTab(role: MemberRole, tab: string): boolean {
+  if (tab === 'envelopes') return canViewGroupFinances(role);
+  if (tab === 'premium') return canUsePremium(role);
+  if (tab === 'categories') return true;
+  if (tab === 'members') return true;
+  if (isSettingsArea(tab)) return visibleTabs(role).includes('settings');
+  return visibleTabs(role).includes(tab);
 }

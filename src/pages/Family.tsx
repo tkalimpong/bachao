@@ -1,14 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import {
-  UserPlus,
-  ChevronLeft, ChevronRight, ChevronDown, X, Check, History, Trash2,
+  ChevronLeft, ChevronRight, ChevronDown, X, Check, History,
 } from 'lucide-react';
 import {
-  EDITABLE_ROLES,
   ROLE_ICONS,
-  canManageMembers,
-  canUsePremium,
   canViewGroupFinances,
   getMemberRole,
   roleLabel,
@@ -26,17 +22,14 @@ function formatMonthKey(key: string, lang: 'en' | 'hi') {
 
 export default function Family() {
   const {
-    members, expenses, incomes, language, isPremium, setTab,
-    setHistoryNavigateMonth, updateMemberRole, removeMember,
-    currentUserId, setCurrentUserId,
+    members, expenses, incomes, language, setTab,
+    setHistoryNavigateMonth, currentUserId, setCurrentUserId,
   } = useStore();
   const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
   const myRole = getMemberRole(members, currentUserId);
   const showGroup = myRole ? canViewGroupFinances(myRole) : false;
-  const canManage = myRole ? canManageMembers(myRole) : false;
-  const canPremium = myRole ? canUsePremium(myRole) : false;
 
   const allMonths = useMemo(() => {
     const seen = new Set<string>();
@@ -86,25 +79,10 @@ export default function Family() {
     setTab('history');
   }
 
-  function handleInvite() {
-    if (!canManage) return;
-    if (canPremium && !isPremium) setTab('premium');
-    // partner: invite flow without premium (placeholder)
-  }
-
   return (
     <div className="flex flex-col gap-4 pb-24 pt-10">
-      <div className="px-5 flex items-center justify-between">
+      <div className="px-5">
         <h2 className="text-xl font-bold text-gray-900">{L('Family', 'परिवार')}</h2>
-        {canManage && (
-          <button
-            onClick={handleInvite}
-            className="flex items-center gap-1.5 bg-brand-50 text-brand-600 text-xs font-semibold px-3 py-1.5 rounded-full active:scale-95"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            {L('Invite', 'जोड़ें')}
-          </button>
-        )}
       </div>
 
       {/* Current user (demo / multi-role testing) */}
@@ -214,10 +192,8 @@ export default function Family() {
           </div>
 
           <div className="divide-y divide-gray-50">
-            {memberStats.map(({ member: m, earned, spent, balance, count }) => {
-              const RoleIcon = ROLE_ICONS[m.role];
-              return (
-                <div key={m.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 items-center px-4 py-3">
+            {memberStats.map(({ member: m, earned, spent, balance, count }) => (
+              <div key={m.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 items-center px-4 py-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black text-white shrink-0"
@@ -227,52 +203,22 @@ export default function Family() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-gray-900 truncate">{m.name}</p>
-                      {m.role === 'owner' ? (
-                        <div
-                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-0.5"
-                          style={{ background: m.color + '22', color: m.color }}
-                        >
-                          <RoleIcon className="w-2.5 h-2.5" />
-                          {roleLabel('owner', language)}
-                        </div>
-                      ) : canManage ? (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <div className="flex bg-gray-100 rounded-lg p-0.5">
-                            {EDITABLE_ROLES.map((role) => {
-                              const Icon = ROLE_ICONS[role];
-                              const active = m.role === role;
-                              return (
-                                <button
-                                  key={role}
-                                  type="button"
-                                  onClick={() => updateMemberRole(m.id, role)}
-                                  className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-semibold transition-all active:scale-95 ${
-                                    active ? 'bg-white shadow-sm text-gray-800' : 'text-gray-400'
-                                  }`}
-                                >
-                                  <Icon className="w-2.5 h-2.5" style={active ? { color: m.color } : {}} />
-                                  {roleLabel(role, language)}
-                                </button>
-                              );
-                            })}
+                      {(() => {
+                        const RoleIcon = ROLE_ICONS[m.role];
+                        return (
+                          <div
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-0.5"
+                            style={
+                              m.role === 'owner'
+                                ? { background: m.color + '22', color: m.color }
+                                : { background: '#f3f4f6', color: '#6b7280' }
+                            }
+                          >
+                            <RoleIcon className="w-2.5 h-2.5" />
+                            {roleLabel(m.role, language)}
                           </div>
-                          <button
-                              type="button"
-                              onClick={() => removeMember(m.id)}
-                              className="p-1 rounded-lg text-gray-300 active:bg-rose-50 active:text-rose-500"
-                              aria-label={L('Remove member', 'हटाएं')}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                      ) : (
-                        <div
-                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-0.5 bg-gray-100 text-gray-500"
-                        >
-                          <RoleIcon className="w-2.5 h-2.5" />
-                          {roleLabel(m.role, language)}
-                        </div>
-                      )}
+                        );
+                      })()}
                       {count > 0 && (
                         <p className="text-[10px] text-gray-300 mt-0.5">
                           {count} {L('txns', 'लेनदेन')}
@@ -294,8 +240,7 @@ export default function Family() {
                     {earned === 0 && spent === 0 ? '—' : `${balance >= 0 ? '+' : '−'}${fmt(balance)}`}
                   </span>
                 </div>
-              );
-            })}
+            ))}
           </div>
         </div>
       </div>
@@ -317,35 +262,13 @@ export default function Family() {
             </p>
             <p className="text-xs text-gray-400">
               {showGroup
-                ? L('Browse & edit by date or member', 'तारीख या सदस्य से देखें')
+                ? L('Browse & edit by date', 'तारीख से देखें और संपादित करें')
                 : L('Browse & edit your records', 'अपने रिकॉर्ड देखें और संपादित करें')}
             </p>
           </div>
           <ChevronRight className="w-5 h-5 text-brand-400 shrink-0" />
         </button>
       </div>
-
-      {/* Pro CTA — owner only */}
-      {canPremium && !isPremium && (
-        <div className="px-4">
-          <button
-            onClick={() => setTab('premium')}
-            className="w-full bg-white rounded-2xl p-4 flex items-center gap-3 active:scale-95 border-2 border-dashed border-gray-200"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-gray-300" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-gray-500">
-                {L('Add more members', 'और सदस्य जोड़ें')}
-              </p>
-              <p className="text-xs text-brand-500 font-semibold">
-                {L('Upgrade to Bachao Pro →', 'बचाओ प्रो अपग्रेड करें →')}
-              </p>
-            </div>
-          </button>
-        </div>
-      )}
 
       {showMonthPicker && (
         <>

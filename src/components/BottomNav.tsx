@@ -1,59 +1,89 @@
-import { Home, PlusCircle, Wallet, Users, History } from 'lucide-react';
+import { Home, TrendingDown, TrendingUp, Settings, Users, History } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { getMemberRole, visibleTabs } from '../lib/permissions';
+import { getMemberRole, isSettingsArea, visibleTabs } from '../lib/permissions';
 
-const tabs = [
-  { id: 'home',      Icon: Home,       en: 'Home',      hi: 'होम'    },
-  { id: 'envelopes', Icon: Wallet,     en: 'Envelopes', hi: 'लिफ़ाफ़े' },
-  { id: 'add',       Icon: PlusCircle, en: 'Add',       hi: 'जोड़ें'  },
-  { id: 'family',    Icon: Users,      en: 'Family',    hi: 'परिवार' },
-  { id: 'history',   Icon: History,    en: 'History',   hi: 'इतिहास' },
+const LEFT_TABS = [
+  { id: 'home',    Icon: Home,    label: 'Home'    },
+  { id: 'history', Icon: History, label: 'History' },
+] as const;
+
+const RIGHT_TABS = [
+  { id: 'family',   Icon: Users,    label: 'Family'   },
+  { id: 'settings', Icon: Settings, label: 'Settings' },
 ] as const;
 
 export default function BottomNav() {
-  const { currentTab, setTab, language, members, currentUserId } = useStore();
+  const { currentTab, addMode, setTab, members, currentUserId } = useStore();
   const role = getMemberRole(members, currentUserId);
-  const allowed = role ? visibleTabs(role) : ['home', 'add', 'family', 'history'];
+  const allowed = role ? visibleTabs(role) : ['home', 'settings', 'add', 'family', 'history'];
+  const showAdd = allowed.includes('add');
+  const onAdd = currentTab === 'add';
+
+  const leftTabs  = LEFT_TABS.filter(({ id }) => allowed.includes(id));
+  const rightTabs = RIGHT_TABS.filter(({ id }) => allowed.includes(id));
+
+  function isActive(id: string) {
+    if (id === 'settings') return isSettingsArea(currentTab);
+    return currentTab === id;
+  }
+
+  function renderTab({ id, Icon, label }: (typeof LEFT_TABS)[number] | (typeof RIGHT_TABS)[number]) {
+    const active = isActive(id);
+    return (
+      <button
+        key={id}
+        onClick={() => setTab(id)}
+        aria-label={label}
+        className={`p-2 rounded-xl transition-colors ${
+          active ? 'text-brand-500' : 'text-gray-400'
+        }`}
+      >
+        <Icon className="w-6 h-6" />
+      </button>
+    );
+  }
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm bg-white border-t border-gray-100">
-      <div className="flex items-center justify-around px-2 py-1 pb-2">
-        {tabs.filter(({ id }) => allowed.includes(id)).map(({ id, Icon, en, hi }) => {
-          const active = currentTab === id;
-          const isAdd  = id === 'add';
-          const label  = language === 'en' ? en : hi;
+      <div className="flex items-center justify-around px-1 py-2 pb-3">
+        {leftTabs.map(renderTab)}
 
-          if (isAdd) {
-            return (
-              <button
-                key={id}
-                onClick={() => setTab(id)}
-                className="-mt-5 flex flex-col items-center"
-              >
-                <div
-                  className={`w-14 h-14 rounded-full flex items-center justify-center shadow-md active:scale-95 transition-transform ${
-                    active ? 'bg-gray-900' : 'bg-brand-500'
-                  }`}
-                >
-                  <Icon className="w-7 h-7 text-white" />
-                </div>
-              </button>
-            );
-          }
-
-          return (
+        {showAdd && (
+          <div className="-mt-4 flex items-center gap-2 px-1">
             <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-colors ${
-                active ? 'text-brand-500' : 'text-gray-400'
-              }`}
+              onClick={() => setTab('add', 'expense')}
+              aria-label="Add expense"
+              className="active:scale-95 transition-transform"
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium">{label}</span>
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all ${
+                  onAdd && addMode === 'expense'
+                    ? 'bg-rose-600 ring-2 ring-rose-300 ring-offset-1'
+                    : 'bg-rose-500'
+                }`}
+              >
+                <TrendingDown className="w-5 h-5 text-white" />
+              </div>
             </button>
-          );
-        })}
+            <button
+              onClick={() => setTab('add', 'income')}
+              aria-label="Add income"
+              className="active:scale-95 transition-transform"
+            >
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all ${
+                  onAdd && addMode === 'income'
+                    ? 'bg-emerald-600 ring-2 ring-emerald-300 ring-offset-1'
+                    : 'bg-emerald-500'
+                }`}
+              >
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+            </button>
+          </div>
+        )}
+
+        {rightTabs.map(renderTab)}
       </div>
     </nav>
   );

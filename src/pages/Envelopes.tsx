@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useStore, type Category, type Expense } from '../store/useStore';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { getCat, CATEGORIES, CATEGORY_LABELS } from '../lib/categories';
-import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Tag, Lock, Percent, PiggyBank, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Lock, Percent, PiggyBank, Pencil } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
+import SubScreenHeader from '../components/SubScreenHeader';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
 
 const CAT_LABELS = CATEGORY_LABELS;
@@ -24,14 +25,12 @@ function timeAgo(dateStr: string): string {
 
 export default function Envelopes() {
   const {
-    expenses, envelopes, members, language,
-    updateEnvelopeBudget, syncStatus, isPremium, setTab,
+    expenses, members, language,
+    syncStatus, setTab,
     allocationRules, setAllocationRule, currentUserId,
   } = useStore();
 
   const [expanded, setExpanded]       = useState<Category | null>(null);
-  const [editing, setEditing]         = useState<Category | null>(null);
-  const [editVal, setEditVal]         = useState('');
   const [editTx, setEditTx]           = useState<Expense | null>(null);
   const [rulesOpen, setRulesOpen]     = useState(false);
   const [ruleVals, setRuleVals]       = useState<Record<string, string>>(
@@ -57,23 +56,6 @@ export default function Envelopes() {
   const thisMonth = new Date().toISOString().slice(0, 7);
   const monthExpenses = expenses.filter((e) => e.date.startsWith(thisMonth));
 
-  const rows = CATEGORIES.map((cat) => {
-    const env = envelopes.find((e) => e.id === cat.id)!;
-    const txns = monthExpenses
-      .filter((e) => e.category === cat.id)
-      .sort((a, b) => b.date.localeCompare(a.date));
-    const spent   = txns.reduce((s, e) => s + e.amount, 0);
-    const pct     = env.budget > 0 ? Math.min((spent / env.budget) * 100, 110) : 0;
-    const isOver  = env.budget > 0 && spent > env.budget;
-    const isWarn  = env.budget > 0 && pct >= 75 && !isOver;
-    return { cat, env, txns, spent, pct, isWarn, isOver };
-  });
-
-  const totalBudget    = rows.reduce((s, r) => s + r.env.budget, 0);
-  const totalSpent     = rows.reduce((s, r) => s + r.spent, 0);
-  const totalRemaining = totalBudget - totalSpent; void totalRemaining;
-
-  // 30-day rolling average: total all-time spending ÷ (elapsed days / 30)
   const allTimeTotal = expenses.reduce((s, e) => s + e.amount, 0);
   const firstExpenseDate = expenses.length > 0
     ? new Date(expenses.map((e) => e.date).sort()[0])
@@ -84,7 +66,6 @@ export default function Envelopes() {
   );
   const avg30d = Math.round(allTimeTotal / (elapsedDays / 30));
 
-  // Per-category 30-day average
   function catAvg30d(catId: string) {
     const catTotal = expenses
       .filter((e) => e.category === catId)
@@ -92,15 +73,19 @@ export default function Envelopes() {
     return Math.round(catTotal / (elapsedDays / 30));
   }
 
-  function startEdit(id: Category, current: number) {
-    setEditing(id);
-    setEditVal(String(current));
-  }
-  function commitEdit(id: Category) {
-    const v = Number(editVal);
-    if (v > 0) updateEnvelopeBudget(id, v);
-    setEditing(null);
-  }
+  const rows = CATEGORIES.map((cat) => {
+    const txns = monthExpenses
+      .filter((e) => e.category === cat.id)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const spent = txns.reduce((s, e) => s + e.amount, 0);
+    const avg   = catAvg30d(cat.id);
+    const pct   = avg > 0 ? Math.min((spent / avg) * 100, 110) : 0;
+    const isOver = avg > 0 && spent > avg;
+    const isWarn = avg > 0 && pct >= 75 && !isOver;
+    return { cat, txns, spent, avg, pct, isWarn, isOver };
+  });
+
+  const totalSpent = rows.reduce((s, r) => s + r.spent, 0);
 
   const myRole = getMemberRole(members, currentUserId);
   if (myRole && !canViewGroupFinances(myRole)) {
@@ -109,13 +94,13 @@ export default function Envelopes() {
       <div className="flex flex-col items-center justify-center gap-4 px-6 pt-24 pb-24 text-center">
         <Lock className="w-12 h-12 text-gray-300" />
         <p className="text-sm font-semibold text-gray-600">
-          {L('Group budgets are not available for your role.', 'आपकी भूमिका के लिए समूह बजट उपलब्ध नहीं है।')}
+          {L('Group envelopes are not available for your role.', 'आपकी भूमिका के लिए समूह लिफ़ाफ़े उपलब्ध नहीं हैं।')}
         </p>
         <button
-          onClick={() => setTab('add')}
+          onClick={() => setTab('settings')}
           className="text-sm font-bold text-brand-500 active:opacity-70"
         >
-          {L('Record a transaction →', 'लेनदेन दर्ज करें →')}
+          {L('Back to Settings →', 'सेटिंग पर वापस →')}
         </button>
       </div>
     );
@@ -123,13 +108,13 @@ export default function Envelopes() {
 
   return (
     <>
-    <div className="flex flex-col gap-4 pb-24 pt-10">
-      {/* Header */}
-      <div className="px-5">
+    <div className="flex flex-col gap-4 pb-24">
+      <SubScreenHeader
+        title={language === 'en' ? 'Envelopes' : 'लिफ़ाफ़े'}
+        onBack={() => setTab('settings')}
+      />
+      <div className="px-5 -mt-2">
         <div className="flex items-center gap-2 mb-0.5">
-          <h2 className="text-xl font-bold text-gray-900">
-            {language === 'en' ? 'Envelopes' : 'लिफ़ाफ़े'}
-          </h2>
           {/* Real-time sync indicator */}
           {syncStatus === 'live' && (
             <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
@@ -195,7 +180,7 @@ export default function Envelopes() {
 
       {/* Envelope cards */}
       <div className="px-4 flex flex-col gap-2">
-        {rows.map(({ cat, env, txns, spent, pct, isWarn, isOver }) => {
+        {rows.map(({ cat, txns, spent, avg, pct, isWarn, isOver }) => {
           const isExpanded = expanded === cat.id;
           const barColor = isOver ? '#f43f5e' : isWarn ? '#f59e0b' : '#22c55e';
 
@@ -247,40 +232,24 @@ export default function Envelopes() {
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%`, background: barColor }}
+                      style={{
+                        width: avg > 0 ? `${pct}%` : spent > 0 ? '8%' : '0%',
+                        background: avg > 0 ? barColor : '#d1d5db',
+                      }}
                     />
                   </div>
                   <div className="flex justify-between items-center mt-1">
-                    {/* spent / 30d-avg */}
-                    {(() => {
-                      const ca = catAvg30d(cat.id);
-                      return (
-                        <span className="text-[10px] text-gray-400">
-                          {ca > 0
-                            ? `${fmt(spent)} / ${fmt(ca)} ${language === 'en' ? '30d avg' : '30d औसत'}`
-                            : language === 'en' ? 'no history' : 'कोई इतिहास नहीं'}
-                        </span>
-                      );
-                    })()}
-                    {/* Budget edit */}
-                    {editing === cat.id ? (
-                      <input
-                        autoFocus
-                        type="number"
-                        value={editVal}
-                        onChange={(e) => setEditVal(e.target.value)}
-                        onBlur={() => commitEdit(cat.id)}
-                        onKeyDown={(e) => e.key === 'Enter' && commitEdit(cat.id)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-[10px] text-gray-500 bg-gray-100 rounded px-1 w-20 outline-none text-right"
-                      />
-                    ) : (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); startEdit(cat.id, env.budget); }}
-                        className="text-[10px] text-gray-300 hover:text-brand-500 transition-colors"
-                      >
-                        {fmt(env.budget)} {language === 'en' ? 'budget' : 'बजट'} ✏️
-                      </button>
+                    <span className="text-[10px] text-gray-400">
+                      {avg > 0
+                        ? `${fmt(spent)} / ${fmt(avg)} ${language === 'en' ? '30d avg' : '30d औसत'}`
+                        : spent > 0
+                        ? fmt(spent)
+                        : language === 'en' ? 'no history' : 'कोई इतिहास नहीं'}
+                    </span>
+                    {txns.length > 0 && (
+                      <span className="text-[10px] text-gray-300">
+                        {txns.length} {language === 'en' ? 'txns' : 'लेनदेन'}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -335,7 +304,7 @@ export default function Envelopes() {
 
                   {/* Add to this envelope shortcut */}
                   <button
-                    onClick={() => { useStore.setState({ currentTab: 'add' }); }}
+                    onClick={() => { setTab('add', 'expense'); }}
                     className="w-full py-2.5 text-xs text-brand-500 font-semibold bg-brand-50/50 active:bg-brand-50 transition-colors"
                   >
                     + {language === 'en' ? `Add to ${cat.id}` : `${cat.id} में जोड़ें`}
@@ -490,36 +459,6 @@ export default function Envelopes() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Manage Categories — Premium gate */}
-      <div className="px-4">
-        <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
-            <Tag className="w-5 h-5 text-brand-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-800">
-              {language === 'en' ? 'Manage Categories' : 'कैटेगरी प्रबंधन'}
-            </p>
-            <p className="text-xs text-gray-400 truncate">
-              {language === 'en' ? 'Add or edit custom categories' : 'कस्टम कैटेगरी जोड़ें या बदलें'}
-            </p>
-          </div>
-          {isPremium ? (
-            <button className="bg-brand-500 text-white text-xs font-bold px-3 py-1.5 rounded-full active:scale-95 transition-transform">
-              {language === 'en' ? 'Manage' : 'प्रबंधन'}
-            </button>
-          ) : (
-            <button
-              onClick={() => setTab('premium')}
-              className="flex items-center gap-1 bg-gray-100 text-gray-500 text-xs font-bold px-3 py-1.5 rounded-full active:scale-95 transition-transform"
-            >
-              <Lock className="w-3 h-3" />
-              {language === 'en' ? 'Plus' : 'प्लस'}
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Real-time family activity feed */}

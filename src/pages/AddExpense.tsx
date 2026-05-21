@@ -4,8 +4,6 @@ import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
 import { CATEGORIES, defaultCategoryNote } from '../lib/categories';
 import { Check, TrendingDown, TrendingUp, CalendarDays } from 'lucide-react';
 
-type Mode = 'expense' | 'income';
-
 const INCOME_SOURCES: { id: IncomeSource; icon: string; en: string; hi: string }[] = [
   { id: 'salary',       icon: '💼', en: 'Salary',    hi: 'तनख्वाह' },
   { id: 'freelance',    icon: '💻', en: 'Freelance',  hi: 'फ्रीलांस' },
@@ -21,7 +19,7 @@ function fmt(n: number) {
 
 export default function AddExpense() {
   const {
-    addExpense, addIncome, setTab, language,
+    addExpense, addIncome, setTab, addMode: mode, language,
     members, activeMemberId, setActiveMember,
     envelopes, expenses, currentUserId,
   } = useStore();
@@ -34,7 +32,6 @@ export default function AddExpense() {
     if (!showGroup) setActiveMember(currentUserId);
   }, [showGroup, currentUserId, setActiveMember]);
 
-  const [mode, setMode]         = useState<Mode>('expense');
   const [category, setCategory] = useState<Category>('food');
   const [source, setSource]     = useState<IncomeSource>('salary');
   const [amount, setAmount]     = useState('');
@@ -91,33 +88,24 @@ export default function AddExpense() {
 
   return (
     <div className="flex flex-col pb-24 pt-10">
-      <div className="px-5 mb-4">
-        <h2 className="text-xl font-bold text-gray-900">
-          {language === 'en' ? 'Add Transaction' : 'लेन-देन जोड़ें'}
-        </h2>
-      </div>
-
-      {/* Mode toggle */}
-      <div className="px-4 mb-5">
-        <div className="bg-white rounded-2xl p-1 flex gap-1">
-          <button
-            onClick={() => setMode('expense')}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-              mode === 'expense' ? 'bg-rose-500 text-white' : 'text-gray-400'
+      <div className="px-5 mb-5">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              mode === 'expense' ? 'bg-rose-500' : 'bg-emerald-500'
             }`}
           >
-            <TrendingDown className="w-4 h-4" />
-            {language === 'en' ? 'Expense' : 'खर्च'}
-          </button>
-          <button
-            onClick={() => setMode('income')}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
-              mode === 'income' ? 'bg-emerald-500 text-white' : 'text-gray-400'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            {language === 'en' ? 'Income' : 'आय'}
-          </button>
+            {mode === 'expense' ? (
+              <TrendingDown className="w-5 h-5 text-white" />
+            ) : (
+              <TrendingUp className="w-5 h-5 text-white" />
+            )}
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">
+            {mode === 'expense'
+              ? (language === 'en' ? 'Add Expense' : 'खर्च जोड़ें')
+              : (language === 'en' ? 'Add Income' : 'आय जोड़ें')}
+          </h2>
         </div>
       </div>
 

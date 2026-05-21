@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { canUsePremium, getMemberRole } from '../lib/permissions';
 import {
   Check, Zap, Users, BarChart2, Tag, Download,
   ShieldCheck, Star, Lock,
 } from 'lucide-react';
-import { useState } from 'react';
+import SubScreenHeader from '../components/SubScreenHeader';
 
 const PLANS = [
   {
@@ -82,23 +83,26 @@ export default function Premium() {
         <p className="text-sm font-semibold text-gray-600">
           {L('Only the owner can manage premium.', 'Premium केवल Owner प्रबंधित कर सकता है।')}
         </p>
-        <button onClick={() => setTab('family')} className="text-sm font-bold text-brand-500">
-          {L('Back to Family →', 'परिवार पर वापस →')}
+        <button onClick={() => setTab('settings')} className="text-sm font-bold text-brand-500">
+          {L('Back to Settings →', 'सेटिंग पर वापस →')}
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-24 pt-10">
+    <div className="flex flex-col gap-4 pb-24">
+      <SubScreenHeader
+        title={language === 'en' ? 'Plan' : 'प्लान'}
+        onBack={() => setTab('settings')}
+      />
 
-      {/* Header */}
-      <div className="px-5">
+      <div className="px-5 -mt-2">
         <div className="flex items-center gap-2 mb-1">
           <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-          <h2 className="text-xl font-bold text-gray-900">
+          <p className="text-sm font-semibold text-gray-700">
             {language === 'en' ? 'Go Premium' : 'प्रीमियम बनें'}
-          </h2>
+          </p>
         </div>
         <p className="text-sm text-gray-400">
           {language === 'en'

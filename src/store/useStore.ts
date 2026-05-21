@@ -64,7 +64,8 @@ interface AppState {
 
   // ── navigation ────────────────────────────────────────────────
   currentTab: string;
-  setTab: (tab: string) => void;
+  addMode: 'expense' | 'income';
+  setTab: (tab: string, addMode?: 'expense' | 'income') => void;
   historyNavigateMonth: string | null;
   setHistoryNavigateMonth: (month: string | null) => void;
 
@@ -72,6 +73,9 @@ interface AppState {
   isPremium: boolean;
   language: 'en' | 'hi';
   toggleLanguage: () => void;
+  categoryOverrides: Partial<Record<Category, { icon: string; en: string; hi: string }>>;
+  setCategoryOverride: (id: Category, data: { icon: string; en: string; hi: string }) => void;
+  resetCategoryOverride: (id: Category) => void;
 
   // ── expenses ──────────────────────────────────────────────────
   expenses: Expense[];
@@ -156,7 +160,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ── navigation ────────────────────────────────────────────────
   currentTab: 'home',
-  setTab: (tab) => set({ currentTab: tab }),
+  addMode: 'expense',
+  setTab: (tab, addMode) =>
+    set(addMode !== undefined ? { currentTab: tab, addMode } : { currentTab: tab }),
   historyNavigateMonth: null,
   setHistoryNavigateMonth: (historyNavigateMonth) => set({ historyNavigateMonth }),
 
@@ -164,6 +170,15 @@ export const useStore = create<AppState>((set, get) => ({
   isPremium: false,
   language: 'en',
   toggleLanguage: () => set((s) => ({ language: s.language === 'en' ? 'hi' : 'en' })),
+  categoryOverrides: {},
+  setCategoryOverride: (id, data) =>
+    set((s) => ({ categoryOverrides: { ...s.categoryOverrides, [id]: data } })),
+  resetCategoryOverride: (id) =>
+    set((s) => {
+      const next = { ...s.categoryOverrides };
+      delete next[id];
+      return { categoryOverrides: next };
+    }),
 
   // ── expenses ──────────────────────────────────────────────────
   expenses: isFirebaseConfigured ? [] : initialExpenses,
