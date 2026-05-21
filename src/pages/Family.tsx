@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import { isFirebaseConfigured } from '../lib/firebase';
+import { isLiveFirebase } from '../lib/appMode';
 import {
   ChevronLeft, ChevronRight, ChevronDown, X, Check, History, ArrowRightLeft,
 } from 'lucide-react';
@@ -121,7 +121,7 @@ export default function Family() {
         <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
           {L('Signed in as', 'लॉगिन')}
         </p>
-        {isFirebaseConfigured ? (
+        {isLiveFirebase() ? (
           (() => {
             const me = members.find((m) => m.id === currentUserId);
             return (

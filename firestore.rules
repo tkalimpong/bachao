@@ -11,6 +11,11 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
     }
 
+    /** Owner bootstrap: groupId equals the creator's uid. */
+    function isGroupOwner(groupId) {
+      return signedIn() && request.auth.uid == groupId;
+    }
+
     match /users/{userId} {
       allow read, write: if signedIn() && request.auth.uid == userId;
     }
@@ -24,16 +29,30 @@ service cloud.firestore {
     }
 
     match /groups/{groupId} {
-      allow read: if isMember(groupId);
-      allow create: if signedIn() && request.auth.uid == groupId;
+      // Owner must read their group before the member doc exists (first sign-in).
+      allow read: if isMember(groupId) || isGroupOwner(groupId);
+      allow create: if isGroupOwner(groupId);
 
       match /members/{memberId} {
-        allow read: if isMember(groupId);
+        allow read: if isMember(groupId)
+          || (signedIn() && request.auth.uid == memberId);
         allow create: if signedIn() && request.auth.uid == memberId;
         allow update, delete: if isMember(groupId);
       }
 
-      match /{collection}/{docId} {
+      match /expenses/{docId} {
+        allow read, write: if isMember(groupId);
+      }
+      match /incomes/{docId} {
+        allow read, write: if isMember(groupId);
+      }
+      match /transfers/{docId} {
+        allow read, write: if isMember(groupId);
+      }
+      match /categoryBudgets/{docId} {
+        allow read, write: if isMember(groupId);
+      }
+      match /envelopes/{docId} {
         allow read, write: if isMember(groupId);
       }
     }

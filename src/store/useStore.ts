@@ -8,7 +8,8 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { isFirebaseConfigured, db } from '../lib/firebase';
+import { isLiveFirebase } from '../lib/appMode';
+import { db } from '../lib/firebase';
 import {
   canEditMemberRole,
   canManageMembers,
@@ -190,8 +191,8 @@ function captureCurrentTabScroll() {
 
 export const useStore = create<AppState>((set, get) => ({
   // ── sync ──────────────────────────────────────────────────────
-  groupId: isFirebaseConfigured ? '' : 'family-default',
-  syncStatus: isFirebaseConfigured ? 'connecting' : 'offline',
+  groupId: isLiveFirebase() ? '' : 'family-default',
+  syncStatus: isLiveFirebase() ? 'connecting' : 'offline',
   setSyncStatus: (syncStatus) => set({ syncStatus }),
   setGroupId: (groupId) => set({ groupId }),
 
@@ -257,10 +258,10 @@ export const useStore = create<AppState>((set, get) => ({
     }),
 
   // ── expenses ──────────────────────────────────────────────────
-  expenses: isFirebaseConfigured ? [] : initialExpenses,
+  expenses: isLiveFirebase() ? [] : initialExpenses,
   setExpenses: (expenses) => set({ expenses }),
   addExpense: (e) => {
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       addDoc(collection(db, `groups/${groupId}/expenses`), {
         ...e,
@@ -277,7 +278,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateExpense: (id, data) => {
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       updateDoc(doc(db, `groups/${groupId}/expenses/${id}`), data);
     } else {
@@ -287,7 +288,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
   deleteExpense: (id) => {
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       deleteDoc(doc(db, `groups/${groupId}/expenses/${id}`));
     } else {
@@ -296,10 +297,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // ── incomes ───────────────────────────────────────────────────
-  incomes: isFirebaseConfigured ? [] : initialIncomes,
+  incomes: isLiveFirebase() ? [] : initialIncomes,
   setIncomes: (incomes) => set({ incomes }),
   addIncome: (i) => {
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       addDoc(collection(db, `groups/${groupId}/incomes`), {
         ...i,
@@ -316,7 +317,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateIncome: (id, data) => {
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       updateDoc(doc(db, `groups/${groupId}/incomes/${id}`), data);
     } else {
@@ -326,7 +327,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
   deleteIncome: (id) => {
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       deleteDoc(doc(db, `groups/${groupId}/incomes/${id}`));
     } else {
@@ -335,11 +336,11 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // ── transfers ─────────────────────────────────────────────────
-  transfers: isFirebaseConfigured ? [] : initialTransfers,
+  transfers: isLiveFirebase() ? [] : initialTransfers,
   setTransfers: (transfers) => set({ transfers }),
   addTransfer: (t) => {
     if (t.fromMemberId === t.toMemberId) return;
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       addDoc(collection(db, `groups/${groupId}/transfers`), {
         ...t,
@@ -353,7 +354,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
   updateTransfer: (id, data) => {
     if (data.fromMemberId && data.toMemberId && data.fromMemberId === data.toMemberId) return;
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       updateDoc(doc(db, `groups/${groupId}/transfers/${id}`), data);
     } else {
@@ -363,7 +364,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
   deleteTransfer: (id) => {
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       deleteDoc(doc(db, `groups/${groupId}/transfers/${id}`));
     } else {
@@ -376,7 +377,7 @@ export const useStore = create<AppState>((set, get) => ({
   setCategoryBudgets: (categoryBudgets) => set({ categoryBudgets }),
 
   updateCategoryBudget: (id, budget) => {
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       const { groupId } = get();
       setDoc(
         doc(db, `groups/${groupId}/categoryBudgets/${id}`),
@@ -391,7 +392,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   // ── members ───────────────────────────────────────────────────
-  members: isFirebaseConfigured
+  members: isLiveFirebase()
     ? []
     : [
         { id: 'm1', name: 'Rahul', avatar: 'R', role: 'owner', color: '#2563eb' },
@@ -399,9 +400,9 @@ export const useStore = create<AppState>((set, get) => ({
         { id: 'm3', name: 'Arjun', avatar: 'A', role: 'helper', color: '#22c55e' },
       ],
   setMembers: (members) => set({ members }),
-  currentUserId: isFirebaseConfigured ? '' : 'm1',
+  currentUserId: isLiveFirebase() ? '' : 'm1',
   setCurrentUserId: (id) => {
-    if (isFirebaseConfigured) {
+    if (isLiveFirebase()) {
       set({ currentUserId: id, activeMemberId: id });
       return;
     }
@@ -409,13 +410,13 @@ export const useStore = create<AppState>((set, get) => ({
     if (!member) return;
     set({ currentUserId: id, activeMemberId: id });
   },
-  activeMemberId: isFirebaseConfigured ? '' : 'm1',
+  activeMemberId: isLiveFirebase() ? '' : 'm1',
   setActiveMember: (id) => set({ activeMemberId: id }),
   updateMemberRole: (id, role) => {
     const { members, currentUserId, groupId } = get();
     const me = members.find((m) => m.id === currentUserId);
     if (!me || !canEditMemberRole(me.role)) return;
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       setDoc(doc(db, `groups/${groupId}/members/${id}`), { role }, { merge: true });
     } else {
       set((s) => ({
@@ -431,7 +432,7 @@ export const useStore = create<AppState>((set, get) => ({
     const target = members.find((m) => m.id === id);
     if (!me || !canManageMembers(me.role) || !target || target.role === 'owner') return;
     if (members.length <= 1) return;
-    if (isFirebaseConfigured && db) {
+    if (isLiveFirebase() && db) {
       deleteDoc(doc(db, `groups/${groupId}/members/${id}`));
     } else {
       set((s) => {

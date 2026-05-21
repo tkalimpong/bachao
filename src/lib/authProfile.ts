@@ -29,11 +29,28 @@ export async function loadUserGroupId(uid: string): Promise<string | null> {
   return snap.exists() ? (snap.data().groupId as string) : null;
 }
 
+async function repairUserProfile(user: FirebaseUser, groupId: string): Promise<void> {
+  if (!db) return;
+  await setDoc(
+    doc(db, `users/${user.uid}`),
+    {
+      groupId,
+      email: user.email ?? null,
+      displayName: user.displayName ?? null,
+      photoURL: user.photoURL ?? null,
+    },
+    { merge: true },
+  );
+}
+
 /** First sign-in: create a family group owned by this user. */
 export async function createUserGroup(user: FirebaseUser): Promise<string> {
   if (!db) throw new Error('Firestore not configured');
 
   const groupId = user.uid;
+  const linked = await loadUserGroupId(user.uid);
+  if (linked) return linked;
+
   const name = user.displayName?.trim() || user.email?.split('@')[0] || 'Family';
   const inviteCode = randomInviteCode();
   const member = {
@@ -62,7 +79,15 @@ export async function createUserGroup(user: FirebaseUser): Promise<string> {
   });
   batch.set(doc(db, `groups/${groupId}/members/${user.uid}`), member);
   batch.set(doc(db, `inviteCodes/${inviteCode}`), { groupId, createdBy: user.uid });
-  await batch.commit();
+
+  try {
+    await batch.commit();
+  } catch (e) {
+    const retry = await loadUserGroupId(user.uid);
+    if (retry) return retry;
+    await repairUserProfile(user, groupId);
+    throw e;
+  }
   return groupId;
 }
 
@@ -82,16 +107,7 @@ export async function joinGroupWithInviteCode(
   const groupId = inviteSnap.data().groupId as string;
   const memberSnap = await getDoc(doc(db, `groups/${groupId}/members/${user.uid}`));
   if (memberSnap.exists()) {
-    await setDoc(
-      doc(db, `users/${user.uid}`),
-      {
-        groupId,
-        email: user.email ?? null,
-        displayName: user.displayName ?? null,
-        photoURL: user.photoURL ?? null,
-      },
-      { merge: true },
-    );
+    await repairUserProfile(user, groupId);
     return groupId;
   }
 

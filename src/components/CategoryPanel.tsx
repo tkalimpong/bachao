@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, type Category, type Expense } from '../store/useStore';
-import { isFirebaseConfigured } from '../lib/firebase';
+import { isLiveFirebase } from '../lib/appMode';
 import { CATEGORIES } from '../lib/categories';
 import { categoryMonthProgress, monthlyAvgBeforeMonth } from '../lib/categoryAverage';
 import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Pencil } from 'lucide-react';
@@ -107,7 +107,7 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
                 {L('Syncing…', 'सिंक हो रहा है…')}
               </div>
             )}
-            {syncStatus === 'offline' && isFirebaseConfigured && (
+            {syncStatus === 'offline' && isLiveFirebase() && (
               <div className="flex items-center gap-1 bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
                 <WifiOff className="w-2.5 h-2.5" />
                 {L('Offline', 'ऑफ़लाइन')}

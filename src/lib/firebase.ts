@@ -1,11 +1,20 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
 import {
+  browserLocalPersistence,
+  getAuth,
+  inMemoryPersistence,
+  setPersistence,
+  type Auth,
+} from 'firebase/auth';
+import {
+  getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
   type Firestore,
 } from 'firebase/firestore';
+import { isEmbeddedPreviewBrowser } from './embeddedBrowser';
+import { isPreviewUiMode } from './appMode';
 
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,20 +25,44 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-export const isFirebaseConfigured = Boolean(
-  firebaseConfig.apiKey && firebaseConfig.projectId,
-);
+function envLooksConfigured(): boolean {
+  const { apiKey, projectId, authDomain } = firebaseConfig;
+  if (!apiKey || !projectId || !authDomain) return false;
+  if (apiKey.includes('your-') || projectId.includes('your-')) return false;
+  return true;
+}
+
+export const isFirebaseConfigured = envLooksConfigured();
+export const firebaseInitInPreview = isFirebaseConfigured && isPreviewUiMode();
 
 export let app: FirebaseApp | null = null;
 export let auth: Auth | null = null;
 export let db: Firestore | null = null;
+export let firebaseInitError: string | null = null;
 
-if (isFirebaseConfigured) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = initializeFirestore(app, {
+function initFirestore(appInstance: FirebaseApp): Firestore {
+  if (isEmbeddedPreviewBrowser()) {
+    // IndexedDB persistence hangs or crashes in IDE Simple Browser iframes.
+    return getFirestore(appInstance);
+  }
+  return initializeFirestore(appInstance, {
     localCache: persistentLocalCache({
       tabManager: persistentMultipleTabManager(),
     }),
   });
+}
+
+if (isFirebaseConfigured && !isPreviewUiMode()) {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    const persistence = isEmbeddedPreviewBrowser()
+      ? inMemoryPersistence
+      : browserLocalPersistence;
+    void setPersistence(auth, persistence);
+    db = initFirestore(app);
+  } catch (e) {
+    firebaseInitError = e instanceof Error ? e.message : 'Firebase init failed';
+    console.error('[firebase]', e);
+  }
 }

@@ -3,8 +3,8 @@ import { useStore } from './store/useStore';
 import { canAccessTab, getMemberRole, shouldShowBottomNav } from './lib/permissions';
 import { applyScrollForTab, scrollMainToTop, restoreMainScrollTop } from './lib/mainScroll';
 import { useFirestoreSync } from './hooks/useFirestoreSync';
-import { useAuth } from './hooks/useAuth';
-import { isFirebaseConfigured } from './lib/firebase';
+import { useAuth } from './context/AuthContext';
+import { isLiveFirebase, isPreviewUiMode } from './lib/appMode';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import AddExpense from './pages/AddExpense';
@@ -15,6 +15,7 @@ import Family from './pages/Family';
 import Premium from './pages/Premium';
 import History from './pages/History';
 import Login from './pages/Login';
+import PreviewBrowserBanner from './components/PreviewBrowserBanner';
 
 const SCREENS: Record<string, React.FC> = {
   home:       Dashboard,
@@ -27,11 +28,12 @@ const SCREENS: Record<string, React.FC> = {
   history:    History,
 };
 
-function LoadingScreen() {
+function LoadingScreen({ message }: { message: string }) {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="w-full max-w-sm min-h-screen bg-surface flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-brand-200 border-t-brand-500 animate-spin" />
+      <div className="w-full max-w-sm min-h-screen bg-surface flex flex-col items-center justify-center gap-4 px-8">
+        <div className="w-10 h-10 rounded-full border-[3px] border-brand-100 border-t-brand-500 animate-spin" />
+        <p className="text-sm font-medium text-gray-600 text-center">{message}</p>
       </div>
     </div>
   );
@@ -48,7 +50,7 @@ function AppShell() {
     groupId,
   } = useStore();
   const showBottomNav = shouldShowBottomNav(currentTab, uiOverlayDepth);
-  const syncEnabled = !isFirebaseConfigured || Boolean(groupId && currentUserId);
+  const syncEnabled = isLiveFirebase() && Boolean(groupId && currentUserId);
   useFirestoreSync(syncEnabled);
 
   useEffect(() => {
@@ -103,17 +105,36 @@ function AppShell() {
 
 export default function App() {
   const auth = useAuth();
+  const previewUi = isPreviewUiMode();
 
   if (auth.isRequired) {
-    if (!auth.ready || (auth.loading && !auth.user)) {
-      return <LoadingScreen />;
-    }
-    if (!auth.user) {
+    if (!auth.ready || auth.loading) {
+      const message = auth.user
+        ? 'Setting up your family…'
+        : 'Signing you in…';
       return (
-        <Login loading={auth.loading} error={auth.error} onSignIn={auth.signIn} />
+        <>
+          <PreviewBrowserBanner />
+          <LoadingScreen message={message} />
+        </>
+      );
+    }
+    if (!auth.user || !auth.sessionReady) {
+      return (
+        <>
+          <PreviewBrowserBanner />
+          <Login loading={auth.loading} error={auth.error} onSignIn={auth.signIn} />
+        </>
       );
     }
   }
 
-  return <AppShell />;
+  return (
+    <>
+      <PreviewBrowserBanner />
+      <div className={previewUi ? 'pt-20' : undefined}>
+        <AppShell />
+      </div>
+    </>
+  );
 }

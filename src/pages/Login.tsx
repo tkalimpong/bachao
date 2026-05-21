@@ -52,6 +52,13 @@ export default function Login({ loading, error, onSignIn }: Props) {
             <p className="text-sm text-rose-600 bg-rose-50 rounded-2xl px-4 py-3">{error}</p>
           )}
 
+          <p className="text-[11px] text-gray-400 px-1 leading-relaxed">
+            {L(
+              'On browser, a Google popup opens. Allow popups if asked.',
+              'ब्राउज़र में Google पॉपअप खुलेगा। पॉपअप की अनुमति दें।',
+            )}
+          </p>
+
           <button
             type="button"
             disabled={loading}

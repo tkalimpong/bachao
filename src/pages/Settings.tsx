@@ -2,8 +2,8 @@ import {
   Tag, Zap, Users, ChevronRight, Globe, Lock, LogOut,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { isFirebaseConfigured } from '../lib/firebase';
-import { useAuth } from '../hooks/useAuth';
+import { isLiveFirebase } from '../lib/appMode';
+import { useAuth } from '../context/AuthContext';
 import {
   canManageMembers,
   canUsePremium,
@@ -81,7 +81,7 @@ export default function Settings() {
         </p>
       </div>
 
-      {isFirebaseConfigured && auth.user && (
+      {isLiveFirebase() && auth.user && (
         <div className="px-4">
           <div className="bg-white rounded-2xl p-4 flex items-center gap-3">
             {auth.user.photoURL ? (

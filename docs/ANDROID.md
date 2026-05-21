@@ -35,7 +35,7 @@ Bachao は **Vite + Capacitor** の Web アプリです。
 1. [Firebase Console](https://console.firebase.google.com/) でプロジェクトを作成
 2. **Authentication** → Sign-in method → **Google** を有効化
 3. **Firestore Database** を有効化
-4. リポジトリの **`firestore.rules`** を Firebase Console の Firestore → ルール に貼り付けて公開
+4. **Firestore セキュリティルールをデプロイ**（ログインに必須 — 下記「ルールのデプロイ」）
 5. **プロジェクトの設定 → マイアプリ → ウェブアプリを追加**
 6. 表示された設定値をコピー
 
@@ -47,7 +47,26 @@ copy .env.local.example .env.local
 
 `.env.local` の各 `VITE_FIREBASE_*` を Firebase の値で埋める。
 
-5. 動作確認（任意）:
+### ルールのデプロイ（ログインエラー `Firestore access denied` のとき必須）
+
+**方法 A — Firebase CLI（推奨）**
+
+```powershell
+npm install -g firebase-tools
+firebase login
+firebase use hamromatka
+firebase deploy --only firestore:rules
+```
+
+`hamromatka` は `.env.local` の `VITE_FIREBASE_PROJECT_ID` に合わせて変更。
+
+**方法 B — コンソールに手動コピー**
+
+1. Firebase Console → **Firestore Database** → **ルール**
+2. リポジトリの [`firestore.rules`](../firestore.rules) をすべてコピーして貼り付け
+3. **公開** をクリック
+
+7. 動作確認（任意）:
 
 ```powershell
 npm install

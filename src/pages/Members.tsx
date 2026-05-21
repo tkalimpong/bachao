@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { UserPlus, Trash2, Copy, Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { fetchGroupInviteCode } from '../lib/authProfile';
-import { isFirebaseConfigured } from '../lib/firebase';
+import { isLiveFirebase } from '../lib/appMode';
 import {
   EDITABLE_ROLES,
   ROLE_ICONS,
@@ -30,7 +30,7 @@ export default function Members() {
   const canPremium = myRole ? canUsePremium(myRole) : false;
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !canManage || !groupId) return;
+    if (!isLiveFirebase() || !canManage || !groupId) return;
     fetchGroupInviteCode(groupId).then(setInviteCode);
   }, [canManage, groupId]);
 
@@ -47,7 +47,7 @@ export default function Members() {
 
   function handleInvite() {
     if (!canManage) return;
-    if (isFirebaseConfigured && inviteCode) {
+    if (isLiveFirebase() && inviteCode) {
       copyInviteCode();
       return;
     }
@@ -61,7 +61,7 @@ export default function Members() {
         onBack={() => goBackToTab('settings')}
       />
 
-      {canManage && isFirebaseConfigured && inviteCode && (
+      {canManage && isLiveFirebase() && inviteCode && (
         <div className="px-4 mb-4">
           <div className="bg-brand-50 rounded-2xl px-4 py-4">
             <p className="text-[10px] font-bold uppercase text-brand-600 mb-2">
@@ -88,7 +88,7 @@ export default function Members() {
         </div>
       )}
 
-      {canManage && !isFirebaseConfigured && (
+      {canManage && !isLiveFirebase() && (
         <div className="px-4 mb-4">
           <button
             onClick={handleInvite}

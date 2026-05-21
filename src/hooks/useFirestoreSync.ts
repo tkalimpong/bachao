@@ -9,7 +9,8 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../lib/firebase';
+import { db } from '../lib/firebase';
+import { isLiveFirebase } from '../lib/appMode';
 import {
   useStore,
   type CategoryBudget,
@@ -64,8 +65,8 @@ export function useFirestoreSync(enabled = true) {
   ]);
 
   useEffect(() => {
-    if (!enabled || !isFirebaseConfigured || !db || !groupId) {
-      if (!isFirebaseConfigured) setSyncStatus('offline');
+    if (!enabled || !isLiveFirebase() || !db || !groupId) {
+      if (!isLiveFirebase()) setSyncStatus('offline');
       return;
     }
 
