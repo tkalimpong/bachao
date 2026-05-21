@@ -126,7 +126,7 @@ export default function AddExpense() {
               const fill    = env?.budget ? Math.min((spent / env.budget) * 100, 110) : 0;
               const over    = env?.budget ? spent > env.budget : false;
               const warn    = env?.budget ? fill >= 75 && !over : false;
-              const dotColor = over ? '#f43f5e' : warn ? '#f97316' : '#22c55e';
+              const dotColor = over ? '#f43f5e' : warn ? '#f59e0b' : '#22c55e';
               const isSelected = category === cat.id;
 
               return (
@@ -192,7 +192,7 @@ export default function AddExpense() {
                 className="h-full rounded-full transition-all duration-500"
                 style={{
                   width: `${Math.min(catFill, 100)}%`,
-                  background: catOver ? '#f43f5e' : catWarn ? '#f97316' : '#22c55e',
+                  background: catOver ? '#f43f5e' : catWarn ? '#f59e0b' : '#22c55e',
                 }}
               />
             </div>

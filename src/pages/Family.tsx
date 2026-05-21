@@ -9,6 +9,7 @@ import {
   getMemberRole,
   roleLabel,
 } from '../lib/permissions';
+import { TRUST_BLUE } from '../lib/theme';
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -167,7 +168,17 @@ export default function Family() {
               </div>
               <div>
                 <p className="text-[9px] text-white/50 font-bold uppercase mb-0.5">{L('Balance', 'बचत')}</p>
-                <p className={`text-sm font-black ${familyTotal.balance >= 0 ? 'text-white' : 'text-rose-300'}`}>
+                <p
+                  className="text-sm font-black"
+                  style={{
+                    color:
+                      familyTotal.balance > 0
+                        ? TRUST_BLUE[400]
+                        : familyTotal.balance < 0
+                        ? '#fda4af'
+                        : 'rgba(255,255,255,0.5)',
+                  }}
+                >
                   {familyTotal.balance === 0 && familyTotal.earned === 0 && familyTotal.spent === 0
                     ? '—'
                     : `${familyTotal.balance >= 0 ? '+' : '−'}${fmt(familyTotal.balance)}`}
@@ -188,7 +199,12 @@ export default function Family() {
             <span className="text-[9px] font-bold text-gray-400 uppercase">{L('Member', 'सदस्य')}</span>
             <span className="text-[9px] font-bold text-emerald-500 uppercase text-right w-14">{L('In', 'आय')}</span>
             <span className="text-[9px] font-bold text-rose-400 uppercase text-right w-14">{L('Out', 'खर्च')}</span>
-            <span className="text-[9px] font-bold text-gray-500 uppercase text-right w-14">{L('Bal.', 'बचत')}</span>
+            <span
+              className="text-[9px] font-bold uppercase text-right w-14"
+              style={{ color: TRUST_BLUE[500] }}
+            >
+              {L('Bal.', 'बचत')}
+            </span>
           </div>
 
           <div className="divide-y divide-gray-50">
@@ -233,9 +249,15 @@ export default function Family() {
                     {spent > 0 ? `−${fmt(spent)}` : '—'}
                   </span>
                   <span
-                    className={`text-xs font-black text-right w-14 tabular-nums ${
-                      balance > 0 ? 'text-gray-900' : balance < 0 ? 'text-rose-500' : 'text-gray-300'
-                    }`}
+                    className="text-xs font-black text-right w-14 tabular-nums"
+                    style={{
+                      color:
+                        balance > 0
+                          ? TRUST_BLUE[600]
+                          : balance < 0
+                          ? '#f43f5e'
+                          : '#d1d5db',
+                    }}
                   >
                     {earned === 0 && spent === 0 ? '—' : `${balance >= 0 ? '+' : '−'}${fmt(balance)}`}
                   </span>

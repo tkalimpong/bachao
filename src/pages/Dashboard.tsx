@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat, CATEGORIES } from '../lib/categories';
+import AppLogo from '../components/AppLogo';
+import { TRUST_BLUE } from '../lib/theme';
 import { Globe, TrendingDown, TrendingUp, Minus, PiggyBank, Pencil } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
@@ -40,7 +42,7 @@ function GaugeRing({ budget, spent }: { budget: number; spent: number }) {
   const hasBudget = budget > 0;
   const fillPct   = hasBudget ? Math.min((spent / budget) * 100, 110) : 0;
   const fillLen   = (fillPct / 100) * RING_CIRC;
-  const color     = fillPct >= 100 ? '#f43f5e' : fillPct >= 75 ? '#f97316' : '#22c55e';
+  const color     = fillPct >= 100 ? '#f43f5e' : fillPct >= 75 ? '#f59e0b' : '#22c55e';
 
   return (
     <>
@@ -130,11 +132,7 @@ export default function Dashboard() {
       <div className="bg-white pt-10 pb-4 px-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img
-              src="/bachao-logo.png"
-              alt="Bachao"
-              className="w-10 h-10 rounded-xl object-cover shadow-sm"
-            />
+            <AppLogo size={40} />
             <div>
               <p className="text-xs text-gray-400 font-medium">
                 {new Date().toLocaleString(language === 'en' ? 'en-IN' : 'hi-IN', { month: 'long', year: 'numeric' })}
@@ -188,8 +186,22 @@ export default function Dashboard() {
                 {language === 'en' ? 'Balance' : 'बचत'}
               </span>
             </div>
-            <p className={`text-2xl font-black ${balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {balance < 0 ? '−' : '+'}{fmt(balance)}
+            <p
+              className="text-2xl font-black"
+              style={{
+                color:
+                  balance > 0
+                    ? TRUST_BLUE[400]
+                    : balance < 0
+                    ? undefined
+                    : 'rgba(255,255,255,0.5)',
+              }}
+            >
+              {balance < 0 ? (
+                <span className="text-rose-400">−{fmt(Math.abs(balance))}</span>
+              ) : (
+                <>+{fmt(balance)}</>
+              )}
             </p>
           </div>
           {totalIn > 0 && (
@@ -210,7 +222,10 @@ export default function Dashboard() {
       {/* ── 貯蓄カード（自動計算）─────────────────────────────────────────── */}
       <div className="px-4">
         {balance >= 0 ? (
-          <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <div
+            className="rounded-2xl px-4 py-3 flex items-center gap-3"
+            style={{ background: `linear-gradient(to right, ${TRUST_BLUE[500]}, ${TRUST_BLUE[600]})` }}
+          >
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
               <PiggyBank className="w-5 h-5 text-white" />
             </div>
@@ -300,7 +315,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-center gap-4 mt-2 pt-2 border-t border-gray-50">
             {[
               { color: '#22c55e', en: 'OK',     hi: 'ठीक' },
-              { color: '#f97316', en: '≥75%',   hi: '≥75%' },
+              { color: '#f59e0b', en: '≥75%',   hi: '≥75%' },
               { color: '#f43f5e', en: 'Over',   hi: 'पार'  },
             ].map((l) => (
               <div key={l.en} className="flex items-center gap-1">

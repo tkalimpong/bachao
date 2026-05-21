@@ -295,7 +295,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ── members ───────────────────────────────────────────────────
   members: [
-    { id: 'm1', name: 'Rahul', avatar: 'R', role: 'owner', color: '#f97316' },
+    { id: 'm1', name: 'Rahul', avatar: 'R', role: 'owner', color: '#2563eb' },
     { id: 'm2', name: 'Priya', avatar: 'P', role: 'partner', color: '#8b5cf6' },
     { id: 'm3', name: 'Arjun', avatar: 'A', role: 'helper', color: '#22c55e' },
   ],

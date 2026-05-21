@@ -71,7 +71,7 @@ export default function Reports() {
       {/* Summary stats */}
       <div className="px-4 grid grid-cols-3 gap-2">
         {[
-          { label: language === 'en' ? 'This Month' : 'इस माह', value: fmt(totalThisMonth), color: '#f97316' },
+          { label: language === 'en' ? 'This Month' : 'इस माह', value: fmt(totalThisMonth), color: '#2563eb' },
           { label: language === 'en' ? 'Daily Avg' : 'प्रतिदिन', value: fmt(avgPerDay), color: '#8b5cf6' },
           { label: language === 'en' ? 'Entries' : 'एंट्री', value: String(monthExpenses.length), color: '#22c55e' },
         ].map((s) => (
@@ -123,7 +123,7 @@ export default function Reports() {
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 }}
               />
-              <Bar dataKey="total" fill="#f97316" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="total" fill="#2563eb" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

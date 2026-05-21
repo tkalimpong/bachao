@@ -30,7 +30,7 @@ const PLANS = [
     price: '₹199',
     period: '/mo',
     periodHi: '/माह',
-    color: '#f97316',
+    color: '#2563eb',
     popular: true,
     features: [
       { icon: Users,    en: 'Family sharing (up to 10)',   hi: '10 सदस्य तक शेयरिंग' },
@@ -58,7 +58,7 @@ const TESTIMONIALS = [
 const tierLabel: Record<string, { en: string; hi: string; color: string }> = {
   free: { en: 'Free',  hi: 'मुफ़्त', color: '#6b7280' },
   plus: { en: 'Plus',  hi: 'प्लस',  color: '#8b5cf6' },
-  pro:  { en: 'Pro',   hi: 'प्रो',  color: '#f97316' },
+  pro:  { en: 'Pro',   hi: 'प्रो',  color: '#2563eb' },
 };
 
 export default function Premium() {

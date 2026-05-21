@@ -47,8 +47,8 @@ export default function Settings() {
       ? [{
           id: 'envelopes',
           Icon: Wallet,
-          color: '#f97316',
-          bg: '#fff7ed',
+          color: '#2563eb',
+          bg: '#eff6ff',
           en: 'Envelopes',
           hi: 'लिफ़ाफ़े',
           subEn: 'Category spending & allocation rules',

@@ -161,7 +161,7 @@ export default function Envelopes() {
               className="h-full rounded-full transition-all duration-700"
               style={{
                 width: avg30d > 0 ? `${Math.min((totalSpent / avg30d) * 100, 100)}%` : '0%',
-                background: totalSpent > avg30d ? '#f43f5e' : '#f97316',
+                background: totalSpent > avg30d ? '#f43f5e' : '#f59e0b',
               }}
             />
           </div>

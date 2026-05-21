@@ -3,6 +3,7 @@ import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat } from '../lib/categories';
 import { Search, X, ChevronLeft, ChevronRight, Pencil, ChevronDown, Check } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
+import { TRUST_BLUE } from '../lib/theme';
 import {
   canViewAllHistory,
   canViewGroupFinances,
@@ -239,6 +240,7 @@ export default function History() {
   const totalIn = filtered
     .filter((t) => t.kind === 'income')
     .reduce((s, t) => s + t.data.amount, 0);
+  const balance = totalIn - totalOut;
 
   const L = (en: string, hi: string) => language === 'en' ? en : hi;
 
@@ -357,18 +359,48 @@ export default function History() {
 
       {/* ── Monthly summary ─────────────────────────────────────────────── */}
       <div className="px-4 pt-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-emerald-50 rounded-2xl px-4 py-3">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-emerald-50 rounded-2xl px-3 py-3">
             <p className="text-[10px] text-emerald-500 font-semibold uppercase mb-1">
               {L('In', 'आया')}
             </p>
-            <p className="text-lg font-black text-emerald-600">+{fmt(totalIn)}</p>
+            <p className="text-base font-black text-emerald-600 tabular-nums">
+              {totalIn > 0 ? `+${fmt(totalIn)}` : '—'}
+            </p>
           </div>
-          <div className="bg-rose-50 rounded-2xl px-4 py-3">
+          <div className="bg-rose-50 rounded-2xl px-3 py-3">
             <p className="text-[10px] text-rose-400 font-semibold uppercase mb-1">
               {L('Out', 'गया')}
             </p>
-            <p className="text-lg font-black text-rose-500">−{fmt(totalOut)}</p>
+            <p className="text-base font-black text-rose-500 tabular-nums">
+              {totalOut > 0 ? `−${fmt(totalOut)}` : '—'}
+            </p>
+          </div>
+          <div
+            className="rounded-2xl px-3 py-3"
+            style={{ background: balance > 0 ? TRUST_BLUE[50] : '#f9fafb' }}
+          >
+            <p
+              className="text-[10px] font-semibold uppercase mb-1"
+              style={{ color: balance > 0 ? TRUST_BLUE[500] : '#6b7280' }}
+            >
+              {L('Balance', 'बचत')}
+            </p>
+            <p
+              className="text-base font-black tabular-nums"
+              style={{
+                color:
+                  balance > 0
+                    ? TRUST_BLUE[600]
+                    : balance < 0
+                    ? '#f43f5e'
+                    : '#d1d5db',
+              }}
+            >
+              {balance === 0 && totalIn === 0 && totalOut === 0
+                ? '—'
+                : `${balance >= 0 ? '+' : '−'}${fmt(Math.abs(balance))}`}
+            </p>
           </div>
         </div>
       </div>
