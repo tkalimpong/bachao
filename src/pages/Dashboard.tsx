@@ -3,8 +3,9 @@ import { useStore, type Category, type Expense, type Income } from '../store/use
 import { getCat, CATEGORIES } from '../lib/categories';
 import { SOURCE_ICONS } from '../lib/incomeSources';
 import AppLogo from '../components/AppLogo';
+import BachaoPotIcon from '../components/BachaoPotIcon';
 import { TRUST_BLUE } from '../lib/theme';
-import { Globe, TrendingDown, TrendingUp, Minus, PiggyBank, Pencil, ChevronDown } from 'lucide-react';
+import { Globe, TrendingDown, TrendingUp, Minus, Pencil, ChevronDown } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
 import { categoryMonthProgress } from '../lib/categoryAverage';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
@@ -252,12 +253,13 @@ export default function Dashboard() {
             className="w-full px-4 py-3 flex items-center gap-3 text-left active:opacity-90 transition-opacity"
           >
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
                 monthBalance >= 0 ? 'bg-white/20' : 'bg-rose-100'
               }`}
             >
-              <PiggyBank
-                className={`w-5 h-5 ${monthBalance >= 0 ? 'text-white' : 'text-rose-400'}`}
+              <BachaoPotIcon
+                state={monthBalance >= 0 ? 'savings' : 'overspend'}
+                className={`w-11 h-11 ${monthBalance >= 0 ? 'text-white' : 'text-rose-800'}`}
               />
             </div>
             <div className="flex-1 min-w-0">

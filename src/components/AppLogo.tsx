@@ -6,7 +6,7 @@ type Props = {
 export default function AppLogo({ size = 40, className = '' }: Props) {
   return (
     <img
-      src="/bachao-logo.png"
+      src="/bachao-mark.png"
       alt="Bachao"
       width={size}
       height={size}
