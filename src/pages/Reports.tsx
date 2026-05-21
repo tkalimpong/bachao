@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { t } from '../lib/i18n';
-import { getCat, CATEGORIES } from '../lib/categories';
+import { getCat, getVisibleCategories } from '../lib/categories';
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer,
   PieChart, Pie, Cell, Tooltip,
@@ -15,7 +15,7 @@ function fmt(n: number) {
 const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Reports() {
-  const { expenses, language } = useStore();
+  const { expenses, language, hiddenCategories } = useStore();
   const [view, setView] = useState<'monthly' | 'weekly'>('monthly');
 
   const thisMonth = new Date().toISOString().slice(0, 7);
@@ -170,7 +170,7 @@ export default function Reports() {
       {/* Category list */}
       <div className="px-4">
         <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-50">
-          {CATEGORIES.filter((c) => catTotals[c.id]).map((cat) => {
+          {getVisibleCategories(hiddenCategories).filter((c) => catTotals[c.id]).map((cat) => {
             const amt = catTotals[cat.id] ?? 0;
             const pct = (amt / totalThisMonth) * 100;
             return (

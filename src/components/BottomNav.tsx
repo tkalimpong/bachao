@@ -3,21 +3,22 @@ import { useStore } from '../store/useStore';
 import { getMemberRole, isSettingsArea, visibleTabs } from '../lib/permissions';
 
 const LEFT_TABS = [
-  { id: 'home',    Icon: Home,    label: 'Home'    },
-  { id: 'history', Icon: History, label: 'History' },
+  { id: 'home',    Icon: Home,    en: 'Home',    hi: 'होम'     },
+  { id: 'history', Icon: History, en: 'History', hi: 'इतिहास'  },
 ] as const;
 
 const RIGHT_TABS = [
-  { id: 'family',   Icon: Users,    label: 'Family'   },
-  { id: 'settings', Icon: Settings, label: 'Settings' },
+  { id: 'family',   Icon: Users,    en: 'Family',   hi: 'परिवार'  },
+  { id: 'settings', Icon: Settings, en: 'Settings', hi: 'सेटिंग' },
 ] as const;
 
 export default function BottomNav() {
-  const { currentTab, addMode, setTab, members, currentUserId } = useStore();
+  const { currentTab, addMode, setTab, language, members, currentUserId } = useStore();
   const role = getMemberRole(members, currentUserId);
   const allowed = role ? visibleTabs(role) : ['home', 'settings', 'add', 'family', 'history'];
   const showAdd = allowed.includes('add');
   const onAdd = currentTab === 'add';
+  const L = (en: string, hi: string) => (language === 'en' ? en : hi);
 
   const leftTabs  = LEFT_TABS.filter(({ id }) => allowed.includes(id));
   const rightTabs = RIGHT_TABS.filter(({ id }) => allowed.includes(id));
@@ -27,36 +28,38 @@ export default function BottomNav() {
     return currentTab === id;
   }
 
-  function renderTab({ id, Icon, label }: (typeof LEFT_TABS)[number] | (typeof RIGHT_TABS)[number]) {
+  function renderTab({ id, Icon, en, hi }: (typeof LEFT_TABS)[number] | (typeof RIGHT_TABS)[number]) {
     const active = isActive(id);
+    const label = L(en, hi);
     return (
       <button
         key={id}
         onClick={() => setTab(id)}
         aria-label={label}
-        className={`p-2 rounded-xl transition-colors ${
+        className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-colors min-w-[3.25rem] ${
           active ? 'text-brand-500' : 'text-gray-400'
         }`}
       >
-        <Icon className="w-6 h-6" />
+        <Icon className="w-5 h-5" />
+        <span className="text-[10px] font-medium leading-none">{label}</span>
       </button>
     );
   }
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm bg-white border-t border-gray-100">
-      <div className="flex items-center justify-around px-1 py-2 pb-3">
+      <div className="flex items-end justify-around px-1 pt-1 pb-2">
         {leftTabs.map(renderTab)}
 
         {showAdd && (
-          <div className="-mt-4 flex items-center gap-2 px-1">
+          <div className="-mt-3 flex items-end gap-2 px-1">
             <button
               onClick={() => setTab('add', 'expense')}
-              aria-label="Add expense"
-              className="active:scale-95 transition-transform"
+              aria-label={L('Add expense', 'खर्च जोड़ें')}
+              className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all ${
+                className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all ${
                   onAdd && addMode === 'expense'
                     ? 'bg-rose-600 ring-2 ring-rose-300 ring-offset-1'
                     : 'bg-rose-500'
@@ -64,14 +67,21 @@ export default function BottomNav() {
               >
                 <TrendingDown className="w-5 h-5 text-white" />
               </div>
+              <span
+                className={`text-[10px] font-medium leading-none ${
+                  onAdd && addMode === 'expense' ? 'text-rose-600' : 'text-gray-400'
+                }`}
+              >
+                {L('Expense', 'खर्च')}
+              </span>
             </button>
             <button
               onClick={() => setTab('add', 'income')}
-              aria-label="Add income"
-              className="active:scale-95 transition-transform"
+              aria-label={L('Add income', 'आय जोड़ें')}
+              className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all ${
+                className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all ${
                   onAdd && addMode === 'income'
                     ? 'bg-emerald-600 ring-2 ring-emerald-300 ring-offset-1'
                     : 'bg-emerald-500'
@@ -79,6 +89,13 @@ export default function BottomNav() {
               >
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
+              <span
+                className={`text-[10px] font-medium leading-none ${
+                  onAdd && addMode === 'income' ? 'text-emerald-600' : 'text-gray-400'
+                }`}
+              >
+                {L('Income', 'आय')}
+              </span>
             </button>
           </div>
         )}

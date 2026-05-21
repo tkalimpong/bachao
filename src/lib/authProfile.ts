@@ -1,13 +1,16 @@
 import type { User as FirebaseUser } from 'firebase/auth';
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
   serverTimestamp,
   setDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import type { MemberRole } from './permissions';
+import { canInviteMember, joinRoleForPlan, type Plan } from './plan';
 
 const MEMBER_COLORS = ['#2563eb', '#8b5cf6', '#22c55e', '#f59e0b', '#ec4899', '#14b8a6'];
 
@@ -78,6 +81,7 @@ export async function createUserGroup(user: FirebaseUser): Promise<string> {
     createdAt: serverTimestamp(),
   });
   batch.set(doc(db, `groups/${groupId}/members/${user.uid}`), member);
+  batch.set(doc(db, `groups/${groupId}/settings/main`), { plan: 'free' as Plan });
   batch.set(doc(db, `inviteCodes/${inviteCode}`), { groupId, createdBy: user.uid });
 
   try {
@@ -89,6 +93,16 @@ export async function createUserGroup(user: FirebaseUser): Promise<string> {
     throw e;
   }
   return groupId;
+}
+
+async function getGroupPlan(groupId: string): Promise<Plan> {
+  const snap = await getDoc(doc(db!, `groups/${groupId}/settings/main`));
+  return snap.data()?.plan === 'plus' ? 'plus' : 'free';
+}
+
+async function getGroupMemberCount(groupId: string): Promise<number> {
+  const snap = await getDocs(collection(db!, `groups/${groupId}/members`));
+  return snap.size;
 }
 
 /** Join an existing family via 6-character invite code. */
@@ -111,7 +125,20 @@ export async function joinGroupWithInviteCode(
     return groupId;
   }
 
-  const color = MEMBER_COLORS[Math.abs(groupId.length) % MEMBER_COLORS.length];
+  const [plan, memberCount] = await Promise.all([
+    getGroupPlan(groupId),
+    getGroupMemberCount(groupId),
+  ]);
+  if (!canInviteMember(plan, memberCount)) {
+    throw new Error(
+      plan === 'free'
+        ? 'Free plan allows 2 members (you + 1 partner). Ask the owner to upgrade to Plus.'
+        : 'This family is full (6 members max).',
+    );
+  }
+
+  const role = joinRoleForPlan(plan, memberCount);
+  const color = MEMBER_COLORS[memberCount % MEMBER_COLORS.length];
   const batch = writeBatch(db);
   batch.set(doc(db, `users/${user.uid}`), {
     groupId,
@@ -123,7 +150,7 @@ export async function joinGroupWithInviteCode(
   batch.set(doc(db, `groups/${groupId}/members/${user.uid}`), {
     name: user.displayName?.trim() || 'Member',
     avatar: avatarLetter(user.displayName || 'M'),
-    role: 'helper' as MemberRole,
+    role: role as MemberRole,
     color,
     email: user.email ?? null,
     photoURL: user.photoURL ?? null,

@@ -1,88 +1,65 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { canUsePremium, getMemberRole } from '../lib/permissions';
+import { isPlus, planLabel, type Plan } from '../lib/plan';
 import {
-  Check, Zap, Users, BarChart2, Tag, Download,
-  ShieldCheck, Star, Lock,
+  Check, Zap, Users, Tag, Download, ShieldCheck, Lock,
 } from 'lucide-react';
 import SubScreenHeader from '../components/SubScreenHeader';
 import { goBackToTab } from '../lib/mainScroll';
 
-const PLANS = [
+const COMPARE = [
   {
-    id: 'plus',
-    name: 'Bachao Plus',
-    nameHi: 'बचाओ प्लस',
-    price: '₹99',
-    period: '/mo',
-    periodHi: '/माह',
-    color: '#8b5cf6',
-    features: [
-      { icon: Users,    en: 'Family sharing (up to 6)',   hi: '6 सदस्य तक शेयरिंग' },
-      { icon: Tag,      en: 'Custom categories',           hi: 'कस्टम कैटेगरी' },
-      { icon: BarChart2,en: 'Full reports & analytics',    hi: 'पूरी रिपोर्ट' },
-      { icon: ShieldCheck, en: 'No ads',                  hi: 'कोई विज्ञापन नहीं' },
-    ],
+    icon: '👤',
+    en: 'Family sharing',
+    hi: 'फ़ैमिली शेयरिंग',
+    freeEn: 'You + 1 partner (fixed role)',
+    freeHi: 'आप + 1 Partner (भूमिका तय)',
+    plusEn: '3–6 members, flexible roles',
+    plusHi: '3–6 सदस्य, भूमिका बदलें',
   },
   {
-    id: 'pro',
-    name: 'Bachao Pro',
-    nameHi: 'बचाओ प्रो',
-    price: '₹199',
-    period: '/mo',
-    periodHi: '/माह',
-    color: '#2563eb',
-    popular: true,
-    features: [
-      { icon: Users,    en: 'Family sharing (up to 10)',   hi: '10 सदस्य तक शेयरिंग' },
-      { icon: Tag,      en: 'Custom categories',           hi: 'कस्टम कैटेगरी' },
-      { icon: Download, en: 'Backup & CSV export',         hi: 'बैकअप और CSV एक्सपोर्ट' },
-      { icon: Star,     en: 'AI spending advice',          hi: 'AI सुझाव' },
-    ],
+    icon: '🏷️',
+    en: 'Categories',
+    hi: 'कैटेगरी',
+    freeEn: 'Default list only',
+    freeHi: 'डिफ़ॉल्ट सूची',
+    plusEn: 'Edit, hide & restore',
+    plusHi: 'संपादित / छुपाएं / वापस',
   },
-];
-
-const FEATURE_LIST = [
-  { icon: '🔒', en: 'Bank-grade encryption',                    hi: 'बैंक-स्तरीय सुरक्षा',        tier: 'free' },
-  { icon: '🇮🇳', en: 'Data stored in India (DPDP compliant)',   hi: 'डेटा भारत में (DPDP अनुपालित)', tier: 'free' },
-  { icon: '📴', en: 'Works offline',                            hi: 'ऑफलाइन भी काम करता है',       tier: 'free' },
-  { icon: '👨‍👩‍👧', en: 'Family sharing with roles',            hi: 'परिवार साझाकरण',               tier: 'plus' },
-  { icon: '🏷️', en: 'Custom category add / edit',              hi: 'कस्टम कैटेगरी',                tier: 'plus' },
-  { icon: '💾', en: 'Backup & CSV export',                      hi: 'बैकअप और CSV एक्सपोर्ट',      tier: 'pro'  },
+  {
+    icon: '💾',
+    en: 'Backup',
+    hi: 'बैकअप',
+    freeEn: '—',
+    freeHi: '—',
+    plusEn: 'JSON export',
+    plusHi: 'JSON एक्सपोर्ट',
+  },
 ] as const;
 
-const TESTIMONIALS = [
-  { name: 'Shreya M.', city: 'Mumbai',    text: '"Saved ₹8,000 in first month!"',   hi: '"पहले महीने ₹8,000 बचाए!"' },
-  { name: 'Vikram S.', city: 'Bangalore', text: '"Perfect for joint families"',      hi: '"संयुक्त परिवार के लिए बेस्ट"' },
-];
-
-const tierLabel: Record<string, { en: string; hi: string; color: string }> = {
-  free: { en: 'Free',  hi: 'मुफ़्त', color: '#6b7280' },
-  plus: { en: 'Plus',  hi: 'प्लस',  color: '#8b5cf6' },
-  pro:  { en: 'Pro',   hi: 'प्रो',  color: '#2563eb' },
-};
-
 export default function Premium() {
-  const { language, isPremium, members, currentUserId } = useStore();
-  const [selected, setSelected] = useState<'plus' | 'pro'>('pro');
-  const [buying, setBuying]     = useState(false);
+  const { language, plan, setPlan, members, currentUserId } = useStore();
+  const [buying, setBuying] = useState(false);
+  const plus = isPlus(plan);
 
-  function handleBuy() {
+  function handleUpgrade() {
     setBuying(true);
     setTimeout(() => {
       setBuying(false);
-      useStore.setState({ isPremium: true });
-    }, 1500);
+      setPlan('plus');
+    }, 1200);
   }
 
+  const L = (en: string, hi: string) => (language === 'en' ? en : hi);
   const myRole = getMemberRole(members, currentUserId);
+
   if (myRole && !canUsePremium(myRole)) {
-    const L = (en: string, hi: string) => (language === 'en' ? en : hi);
     return (
       <div className="flex flex-col items-center justify-center gap-4 px-6 pt-24 pb-24 text-center">
         <Lock className="w-12 h-12 text-gray-300" />
         <p className="text-sm font-semibold text-gray-600">
-          {L('Only the owner can manage premium.', 'Premium केवल Owner प्रबंधित कर सकता है।')}
+          {L('Only the owner can manage the plan.', 'प्लान केवल Owner बदल सकता है।')}
         </p>
         <button onClick={() => goBackToTab('settings')} className="text-sm font-bold text-brand-500">
           {L('Back to Settings →', 'सेटिंग पर वापस →')}
@@ -94,7 +71,7 @@ export default function Premium() {
   return (
     <div className="flex flex-col gap-4 pb-24">
       <SubScreenHeader
-        title={language === 'en' ? 'Plan' : 'प्लान'}
+        title={L('Plan', 'प्लान')}
         onBack={() => goBackToTab('settings')}
       />
 
@@ -102,65 +79,73 @@ export default function Premium() {
         <div className="flex items-center gap-2 mb-1">
           <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
           <p className="text-sm font-semibold text-gray-700">
-            {language === 'en' ? 'Go Premium' : 'प्रीमियम बनें'}
+            {L('Current plan', 'वर्तमान प्लान')}: {planLabel(plan, language)}
           </p>
         </div>
         <p className="text-sm text-gray-400">
-          {language === 'en'
-            ? 'Unlock everything. Cancel anytime.'
-            : 'सब कुछ अनलॉक करें। कभी भी रद्द करें।'}
+          {plus
+            ? L('Plus is active for your family.', 'Plus आपके परिवार के लिए सक्रिय है।')
+            : L('Free forever. Upgrade for more family & features.', 'हमेशा मुफ़्त। Plus से और फीचर।')}
         </p>
       </div>
 
       {/* Plan cards */}
       <div className="px-4 flex gap-3">
-        {PLANS.map((plan) => (
-          <button
-            key={plan.id}
-            onClick={() => setSelected(plan.id as 'plus' | 'pro')}
-            className={`flex-1 rounded-2xl p-4 text-left transition-all active:scale-95 relative ${
-              selected === plan.id ? 'ring-2 ring-brand-500' : 'bg-white'
-            }`}
-            style={selected === plan.id ? { background: plan.color + '11' } : {}}
-          >
-            {plan.popular && (
-              <div
-                className="absolute -top-2.5 right-3 text-[10px] font-bold text-white px-2 py-0.5 rounded-full"
-                style={{ background: plan.color }}
-              >
-                {language === 'en' ? 'POPULAR' : 'लोकप्रिय'}
-              </div>
-            )}
-            <p className="font-bold text-sm text-gray-900 mb-0.5">
-              {language === 'en' ? plan.name : plan.nameHi}
-            </p>
-            <div className="flex items-baseline gap-0.5 mb-3">
-              <span className="text-2xl font-black" style={{ color: plan.color }}>
-                {plan.price}
-              </span>
-              <span className="text-xs text-gray-400">
-                {language === 'en' ? plan.period : plan.periodHi}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {plan.features.map((f) => (
-                <div key={f.en} className="flex items-center gap-1.5">
-                  <Check className="w-3 h-3 shrink-0" style={{ color: plan.color }} />
-                  <span className="text-[11px] text-gray-600">
-                    {language === 'en' ? f.en : f.hi}
+        {(['free', 'plus'] as Plan[]).map((tier) => {
+          const active = plan === tier;
+          const isPlusTier = tier === 'plus';
+          const color = isPlusTier ? '#8b5cf6' : '#6b7280';
+          return (
+            <div
+              key={tier}
+              className={`flex-1 rounded-2xl p-4 relative ${
+                active ? 'ring-2 ring-brand-500' : 'bg-white'
+              }`}
+              style={active ? { background: color + '11' } : {}}
+            >
+              <p className="font-bold text-sm text-gray-900 mb-0.5">
+                {planLabel(tier, language)}
+              </p>
+              <div className="flex items-baseline gap-0.5 mb-3">
+                <span className="text-2xl font-black" style={{ color }}>
+                  {isPlusTier ? '₹99' : L('Free', 'मुफ़्त')}
+                </span>
+                {isPlusTier && (
+                  <span className="text-xs text-gray-400">
+                    {L('/mo', '/माह')}
                   </span>
-                </div>
-              ))}
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {(isPlusTier
+                  ? [
+                      { icon: Users, en: '3–6 members, any role', hi: '3–6 सदस्य, भूमिका बदलें' },
+                      { icon: Tag, en: 'Edit & hide categories', hi: 'कैटेगरी संपादन' },
+                      { icon: Download, en: 'Backup export', hi: 'बैकअप' },
+                      { icon: ShieldCheck, en: 'No ads', hi: 'कोई विज्ञापन नहीं' },
+                    ]
+                  : [
+                      { icon: Users, en: 'You + 1 partner', hi: 'आप + 1 Partner' },
+                      { icon: ShieldCheck, en: 'Core budgeting', hi: 'मुख्य फीचर' },
+                    ]
+                ).map((f) => (
+                  <div key={f.en} className="flex items-center gap-1.5">
+                    <Check className="w-3 h-3 shrink-0" style={{ color }} />
+                    <span className="text-[11px] text-gray-600">
+                      {L(f.en, f.hi)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
 
-      {/* CTA */}
-      {!isPremium ? (
+      {!plus ? (
         <div className="px-4">
           <button
-            onClick={handleBuy}
+            onClick={handleUpgrade}
             disabled={buying}
             className="w-full h-14 rounded-2xl font-bold text-lg text-white active:scale-95 transition-all flex items-center justify-center gap-2 bg-brand-500"
           >
@@ -169,16 +154,15 @@ export default function Premium() {
             ) : (
               <>
                 <Zap className="w-5 h-5 fill-white" />
-                {language === 'en'
-                  ? `Start ${selected === 'pro' ? '₹199' : '₹99'}/mo`
-                  : `शुरू करें ${selected === 'pro' ? '₹199' : '₹99'}/माह`}
+                {L('Upgrade to Plus · ₹99/mo', 'Plus · ₹99/माह')}
               </>
             )}
           </button>
           <p className="text-center text-xs text-gray-400 mt-2">
-            {language === 'en'
-              ? '7-day free trial · Cancel anytime · Google Play Billing'
-              : '7 दिन मुफ़्त · कभी भी रद्द · Google Play Billing'}
+            {L(
+              '7-day free trial · Cancel anytime · Google Play Billing',
+              '7 दिन मुफ़्त · कभी भी रद्द · Google Play',
+            )}
           </p>
         </div>
       ) : (
@@ -189,91 +173,43 @@ export default function Premium() {
             </div>
             <div>
               <p className="font-bold text-green-800 text-sm">
-                {language === 'en' ? "You're a Pro member!" : 'आप प्रो सदस्य हैं!'}
+                {L('Plus is active', 'Plus सक्रिय')}
               </p>
               <p className="text-xs text-green-600">
-                {language === 'en' ? 'All features unlocked' : 'सभी फीचर अनलॉक'}
+                {L('Backup, categories & up to 6 members', 'बैकअप, कैटेगरी और 6 सदस्य')}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Feature comparison */}
+      {/* Comparison */}
       <div className="px-4">
         <p className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-2">
-          {language === 'en' ? "What's included" : 'क्या शामिल है'}
+          {L('Free vs Plus', 'Free बनाम Plus')}
         </p>
-        <div className="bg-white rounded-2xl divide-y divide-gray-50 overflow-hidden">
-          {FEATURE_LIST.map((item) => {
-            const label = tierLabel[item.tier];
-            return (
-              <div key={item.en} className="flex items-center gap-3 px-4 py-3">
-                <span className="text-lg w-7 shrink-0">{item.icon}</span>
-                <span className="text-sm text-gray-700 flex-1">
-                  {language === 'en' ? item.en : item.hi}
-                </span>
-                <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
-                  style={{ background: label.color + '18', color: label.color }}
-                >
-                  {language === 'en' ? label.en : label.hi}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Locked feature previews */}
-      {!isPremium && (
-        <div className="px-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-2">
-            {language === 'en' ? 'Locked features' : 'लॉक फीचर'}
-          </p>
-          <div className="flex flex-col gap-2">
-            {[
-              { icon: '👨‍👩‍👧', en: 'Family sharing',      hi: 'फ़ैमिली शेयरिंग', tier: 'Plus' },
-              { icon: '🏷️',     en: 'Custom categories', hi: 'कस्टम कैटेगरी',   tier: 'Plus' },
-              { icon: '💾',     en: 'Backup & export',   hi: 'बैकअप और एक्सपोर्ट', tier: 'Pro'  },
-            ].map((f) => (
-              <div
-                key={f.en}
-                className="bg-white rounded-xl px-4 py-3 flex items-center gap-3"
-              >
-                <span className="text-xl">{f.icon}</span>
-                <span className="text-sm text-gray-500 flex-1">
-                  {language === 'en' ? f.en : f.hi}
-                </span>
-                <div className="flex items-center gap-1.5 bg-gray-100 px-2.5 py-1 rounded-full">
-                  <Lock className="w-3 h-3 text-gray-400" />
-                  <span className="text-[10px] font-bold text-gray-400">{f.tier}</span>
-                </div>
-              </div>
-            ))}
+        <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-50">
+          <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-4 py-2 bg-gray-50 text-[10px] font-bold text-gray-400 uppercase">
+            <span>{L('Feature', 'फीचर')}</span>
+            <span className="text-center">Free</span>
+            <span className="text-center text-violet-600">Plus</span>
           </div>
-        </div>
-      )}
-
-      {/* Testimonials */}
-      <div className="px-4">
-        <p className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-2">
-          {language === 'en' ? 'Loved across India' : 'भारत भर में पसंद'}
-        </p>
-        <div className="flex gap-3">
-          {TESTIMONIALS.map((t) => (
-            <div key={t.name} className="flex-1 bg-white rounded-2xl p-4">
-              <p className="text-xs text-gray-700 italic mb-2">
-                {language === 'en' ? t.text : t.hi}
+          {COMPARE.map((row) => (
+            <div key={row.en} className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-4 py-3 items-start">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-base shrink-0">{row.icon}</span>
+                <span className="text-xs text-gray-700">{L(row.en, row.hi)}</span>
+              </div>
+              <p className="text-[10px] text-gray-500 text-center leading-snug">
+                {L(row.freeEn, row.freeHi)}
               </p>
-              <p className="text-[10px] font-bold text-gray-400">
-                {t.name} · {t.city}
+              <p className="text-[10px] text-violet-700 text-center leading-snug font-medium">
+                {L(row.plusEn, row.plusHi)}
               </p>
             </div>
           ))}
         </div>
       </div>
-
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, type Category, type Expense } from '../store/useStore';
 import { isLiveFirebase } from '../lib/appMode';
-import { CATEGORIES } from '../lib/categories';
+import { getVisibleCategories } from '../lib/categories';
 import { categoryMonthProgress, monthlyAvgBeforeMonth } from '../lib/categoryAverage';
 import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Pencil } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
@@ -33,6 +33,7 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
     categoryExpandCategory,
     setCategoryExpandCategory,
     setCategoryScrollTarget,
+    hiddenCategories,
   } = useStore();
 
   const [expanded, setExpanded] = useState<Category | null>(null);
@@ -75,7 +76,7 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
     [expenses, selectedMonth],
   );
 
-  const rows = CATEGORIES.map((cat) => {
+  const rows = getVisibleCategories(hiddenCategories).map((cat) => {
     const txns = monthExpenses
       .filter((e) => e.category === cat.id)
       .sort((a, b) => b.date.localeCompare(a.date));

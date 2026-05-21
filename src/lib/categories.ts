@@ -60,3 +60,17 @@ export function defaultCategoryNote(
 ): string {
   return `(${resolveCategoryLabel(category, lang, overrides)})`;
 }
+
+export function getVisibleCategories(hidden: Category[] = []) {
+  const hiddenSet = new Set(hidden);
+  return CATEGORIES.filter((c) => !hiddenSet.has(c.id));
+}
+
+/** Visible categories plus an optional extra (e.g. when editing an expense in a hidden category). */
+export function getSelectableCategories(hidden: Category[] = [], include?: Category) {
+  const visible = getVisibleCategories(hidden);
+  if (!include || !hidden.includes(include)) return visible;
+  const extra = CATEGORIES.find((c) => c.id === include);
+  if (!extra || visible.some((c) => c.id === include)) return visible;
+  return [...visible, extra];
+}

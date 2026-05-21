@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect } from 'react';
 import { resetMainScroll, resetMainScrollThoroughly } from '../lib/mainScroll';
 import { useStore, type Category, type IncomeSource } from '../store/useStore';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
-import { CATEGORIES, defaultCategoryNote } from '../lib/categories';
+import { getVisibleCategories, defaultCategoryNote } from '../lib/categories';
 import { INCOME_SOURCES } from '../lib/incomeSources';
 import { Check, TrendingDown, TrendingUp, CalendarDays } from 'lucide-react';
 
@@ -15,6 +15,7 @@ export default function AddExpense() {
     addExpense, addIncome, setTab, addMode: mode, language,
     members, activeMemberId, setActiveMember,
     categoryBudgets, expenses, currentUserId,
+    hiddenCategories,
     addPrefillCategory, addReturnContext,
     setHistoryView, setCategoryExpandCategory, setHistoryNavigateMonth,
     setCategoryScrollTarget,
@@ -156,7 +157,7 @@ export default function AddExpense() {
         </p>
         {mode === 'expense' ? (
           <div className="grid grid-cols-5 gap-2">
-            {CATEGORIES.map((cat) => {
+            {getVisibleCategories(hiddenCategories).map((cat) => {
               const env     = categoryBudgets.find((e) => e.id === cat.id);
               const spent   = expenses
                 .filter((e) => e.date.startsWith(thisMonth) && e.category === cat.id)

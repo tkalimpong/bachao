@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useUiOverlay } from '../hooks/useUiOverlay';
 import { useStore, type Expense, type Income, type Category, type IncomeSource } from '../store/useStore';
 import { canEditTransaction, getMemberRole } from '../lib/permissions';
-import { CATEGORIES } from '../lib/categories';
+import { getSelectableCategories } from '../lib/categories';
 import { INCOME_SOURCES } from '../lib/incomeSources';
 import { Check, Trash2, X } from 'lucide-react';
 
@@ -22,6 +22,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
     language, members, currentUserId,
     updateExpense, deleteExpense,
     updateIncome,  deleteIncome,
+    hiddenCategories,
   } = useStore();
 
   const isExpense = target.kind === 'expense';
@@ -101,7 +102,10 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
             </p>
             {isExpense ? (
               <div className="grid grid-cols-5 gap-1.5">
-                {CATEGORIES.map((cat) => (
+                {getSelectableCategories(
+                  hiddenCategories,
+                  isExpense ? (original as Expense).category : undefined,
+                ).map((cat) => (
                   <button
                     key={cat.id}
                     onClick={() => setCategory(cat.id)}

@@ -1,8 +1,10 @@
 import {
-  Tag, Zap, Users, ChevronRight, Globe, Lock, LogOut,
+  Tag, Zap, Users, ChevronRight, Globe, Lock, LogOut, Download,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { isLiveFirebase } from '../lib/appMode';
+import { exportFamilyBackup } from '../lib/backup';
+import { canBackup, isPlus } from '../lib/plan';
 import { useAuth } from '../context/AuthContext';
 import {
   canManageMembers,
@@ -24,13 +26,15 @@ type MenuItem = {
 };
 
 export default function Settings() {
-  const { language, isPremium, toggleLanguage, setTab, members, currentUserId } = useStore();
+  const { language, plan, toggleLanguage, setTab, members, currentUserId } = useStore();
   const auth = useAuth();
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
 
   const role = getMemberRole(members, currentUserId);
   const showPlan = role ? canUsePremium(role) : true;
   const canManage = role ? canManageMembers(role) : false;
+
+  const plus = isPlus(plan);
 
   const items: MenuItem[] = [
     {
@@ -51,8 +55,8 @@ export default function Settings() {
       bg: '#f5f3ff',
       en: 'Categories',
       hi: 'कैटेगरी',
-      subEn: 'Edit names and icons',
-      subHi: 'नाम और आइकन बदलें',
+      subEn: plus ? 'Edit, hide & restore' : 'View only · Plus to edit',
+      subHi: plus ? 'संपादित / छुपाएं / वापस' : 'केवल देखें · Plus में संपादन',
       onClick: () => setTab('categories'),
     },
     ...(showPlan
@@ -63,9 +67,22 @@ export default function Settings() {
           bg: '#fefce8',
           en: 'Plan',
           hi: 'प्लान',
-          subEn: isPremium ? 'Bachao Pro active' : 'Upgrade to Plus or Pro',
-          subHi: isPremium ? 'बचाओ Pro सक्रिय' : 'Plus या Pro में अपग्रेड',
+          subEn: plus ? 'Bachao Plus active' : 'Free · Upgrade to Plus',
+          subHi: plus ? 'बचाओ Plus सक्रिय' : 'मुफ़्त · Plus में अपग्रेड',
           onClick: () => setTab('premium'),
+        }]
+      : []),
+    ...(canBackup(plan)
+      ? [{
+          id: 'backup',
+          Icon: Download,
+          color: '#059669',
+          bg: '#ecfdf5',
+          en: 'Backup',
+          hi: 'बैकअप',
+          subEn: 'Export family data (JSON)',
+          subHi: 'परिवार डेटा JSON में',
+          onClick: () => exportFamilyBackup(),
         }]
       : []),
   ];

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore, type Category, type Expense, type Income } from '../store/useStore';
-import { getCat, CATEGORIES } from '../lib/categories';
+import { getCat, getVisibleCategories } from '../lib/categories';
 import { SOURCE_ICONS } from '../lib/incomeSources';
 import AppLogo from '../components/AppLogo';
 import BachaoPotIcon from '../components/BachaoPotIcon';
@@ -84,6 +84,7 @@ export default function Dashboard() {
   const {
     expenses, incomes, members, language, toggleLanguage, setTab,
     setHistoryView, setCategoryExpandCategory, setCategoryScrollTarget, currentUserId,
+    hiddenCategories,
   } =
     useStore();
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
@@ -136,7 +137,7 @@ export default function Dashboard() {
     ...monthIncomes.map((i)  => ({ kind: 'income'  as const, data: i })),
   ].sort((a, b) => b.data.date.localeCompare(a.data.date)).slice(0, 8);
 
-  const gaugeData = CATEGORIES.map((cat) => {
+  const gaugeData = getVisibleCategories(hiddenCategories).map((cat) => {
     const { spent, avg, pct, isWarn, isOver } = categoryMonthProgress(
       expenses,
       thisMonth,

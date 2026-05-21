@@ -12,9 +12,12 @@ import {
 import { db } from '../lib/firebase';
 import { isLiveFirebase } from '../lib/appMode';
 import { saveStoredCategoryOverrides } from '../lib/categoryOverridesStorage';
+import { saveStoredHiddenCategories, saveStoredPlan } from '../lib/planStorage';
+import type { Plan } from '../lib/plan';
 import type { CategoryOverrides } from '../lib/categories';
 import {
   useStore,
+  type Category,
   type CategoryBudget,
   type Expense,
   type FamilyMember,
@@ -200,15 +203,29 @@ export function useFirestoreSync(enabled = true) {
       }),
     );
 
-    // --- category name/icon overrides (family shared) ---
+    // --- group settings (plan, categories, hidden) ---
     unsubscribers.push(
       onSnapshot(doc(db, `${groupBase}/settings/main`), (snap) => {
         if (!snap.exists()) return;
-        const raw = snap.data().categoryOverrides;
+        const data = snap.data();
+
+        if (data.plan === 'plus' || data.plan === 'free') {
+          const plan = data.plan as Plan;
+          useStore.setState({ plan });
+          saveStoredPlan(plan);
+        }
+
+        const raw = data.categoryOverrides;
         if (raw && typeof raw === 'object') {
           const categoryOverrides = raw as CategoryOverrides;
           setCategoryOverrides(categoryOverrides);
           saveStoredCategoryOverrides(categoryOverrides);
+        }
+
+        if (Array.isArray(data.hiddenCategories)) {
+          const hiddenCategories = data.hiddenCategories as Category[];
+          useStore.setState({ hiddenCategories });
+          saveStoredHiddenCategories(hiddenCategories);
         }
       }),
     );

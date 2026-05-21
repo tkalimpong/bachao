@@ -1,5 +1,6 @@
 import { Crown, Handshake, PenLine } from 'lucide-react';
 import type { FamilyMember } from '../store/useStore';
+import { canChangeMemberRoles, type Plan } from './plan';
 
 export type MemberRole = 'owner' | 'partner' | 'helper';
 
@@ -51,7 +52,8 @@ export function canManageMembers(role: MemberRole): boolean {
   return role === 'owner' || role === 'partner';
 }
 
-export function canEditMemberRole(actorRole: MemberRole): boolean {
+export function canEditMemberRole(actorRole: MemberRole, plan: Plan): boolean {
+  if (!canChangeMemberRoles(plan)) return false;
   return canManageMembers(actorRole);
 }
 

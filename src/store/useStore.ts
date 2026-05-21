@@ -19,6 +19,13 @@ import {
   canManageMembers,
   type MemberRole,
 } from '../lib/permissions';
+import type { Plan } from '../lib/plan';
+import {
+  loadStoredHiddenCategories,
+  loadStoredPlan,
+  saveStoredHiddenCategories,
+  saveStoredPlan,
+} from '../lib/planStorage';
 import { seedExpenses, seedIncomes, seedTransfers } from '../lib/seedData';
 
 export type Category =
@@ -120,7 +127,8 @@ interface AppState {
   popUiOverlay: () => void;
 
   // ── settings ──────────────────────────────────────────────────
-  isPremium: boolean;
+  plan: Plan;
+  setPlan: (plan: Plan) => void;
   language: 'en' | 'hi';
   toggleLanguage: () => void;
   categoryOverrides: Partial<Record<Category, { icon: string; en: string; hi: string }>>;
@@ -129,6 +137,8 @@ interface AppState {
   ) => void;
   setCategoryOverride: (id: Category, data: { icon: string; en: string; hi: string }) => void;
   resetCategoryOverride: (id: Category) => void;
+  hiddenCategories: Category[];
+  setCategoryHidden: (id: Category, hidden: boolean) => void;
 
   // ── expenses ──────────────────────────────────────────────────
   expenses: Expense[];
@@ -196,16 +206,28 @@ function captureCurrentTabScroll() {
   if (el) saveTabScrollTop(currentTab, el.scrollTop);
 }
 
-function persistCategoryOverrides(
-  categoryOverrides: Partial<Record<Category, { icon: string; en: string; hi: string }>>,
-) {
+type GroupSettingsPatch = {
+  plan?: Plan;
+  categoryOverrides?: Partial<Record<Category, { icon: string; en: string; hi: string }>>;
+  hiddenCategories?: Category[];
+};
+
+function persistGroupSettings(patch: GroupSettingsPatch) {
+  const state = useStore.getState();
+  const plan = patch.plan ?? state.plan;
+  const categoryOverrides = patch.categoryOverrides ?? state.categoryOverrides;
+  const hiddenCategories = patch.hiddenCategories ?? state.hiddenCategories;
+
+  saveStoredPlan(plan);
   saveStoredCategoryOverrides(categoryOverrides);
+  saveStoredHiddenCategories(hiddenCategories);
+
   if (isLiveFirebase() && db) {
-    const { groupId } = useStore.getState();
+    const { groupId } = state;
     if (groupId) {
       setDoc(
         doc(db, `groups/${groupId}/settings/main`),
-        { categoryOverrides },
+        { plan, categoryOverrides, hiddenCategories },
         { merge: true },
       );
     }
@@ -267,7 +289,11 @@ export const useStore = create<AppState>((set, get) => ({
   popUiOverlay: () => set((s) => ({ uiOverlayDepth: Math.max(0, s.uiOverlayDepth - 1) })),
 
   // ── settings ──────────────────────────────────────────────────
-  isPremium: false,
+  plan: loadStoredPlan(),
+  setPlan: (plan) => {
+    persistGroupSettings({ plan });
+    set({ plan });
+  },
   language: 'en',
   toggleLanguage: () => set((s) => ({ language: s.language === 'en' ? 'hi' : 'en' })),
   categoryOverrides: loadStoredCategoryOverrides(),
@@ -278,15 +304,26 @@ export const useStore = create<AppState>((set, get) => ({
   setCategoryOverride: (id, data) =>
     set((s) => {
       const categoryOverrides = { ...s.categoryOverrides, [id]: data };
-      persistCategoryOverrides(categoryOverrides);
+      persistGroupSettings({ categoryOverrides });
       return { categoryOverrides };
     }),
   resetCategoryOverride: (id) =>
     set((s) => {
       const next = { ...s.categoryOverrides };
       delete next[id];
-      persistCategoryOverrides(next);
+      persistGroupSettings({ categoryOverrides: next });
       return { categoryOverrides: next };
+    }),
+  hiddenCategories: loadStoredHiddenCategories(),
+  setCategoryHidden: (id, hidden) =>
+    set((s) => {
+      const hiddenCategories = hidden
+        ? s.hiddenCategories.includes(id)
+          ? s.hiddenCategories
+          : [...s.hiddenCategories, id]
+        : s.hiddenCategories.filter((c) => c !== id);
+      persistGroupSettings({ hiddenCategories });
+      return { hiddenCategories };
     }),
 
   // ── expenses ──────────────────────────────────────────────────
@@ -429,7 +466,6 @@ export const useStore = create<AppState>((set, get) => ({
     : [
         { id: 'm1', name: 'Rahul', avatar: 'R', role: 'owner', color: '#2563eb' },
         { id: 'm2', name: 'Priya', avatar: 'P', role: 'partner', color: '#8b5cf6' },
-        { id: 'm3', name: 'Arjun', avatar: 'A', role: 'helper', color: '#22c55e' },
       ],
   setMembers: (members) => set({ members }),
   currentUserId: isLiveFirebase() ? '' : 'm1',
@@ -445,9 +481,9 @@ export const useStore = create<AppState>((set, get) => ({
   activeMemberId: isLiveFirebase() ? '' : 'm1',
   setActiveMember: (id) => set({ activeMemberId: id }),
   updateMemberRole: (id, role) => {
-    const { members, currentUserId, groupId } = get();
+    const { members, currentUserId, groupId, plan } = get();
     const me = members.find((m) => m.id === currentUserId);
-    if (!me || !canEditMemberRole(me.role)) return;
+    if (!me || !canEditMemberRole(me.role, plan)) return;
     if (isLiveFirebase() && db) {
       setDoc(doc(db, `groups/${groupId}/members/${id}`), { role }, { merge: true });
     } else {

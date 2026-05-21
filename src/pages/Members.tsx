@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, Trash2, Copy, Check } from 'lucide-react';
+import { UserPlus, Trash2, Copy, Check, Lock } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { fetchGroupInviteCode } from '../lib/authProfile';
 import { isLiveFirebase } from '../lib/appMode';
+import {
+  canChangeMemberRoles,
+  canInviteMember,
+  isPlus,
+  memberLimitLabel,
+} from '../lib/plan';
 import {
   EDITABLE_ROLES,
   ROLE_ICONS,
@@ -18,7 +24,7 @@ import { goBackToTab } from '../lib/mainScroll';
 
 export default function Members() {
   const {
-    members, language, isPremium, setTab,
+    members, language, plan, setTab,
     updateMemberRole, removeMember, currentUserId, groupId,
   } = useStore();
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -28,6 +34,9 @@ export default function Members() {
   const myRole = getMemberRole(members, currentUserId);
   const canManage = myRole ? canManageMembers(myRole) : false;
   const canPremium = myRole ? canUsePremium(myRole) : false;
+  const plus = isPlus(plan);
+  const canEditRoles = plus && canChangeMemberRoles(plan);
+  const atCapacity = !canInviteMember(plan, members.length);
 
   useEffect(() => {
     if (!isLiveFirebase() || !canManage || !groupId) return;
@@ -47,11 +56,15 @@ export default function Members() {
 
   function handleInvite() {
     if (!canManage) return;
+    if (atCapacity) {
+      if (canPremium) setTab('premium');
+      return;
+    }
     if (isLiveFirebase() && inviteCode) {
       copyInviteCode();
       return;
     }
-    if (canPremium && !isPremium) setTab('premium');
+    if (canPremium && !plus) setTab('premium');
   }
 
   return (
@@ -61,7 +74,43 @@ export default function Members() {
         onBack={() => goBackToTab('settings')}
       />
 
-      {canManage && isLiveFirebase() && inviteCode && (
+      <div className="px-4 mb-3">
+        <p className="text-xs font-semibold text-gray-500 ml-1">
+          {memberLimitLabel(plan, members.length, language)}
+        </p>
+        {!plus && (
+          <p className="text-[10px] text-gray-400 ml-1 mt-0.5">
+            {L(
+              'Free: you + 1 partner (Partner role fixed)',
+              'Free: आप + 1 Partner (भूमिका Partner ही)',
+            )}
+          </p>
+        )}
+      </div>
+
+      {canManage && atCapacity && (
+        <div className="mx-4 mb-4 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
+          <p className="text-xs text-amber-800 leading-relaxed">
+            {plus
+              ? L('Family is full (6 members max).', 'परिवार भरा है (अधिकतम 6 सदस्य)।')
+              : L(
+                  'Free allows 2 members. Upgrade to Plus for up to 6 with flexible roles.',
+                  'Free में 2 सदस्य। Plus से 6 तक और भूमिका बदलें।',
+                )}
+          </p>
+          {canPremium && !plus && (
+            <button
+              type="button"
+              onClick={() => setTab('premium')}
+              className="mt-2 text-xs font-bold text-brand-600"
+            >
+              {L('View Plus plan →', 'Plus प्लान →')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {canManage && isLiveFirebase() && inviteCode && !atCapacity && (
         <div className="px-4 mb-4">
           <div className="bg-brand-50 rounded-2xl px-4 py-4">
             <p className="text-[10px] font-bold uppercase text-brand-600 mb-2">
@@ -88,7 +137,7 @@ export default function Members() {
         </div>
       )}
 
-      {canManage && !isLiveFirebase() && (
+      {canManage && !isLiveFirebase() && !atCapacity && (
         <div className="px-4 mb-4">
           <button
             onClick={handleInvite}
@@ -103,7 +152,9 @@ export default function Members() {
       {!canManage && (
         <div className="mx-4 mb-4 bg-gray-50 rounded-2xl px-4 py-3">
           <p className="text-xs text-gray-500">
-            {L('Only Owner or Partner can change roles.', 'केवल Owner या Partner भूमिका बदल सकते हैं।')}
+            {plus
+              ? L('Only Owner or Partner can change roles.', 'केवल Owner या Partner भूमिका बदल सकते हैं।')
+              : L('Roles are fixed on the Free plan.', 'Free प्लान में भूमिका तय है।')}
           </p>
         </div>
       )}
@@ -112,6 +163,7 @@ export default function Members() {
         {members.map((m) => {
           const RoleIcon = ROLE_ICONS[m.role];
           const isSelf = m.id === currentUserId;
+          const showRoleEditor = canManage && canEditRoles && m.role !== 'owner';
 
           return (
             <div
@@ -135,15 +187,33 @@ export default function Members() {
                   )}
                 </div>
 
-                {m.role === 'owner' ? (
-                  <div
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-1.5"
-                    style={roleBadgeStyle('owner', m.color)}
-                  >
-                    <RoleIcon className="w-2.5 h-2.5" />
-                    {roleLabel('owner', language)}
+                {m.role === 'owner' || !showRoleEditor ? (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                      style={roleBadgeStyle(m.role, m.color)}
+                    >
+                      <RoleIcon className="w-2.5 h-2.5" />
+                      {roleLabel(m.role, language)}
+                    </div>
+                    {!plus && m.role === 'partner' && canManage && (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] text-gray-400">
+                        <Lock className="w-2.5 h-2.5" />
+                        {L('Fixed on Free', 'Free में तय')}
+                      </span>
+                    )}
+                    {canManage && m.role !== 'owner' && (
+                      <button
+                        type="button"
+                        onClick={() => removeMember(m.id)}
+                        className="p-1.5 rounded-lg text-gray-300 active:bg-rose-50 active:text-rose-500 ml-auto"
+                        aria-label={L('Remove member', 'हटाएं')}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                ) : canManage ? (
+                ) : (
                   <div className="flex items-center gap-2 mt-2">
                     <div className="flex bg-gray-100 rounded-lg p-0.5">
                       {EDITABLE_ROLES.map((role) => {
@@ -181,14 +251,6 @@ export default function Members() {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </div>
-                ) : (
-                  <div
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-1.5"
-                    style={roleBadgeStyle(m.role, m.color)}
-                  >
-                    <RoleIcon className="w-2.5 h-2.5" />
-                    {roleLabel(m.role, language)}
                   </div>
                 )}
               </div>
