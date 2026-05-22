@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { UserPlus, Trash2, Copy, Check, Lock } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { fetchGroupInviteCode } from '../lib/authProfile';
@@ -79,7 +79,7 @@ export default function Members() {
           {memberLimitLabel(plan, members.length, language)}
         </p>
         {!plus && (
-          <p className="text-[10px] text-gray-400 ml-1 mt-0.5">
+          <p className="text-sm text-gray-400 ml-1 mt-0.5">
             {L(
               'Free: you + 1 partner (Partner role fixed)',
               'Free: आप + 1 Partner (भूमिका Partner ही)',
@@ -113,7 +113,7 @@ export default function Members() {
       {canManage && isLiveFirebase() && inviteCode && !atCapacity && (
         <div className="px-4 mb-4">
           <div className="bg-brand-50 rounded-2xl px-4 py-4">
-            <p className="text-[10px] font-bold uppercase text-brand-600 mb-2">
+            <p className="text-xs font-bold uppercase text-brand-600 mb-2">
               {L('Family invite code', 'परिवार कोड')}
             </p>
             <div className="flex items-center justify-between gap-3">
@@ -127,7 +127,7 @@ export default function Members() {
                 {copied ? L('Copied', 'कॉपी') : L('Copy', 'कॉपी')}
               </button>
             </div>
-            <p className="text-[11px] text-brand-700/70 mt-2 leading-relaxed">
+            <p className="text-sm text-brand-700/70 mt-2 leading-relaxed">
               {L(
                 'Share this code. Family members sign in with Google on Login and enter it to join.',
                 'यह कोड साझा करें। परिवार Google से साइन इन करके Login पर कोड दर्ज करें।',
@@ -181,7 +181,7 @@ export default function Members() {
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-bold text-gray-900 truncate">{m.name}</p>
                   {isSelf && (
-                    <span className="text-[9px] font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full shrink-0">
+                    <span className="text-xs font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full shrink-0">
                       {L('You', 'आप')}
                     </span>
                   )}
@@ -190,14 +190,14 @@ export default function Members() {
                 {m.role === 'owner' || !showRoleEditor ? (
                   <div className="flex items-center gap-2 mt-1.5">
                     <div
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-semibold"
                       style={roleBadgeStyle(m.role, m.color)}
                     >
                       <RoleIcon className="w-2.5 h-2.5" />
                       {roleLabel(m.role, language)}
                     </div>
                     {!plus && m.role === 'partner' && canManage && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] text-gray-400">
+                      <span className="inline-flex items-center gap-0.5 text-xs text-gray-400">
                         <Lock className="w-2.5 h-2.5" />
                         {L('Fixed on Free', 'Free में तय')}
                       </span>
@@ -225,7 +225,7 @@ export default function Members() {
                             key={role}
                             type="button"
                             onClick={() => updateMemberRole(m.id, role)}
-                            className={`flex items-center gap-0.5 px-2 py-1 rounded-md text-[10px] font-semibold transition-all active:scale-95 ${
+                            className={`flex items-center gap-0.5 px-2 py-1 rounded-md text-xs font-semibold transition-all active:scale-95 ${
                               active ? 'shadow-sm' : 'text-gray-400'
                             }`}
                             style={
@@ -235,7 +235,7 @@ export default function Members() {
                             }
                           >
                             <Icon
-                              className="w-3 h-3"
+                              className="w-4 h-4"
                               style={active ? { color: rc.main } : { color: '#9ca3af' }}
                             />
                             {roleLabel(role, language)}
@@ -260,7 +260,7 @@ export default function Members() {
       </div>
 
       <div className="px-4 mt-4">
-        <p className="text-[10px] text-gray-400 leading-relaxed px-1">
+        <p className="text-sm text-gray-400 leading-relaxed px-1">
           {L(
             'Owner: full access · Partner: manage family & finances · Helper: record own transactions only',
             'Owner: पूर्ण · Partner: परिवार और वित्त · Helper: केवल अपने लेनदेन',

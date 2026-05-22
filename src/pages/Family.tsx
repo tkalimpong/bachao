@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore } from '../store/useStore';
 import { isLiveFirebase } from '../lib/appMode';
@@ -120,12 +120,12 @@ export default function Family() {
   return (
     <div className="flex flex-col gap-4 pb-24 pt-10">
       <div className="px-5">
-        <h2 className="text-xl font-bold text-gray-900">{L('Family', 'परिवार')}</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{L('Family', 'परिवार')}</h2>
       </div>
 
       {/* Signed-in account */}
       <div className="px-4">
-        <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
+        <p className="text-sm text-gray-400 font-semibold uppercase ml-1 mb-2">
           {L('Signed in as', 'लॉगिन')}
         </p>
         {isLiveFirebase() ? (
@@ -143,7 +143,7 @@ export default function Family() {
                   <p className="text-sm font-bold text-gray-900 truncate">
                     {me?.name ?? L('Loading…', 'लोड…')}
                   </p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-sm text-gray-400">
                     {L('Google account', 'Google खाता')}
                   </p>
                 </div>
@@ -161,7 +161,7 @@ export default function Family() {
                 }`}
               >
                 <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black text-white"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white"
                   style={{ background: m.color }}
                 >
                   {m.avatar}
@@ -181,7 +181,7 @@ export default function Family() {
             disabled={monthIdx >= allMonths.length - 1}
             className="w-8 h-8 flex items-center justify-center rounded-xl active:bg-gray-100 disabled:opacity-30"
           >
-            <ChevronLeft className="w-4 h-4 text-gray-500" />
+            <ChevronLeft className="w-6 h-6 text-gray-500" />
           </button>
           <button
             onClick={() => setShowMonthPicker(true)}
@@ -189,10 +189,10 @@ export default function Family() {
           >
             <span className="text-sm font-bold text-gray-800 flex items-center gap-1">
               {formatMonthKey(selectedMonth, language)}
-              <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+              <ChevronDown className="w-6 h-6 text-gray-400" />
             </span>
             {!isCurrentMonth && (
-              <span className="text-[10px] text-brand-500 font-semibold">
+              <span className="text-xs text-brand-500 font-semibold">
                 {L('Past month', 'पिछला महीना')}
               </span>
             )}
@@ -202,7 +202,7 @@ export default function Family() {
             disabled={monthIdx <= 0}
             className="w-8 h-8 flex items-center justify-center rounded-xl active:bg-gray-100 disabled:opacity-30"
           >
-            <ChevronRight className="w-4 h-4 text-gray-500" />
+            <ChevronRight className="w-6 h-6 text-gray-500" />
           </button>
         </div>
       </div>
@@ -211,24 +211,24 @@ export default function Family() {
       {showGroup && (
         <div className="px-4">
           <div className="bg-ink rounded-2xl p-4 text-white">
-            <p className="text-[10px] text-white/50 font-semibold uppercase mb-2">
+            <p className="text-xs text-white/50 font-semibold uppercase mb-2">
               {L('Family total', 'परिवार कुल')}
             </p>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div>
-                <p className="text-[9px] text-emerald-400 font-bold uppercase mb-0.5">{L('Income', 'आय')}</p>
+                <p className="text-xs text-emerald-400 font-bold uppercase mb-0.5">{L('Income', 'आय')}</p>
                 <p className="text-sm font-black text-emerald-400">
                   {familyTotal.earned > 0 ? `+${fmt(familyTotal.earned)}` : '—'}
                 </p>
               </div>
               <div>
-                <p className="text-[9px] text-rose-300 font-bold uppercase mb-0.5">{L('Expense', 'खर्च')}</p>
+                <p className="text-xs text-rose-300 font-bold uppercase mb-0.5">{L('Expense', 'खर्च')}</p>
                 <p className="text-sm font-black text-rose-400">
                   {familyTotal.spent > 0 ? `−${fmt(familyTotal.spent)}` : '—'}
                 </p>
               </div>
               <div>
-                <p className="text-[9px] text-white/50 font-bold uppercase mb-0.5">{L('Balance', 'बचत')}</p>
+                <p className="text-xs text-white/50 font-bold uppercase mb-0.5">{L('Balance', 'बचत')}</p>
                 <p
                   className="text-sm font-black"
                   style={{
@@ -252,16 +252,16 @@ export default function Family() {
 
       {/* Members overview */}
       <div className="px-4">
-        <p className="text-xs text-gray-400 font-semibold uppercase mb-2 ml-1">
+        <p className="text-sm text-gray-400 font-semibold uppercase mb-2 ml-1">
           {showGroup ? L('All members', 'सभी सदस्य') : L('Your summary', 'आपका सारांश')}
         </p>
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-2 px-4 py-2 border-b border-gray-100 bg-gray-50/80">
-            <span className="text-[9px] font-bold text-gray-400 uppercase">{L('Member', 'सदस्य')}</span>
-            <span className="text-[9px] font-bold text-emerald-500 uppercase text-right w-14">{L('In', 'आय')}</span>
-            <span className="text-[9px] font-bold text-rose-400 uppercase text-right w-14">{L('Out', 'खर्च')}</span>
+            <span className="text-xs font-bold text-gray-400 uppercase">{L('Member', 'सदस्य')}</span>
+            <span className="text-xs font-bold text-emerald-500 uppercase text-right w-14">{L('In', 'आय')}</span>
+            <span className="text-xs font-bold text-rose-400 uppercase text-right w-14">{L('Out', 'खर्च')}</span>
             <span
-              className="text-[9px] font-bold uppercase text-right w-14"
+              className="text-xs font-bold uppercase text-right w-14"
               style={{ color: TRUST_BLUE[500] }}
             >
               {L('Bal.', 'बचत')}
@@ -284,7 +284,7 @@ export default function Family() {
                         const RoleIcon = ROLE_ICONS[m.role];
                         return (
                           <div
-                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold mt-0.5"
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-semibold mt-0.5"
                             style={roleBadgeStyle(m.role, m.color)}
                           >
                             <RoleIcon className="w-2.5 h-2.5" />
@@ -293,7 +293,7 @@ export default function Family() {
                         );
                       })()}
                       {count > 0 && (
-                        <p className="text-[10px] text-gray-300 mt-0.5">
+                        <p className="text-xs text-gray-300 mt-0.5">
                           {count} {L('txns', 'लेनदेन')}
                         </p>
                       )}
@@ -338,7 +338,7 @@ export default function Family() {
 
       {monthTransfers.length > 0 && (
         <div className="px-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase mb-2 ml-1">
+          <p className="text-sm text-gray-400 font-semibold uppercase mb-2 ml-1">
             {L('Transfers this month', 'इस महीने भेजा')}
           </p>
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-50">
@@ -355,7 +355,7 @@ export default function Family() {
                     <p className="text-sm font-semibold text-gray-800 truncate">
                       {from?.name} → {to?.name}
                     </p>
-                    <p className="text-[10px] text-gray-400 truncate">
+                    <p className="text-sm text-gray-400 truncate">
                       {tr.note || L('Transfer', 'ट्रांसफर')} · {tr.date}
                     </p>
                   </div>
@@ -376,7 +376,7 @@ export default function Family() {
           className="w-full bg-white rounded-2xl px-4 py-4 flex items-center gap-3 shadow-sm active:scale-[0.98] transition-transform"
         >
           <div className="w-11 h-11 rounded-xl bg-brand-50 flex items-center justify-center shrink-0">
-            <History className="w-5 h-5 text-brand-500" />
+            <History className="w-6 h-6 text-brand-500" />
           </div>
           <div className="flex-1 text-left">
             <p className="text-sm font-bold text-gray-900">
@@ -384,13 +384,13 @@ export default function Family() {
                 ? L('View transaction history', 'लेनदेन इतिहास देखें')
                 : L('View my history', 'मेरा इतिहास देखें')}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-sm text-gray-400">
               {showGroup
                 ? L('Browse & edit by date', 'तारीख से देखें और संपादित करें')
                 : L('Browse & edit your records', 'अपने रिकॉर्ड देखें और संपादित करें')}
             </p>
           </div>
-          <ChevronRight className="w-5 h-5 text-brand-400 shrink-0" />
+          <ChevronRight className="w-6 h-6 text-brand-400 shrink-0" />
         </button>
       </div>
 
@@ -416,7 +416,7 @@ export default function Family() {
                   onClick={() => setShowMonthPicker(false)}
                   className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center active:scale-95"
                 >
-                  <X className="w-4 h-4 text-gray-400" />
+                  <X className="w-6 h-6 text-gray-400" />
                 </button>
               </div>
             </div>
@@ -442,7 +442,7 @@ export default function Family() {
                             isSelected ? 'bg-ink text-white' : 'bg-gray-100 text-gray-600'
                           }`}
                         >
-                          {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                          {isSelected && <Check className="w-6 h-6 shrink-0" />}
                           {label}
                         </button>
                       );

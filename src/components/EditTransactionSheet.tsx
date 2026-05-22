@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useUiOverlay } from '../hooks/useUiOverlay';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Expense, type Income, type Category, type IncomeSource } from '../store/useStore';
@@ -91,7 +91,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center active:scale-95"
             >
-              <X className="w-4 h-4 text-gray-500" />
+              <X className="w-6 h-6 text-gray-500" />
             </button>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
 
           {/* Category / Source */}
           <div>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
+            <p className="text-sm text-gray-400 font-semibold uppercase ml-1 mb-2">
               {isExpense
                 ? (language === 'en' ? 'Category' : 'कैटेगरी')
                 : (language === 'en' ? 'Income source' : 'आय का स्रोत')}
@@ -137,7 +137,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
                     }`}
                   >
                     <span className="text-2xl">{src.icon}</span>
-                    <span className="text-[10px] font-medium text-gray-600">
+                    <span className="text-xs font-medium text-gray-600">
                       {language === 'en' ? src.en : src.hi}
                     </span>
                   </button>
@@ -182,7 +182,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
 
           {/* Member */}
           <div>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
+            <p className="text-sm text-gray-400 font-semibold uppercase ml-1 mb-2">
               {language === 'en' ? 'Who?' : 'कौन?'}
             </p>
             <div className="flex gap-2 flex-wrap">
@@ -195,7 +195,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
                   }`}
                 >
                   <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
                     style={{ background: m.color }}
                   >
                     {m.avatar}
@@ -229,7 +229,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
                   : 'bg-rose-50 text-rose-500 w-12'
               }`}
             >
-              <Trash2 className="w-4 h-4 shrink-0" />
+              <Trash2 className="w-6 h-6 shrink-0" />
               {confirmDel && (language === 'en' ? 'Confirm delete' : 'हटाएं?')}
             </button>
 

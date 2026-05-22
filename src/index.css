@@ -15,10 +15,21 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: #F0EDE8;
   font-family: 'Inter', sans-serif;
+  line-height: 1.5;
   overscroll-behavior: none;
+}
+
+/* Lucide icons — slightly thicker strokes for readability on mobile */
+svg.lucide {
+  stroke-width: 2.5;
 }
 
 * {

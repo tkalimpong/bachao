@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { useUiOverlay } from '../hooks/useUiOverlay';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Transfer } from '../store/useStore';
@@ -126,14 +126,14 @@ export default function TransferSheet({
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center active:scale-95"
             >
-              <X className="w-4 h-4 text-gray-500" />
+              <X className="w-6 h-6 text-gray-500" />
             </button>
           </div>
         </div>
 
         <div className="px-5 flex flex-col gap-4">
           <div>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
+            <p className="text-sm text-gray-400 font-semibold uppercase ml-1 mb-2">
               {L('From', 'से')}
             </p>
             <div className="flex gap-2 flex-wrap">
@@ -153,7 +153,7 @@ export default function TransferSheet({
                   } ${lockedFromId && m.id !== effectiveFrom ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
                     style={{ background: m.color }}
                   >
                     {m.avatar}
@@ -164,18 +164,18 @@ export default function TransferSheet({
               })}
             </div>
             {lockedFromId && lockedFromId === currentUserId && (
-              <p className="text-[10px] text-gray-400 mt-1.5 ml-1">
+              <p className="text-sm text-gray-400 mt-1.5 ml-1">
                 {L('You can only send from your account', 'केवल अपने खाते से भेज सकते हैं')}
               </p>
             )}
           </div>
 
           <div className="flex justify-center">
-            <ArrowRightLeft className="w-5 h-5 text-brand-500" />
+            <ArrowRightLeft className="w-6 h-6 text-brand-500" />
           </div>
 
           <div>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
+            <p className="text-sm text-gray-400 font-semibold uppercase ml-1 mb-2">
               {L('To', 'को')}
             </p>
             <div className="flex gap-2 flex-wrap">
@@ -193,7 +193,7 @@ export default function TransferSheet({
                   }`}
                 >
                   <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
                     style={{ background: m.color }}
                   >
                     {m.avatar}
@@ -227,7 +227,7 @@ export default function TransferSheet({
           />
 
           <div className="bg-white rounded-2xl px-4 h-12 flex items-center gap-3">
-            <CalendarDays className="w-4 h-4 text-gray-300 shrink-0" />
+            <CalendarDays className="w-6 h-6 text-gray-300 shrink-0" />
             <input
               type="date"
               value={date}

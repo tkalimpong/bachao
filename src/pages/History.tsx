@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+﻿import { useState, useMemo, useEffect } from 'react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat } from '../lib/categories';
@@ -96,10 +96,10 @@ function TxList({
                 <p className="text-sm font-semibold text-gray-800 truncate">
                   {data.note || L('(no note)', '(नोट नहीं)')}
                 </p>
-                <p className="text-[10px] text-gray-300 capitalize">{(data as Expense).category}</p>
+                <p className="text-xs text-gray-300 capitalize">{(data as Expense).category}</p>
               </div>
               <span className="text-sm font-black text-rose-500 shrink-0">−{fmt(data.amount)}</span>
-              <Pencil className="w-3.5 h-3.5 text-gray-200 shrink-0" />
+              <Pencil className="w-6 h-6 text-gray-200 shrink-0" />
             </button>
           );
         } else {
@@ -125,12 +125,12 @@ function TxList({
                 <p className="text-sm font-semibold text-gray-800 truncate">
                   {data.note || L('(no note)', '(नोट नहीं)')}
                 </p>
-                <p className="text-[10px] text-gray-300 capitalize">
+                <p className="text-xs text-gray-300 capitalize">
                   {(data as Income).source.replace('_', ' ')}
                 </p>
               </div>
               <span className="text-sm font-black text-emerald-500 shrink-0">+{fmt(data.amount)}</span>
-              <Pencil className="w-3.5 h-3.5 text-gray-200 shrink-0" />
+              <Pencil className="w-6 h-6 text-gray-200 shrink-0" />
             </button>
           );
         }
@@ -298,7 +298,7 @@ export default function History() {
             disabled={monthIdx >= allMonths.length - 1}
             className="w-8 h-8 flex items-center justify-center rounded-xl active:bg-gray-200 disabled:opacity-30"
           >
-            <ChevronLeft className="w-4 h-4 text-gray-500" />
+            <ChevronLeft className="w-6 h-6 text-gray-500" />
           </button>
           <button
             onClick={() => setShowMonthPicker(true)}
@@ -307,14 +307,14 @@ export default function History() {
             <span className="text-sm font-bold text-gray-800">
               {formatMonthKey(selectedMonth, language)}
             </span>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+            <ChevronDown className="w-6 h-6 text-gray-400" />
           </button>
           <button
             onClick={() => setMonthIdx((i) => Math.max(i - 1, 0))}
             disabled={monthIdx <= 0}
             className="w-8 h-8 flex items-center justify-center rounded-xl active:bg-gray-200 disabled:opacity-30"
           >
-            <ChevronRight className="w-4 h-4 text-gray-500" />
+            <ChevronRight className="w-6 h-6 text-gray-500" />
           </button>
         </div>
 
@@ -322,7 +322,7 @@ export default function History() {
         <>
         {/* Search */}
         <div className="flex items-center gap-2 bg-gray-50 rounded-2xl px-3 h-10 mb-3">
-          <Search className="w-4 h-4 text-gray-300 shrink-0" />
+          <Search className="w-6 h-6 text-gray-300 shrink-0" />
           <input
             type="text"
             placeholder={L('Search notes, categories…', 'खोजें…')}
@@ -332,7 +332,7 @@ export default function History() {
           />
           {search && (
             <button onClick={() => setSearch('')}>
-              <X className="w-4 h-4 text-gray-300" />
+              <X className="w-6 h-6 text-gray-300" />
             </button>
           )}
         </div>
@@ -386,7 +386,7 @@ export default function History() {
               style={memberFilter === m.id ? { background: m.color } : {}}
             >
               <span
-                className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                 style={{ background: m.color }}
               >
                 {m.avatar}
@@ -409,7 +409,7 @@ export default function History() {
       <div className="px-4 pt-4">
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-emerald-50 rounded-2xl px-3 py-3">
-            <p className="text-[10px] text-emerald-500 font-semibold uppercase mb-1">
+            <p className="text-xs text-emerald-500 font-semibold uppercase mb-1">
               {L('In', 'आया')}
             </p>
             <p className="text-base font-black text-emerald-600 tabular-nums">
@@ -417,7 +417,7 @@ export default function History() {
             </p>
           </div>
           <div className="bg-rose-50 rounded-2xl px-3 py-3">
-            <p className="text-[10px] text-rose-400 font-semibold uppercase mb-1">
+            <p className="text-xs text-rose-400 font-semibold uppercase mb-1">
               {L('Out', 'गया')}
             </p>
             <p className="text-base font-black text-rose-500 tabular-nums">
@@ -429,7 +429,7 @@ export default function History() {
             style={{ background: balance > 0 ? TRUST_BLUE[50] : '#f9fafb' }}
           >
             <p
-              className="text-[10px] font-semibold uppercase mb-1"
+              className="text-xs font-semibold uppercase mb-1"
               style={{ color: balance > 0 ? TRUST_BLUE[500] : '#6b7280' }}
             >
               {L('Balance', 'बचत')}
@@ -499,7 +499,7 @@ export default function History() {
                   onClick={() => setShowMonthPicker(false)}
                   className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center active:scale-95"
                 >
-                  <X className="w-4 h-4 text-gray-400" />
+                  <X className="w-6 h-6 text-gray-400" />
                 </button>
               </div>
             </div>
@@ -529,7 +529,7 @@ export default function History() {
                               : 'bg-gray-100 text-gray-600'
                           }`}
                         >
-                          {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                          {isSelected && <Check className="w-6 h-6 shrink-0" />}
                           {label}
                         </button>
                       );

@@ -1,4 +1,4 @@
-import { Home, TrendingDown, TrendingUp, Settings, Users, History } from 'lucide-react';
+﻿import { Home, TrendingDown, TrendingUp, Settings, Users, History } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { getMemberRole, isSettingsArea, visibleTabs } from '../lib/permissions';
 
@@ -36,19 +36,19 @@ export default function BottomNav() {
         key={id}
         onClick={() => setTab(id)}
         aria-label={label}
-        className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-colors min-w-[3.25rem] ${
+        className={`flex flex-col items-center gap-1 py-1.5 px-2.5 rounded-xl transition-colors min-w-[3.75rem] ${
           active ? 'text-brand-500' : 'text-gray-400'
         }`}
       >
-        <Icon className="w-5 h-5" />
-        <span className="text-[10px] font-medium leading-none">{label}</span>
+        <Icon className="w-6 h-6" strokeWidth={2.5} />
+        <span className="text-xs font-semibold leading-tight">{label}</span>
       </button>
     );
   }
 
   return (
     <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm bg-white border-t border-gray-100">
-      <div className="flex items-end justify-around px-1 pt-1 pb-2">
+      <div className="flex items-end justify-around px-2 pt-2 pb-3">
         {leftTabs.map(renderTab)}
 
         {showAdd && (
@@ -59,16 +59,16 @@ export default function BottomNav() {
               className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all ${
                   onAdd && addMode === 'expense'
                     ? 'bg-rose-600 ring-2 ring-rose-300 ring-offset-1'
                     : 'bg-rose-500'
                 }`}
               >
-                <TrendingDown className="w-5 h-5 text-white" />
+                <TrendingDown className="w-6 h-6 text-white" />
               </div>
               <span
-                className={`text-[10px] font-medium leading-none ${
+                className={`text-xs font-medium leading-none ${
                   onAdd && addMode === 'expense' ? 'text-rose-600' : 'text-gray-400'
                 }`}
               >
@@ -81,16 +81,16 @@ export default function BottomNav() {
               className="flex flex-col items-center gap-1 active:scale-95 transition-transform"
             >
               <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center shadow-md transition-all ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all ${
                   onAdd && addMode === 'income'
                     ? 'bg-emerald-600 ring-2 ring-emerald-300 ring-offset-1'
                     : 'bg-emerald-500'
                 }`}
               >
-                <TrendingUp className="w-5 h-5 text-white" />
+                <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <span
-                className={`text-[10px] font-medium leading-none ${
+                className={`text-xs font-medium leading-none ${
                   onAdd && addMode === 'income' ? 'text-emerald-600' : 'text-gray-400'
                 }`}
               >

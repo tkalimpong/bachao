@@ -70,6 +70,11 @@ export function navigateBack(): boolean {
   return false;
 }
 
+/** Re-push history so Android system back / edge swipe does not close the WebView. */
+function trapBrowserBack(): void {
+  window.history.pushState({ familygullakNav: true }, '');
+}
+
 export function handlePopState(): void {
   if (ignorePopstate) {
     ignorePopstate = false;
@@ -77,7 +82,8 @@ export function handlePopState(): void {
   }
   if (historyEntries > 0) historyEntries -= 1;
   if (tryOverlayBack()) return;
-  useStore.getState().popTab();
+  if (useStore.getState().popTab()) return;
+  trapBrowserBack();
 }
 
 export function canNavigateBack(): boolean {

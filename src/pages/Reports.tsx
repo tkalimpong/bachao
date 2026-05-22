@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { t } from '../lib/i18n';
 import { getCat, getVisibleCategories } from '../lib/categories';
@@ -63,7 +63,7 @@ export default function Reports() {
   return (
     <div className="flex flex-col gap-4 pb-24 pt-10">
       <div className="px-5 mb-1">
-        <h2 className="text-xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-gray-900">
           {language === 'en' ? 'Reports' : 'रिपोर्ट'}
         </h2>
       </div>
@@ -77,7 +77,7 @@ export default function Reports() {
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-2xl px-3 py-4 flex flex-col items-center gap-1">
             <span className="text-lg font-bold" style={{ color: s.color }}>{s.value}</span>
-            <span className="text-[10px] text-gray-400 text-center">{s.label}</span>
+            <span className="text-xs text-gray-400 text-center">{s.label}</span>
           </div>
         ))}
       </div>
@@ -102,7 +102,7 @@ export default function Reports() {
       {/* Bar Chart */}
       <div className="px-4">
         <div className="bg-white rounded-2xl p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase mb-3">
+          <p className="text-sm text-gray-400 font-semibold uppercase mb-3">
             {language === 'en' ? 'Spending Trend' : 'खर्च का ट्रेंड'}
           </p>
           <ResponsiveContainer width="100%" height={160}>
@@ -132,7 +132,7 @@ export default function Reports() {
       {/* Pie chart */}
       <div className="px-4">
         <div className="bg-white rounded-2xl p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase mb-3">
+          <p className="text-sm text-gray-400 font-semibold uppercase mb-3">
             {t(language, 'categories')}
           </p>
           <div className="flex items-center gap-4">

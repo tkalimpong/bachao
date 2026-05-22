@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useStore, type Category, type Expense, type Income } from '../store/useStore';
 import { getCat, getVisibleCategories } from '../lib/categories';
 import { SOURCE_ICONS } from '../lib/incomeSources';
@@ -154,21 +154,21 @@ export default function Dashboard() {
       <div className="bg-white pt-10 pb-4 px-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <AppLogo size={40} />
+            <AppLogo size={44} />
             <div>
-              <p className="text-xs text-gray-400 font-medium">
+              <p className="text-sm text-gray-400 font-medium">
                 {new Date().toLocaleString(language === 'en' ? 'en-IN' : 'hi-IN', { month: 'long', year: 'numeric' })}
               </p>
-              <h1 className="text-lg font-bold text-gray-900">
+              <h1 className="text-xl font-bold text-gray-900">
                 {appName(language)}
               </h1>
             </div>
           </div>
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-1 bg-gray-100 rounded-full px-3 py-1.5 text-xs font-semibold text-gray-600 active:scale-95"
+            className="flex items-center gap-1.5 bg-gray-100 rounded-full px-3.5 py-2 text-sm font-semibold text-gray-600 active:scale-95"
           >
-            <Globe className="w-3 h-3" />
+            <Globe className="w-5 h-5" />
             {language === 'en' ? 'EN' : 'हि'}
           </button>
         </div>
@@ -178,20 +178,20 @@ export default function Dashboard() {
       <div className="px-4">
         <div className="bg-ink rounded-3xl p-5 text-white">
           {!showGroup && (
-            <p className="text-[10px] text-white/50 font-semibold uppercase mb-3">
+            <p className="text-xs text-white/50 font-semibold uppercase mb-3">
               {L('Your summary', 'आपका सारांश')}
             </p>
           )}
-          <p className="text-[10px] text-white/40 font-semibold uppercase mb-3">
+          <p className="text-xs text-white/40 font-semibold uppercase mb-3">
             {L('All time', 'कुल')}
           </p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <div className="w-6 h-6 rounded-full bg-emerald-400/20 flex items-center justify-center">
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                <div className="w-8 h-8 rounded-full bg-emerald-400/20 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-emerald-400" />
                 </div>
-                <span className="text-xs text-white/60 font-medium">
+                <span className="text-sm text-white/60 font-medium">
                   {language === 'en' ? 'Money In' : 'आया'}
                 </span>
               </div>
@@ -199,10 +199,10 @@ export default function Dashboard() {
             </div>
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <div className="w-6 h-6 rounded-full bg-rose-400/20 flex items-center justify-center">
-                  <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+                <div className="w-8 h-8 rounded-full bg-rose-400/20 flex items-center justify-center">
+                  <TrendingDown className="w-5 h-5 text-rose-400" />
                 </div>
-                <span className="text-xs text-white/60 font-medium">
+                <span className="text-sm text-white/60 font-medium">
                   {language === 'en' ? 'Money Out' : 'गया'}
                 </span>
               </div>
@@ -211,7 +211,7 @@ export default function Dashboard() {
           </div>
           <div className="border-t border-white/10 pt-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Minus className="w-4 h-4 text-white/40" />
+              <Minus className="w-6 h-6 text-white/40" />
               <span className="text-sm text-white/60">
                 {language === 'en' ? 'Balance' : 'बचत'}
               </span>
@@ -242,7 +242,7 @@ export default function Dashboard() {
               />
             </div>
           )}
-          <p className="text-[10px] text-white/30 mt-1 text-right">
+          <p className="text-xs text-white/30 mt-1 text-right">
             {allTimeIn > 0 ? Math.round((allTimeOut / allTimeIn) * 100) : 0}%{' '}
             {language === 'en' ? 'of income spent' : 'आय का खर्च'}
           </p>
@@ -289,7 +289,7 @@ export default function Dashboard() {
                   : L('Overspending this month', 'इस महीने ज़्यादा खर्च')}
               </p>
               <p
-                className={`text-[10px] ${
+                className={`text-xs ${
                   monthBalance >= 0 ? 'text-white/50' : 'text-rose-300'
                 }`}
               >
@@ -323,7 +323,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <ChevronDown
-                className={`w-4 h-4 transition-transform duration-300 ${
+                className={`w-5 h-5 transition-transform duration-300 ${
                   monthBalance >= 0 ? 'text-white/60' : 'text-rose-300'
                 } ${savingsExpanded ? 'rotate-180' : ''}`}
               />
@@ -342,7 +342,7 @@ export default function Dashboard() {
                 }`}
               >
                 <p
-                  className={`text-[10px] font-semibold uppercase mb-2 ${
+                  className={`text-xs font-semibold uppercase mb-2 ${
                     monthBalance >= 0 ? 'text-white/50' : 'text-rose-300'
                   }`}
                 >
@@ -355,9 +355,9 @@ export default function Dashboard() {
                     }`}
                   >
                     <div className="flex items-center gap-1 mb-0.5">
-                      <TrendingUp className="w-3 h-3 text-emerald-400" />
+                      <TrendingUp className="w-6 h-6 text-emerald-400" />
                       <span
-                        className={`text-[10px] font-semibold ${
+                        className={`text-xs font-semibold ${
                           monthBalance >= 0 ? 'text-white/80' : 'text-emerald-600'
                         }`}
                       >
@@ -378,9 +378,9 @@ export default function Dashboard() {
                     }`}
                   >
                     <div className="flex items-center gap-1 mb-0.5">
-                      <TrendingDown className="w-3 h-3 text-rose-400" />
+                      <TrendingDown className="w-6 h-6 text-rose-400" />
                       <span
-                        className={`text-[10px] font-semibold ${
+                        className={`text-xs font-semibold ${
                           monthBalance >= 0 ? 'text-white/80' : 'text-rose-500'
                         }`}
                       >
@@ -398,7 +398,7 @@ export default function Dashboard() {
                 </div>
                 {monthIn > 0 && (
                   <p
-                    className={`text-[10px] text-right mt-2 ${
+                    className={`text-xs text-right mt-2 ${
                       monthBalance >= 0 ? 'text-white/40' : 'text-rose-300'
                     }`}
                   >
@@ -415,7 +415,7 @@ export default function Dashboard() {
       {showGroup && (
       <div className="px-4">
         <div className="flex items-center justify-between mb-2 ml-1">
-          <p className="text-xs text-gray-400 font-semibold uppercase">
+          <p className="text-sm text-gray-400 font-semibold uppercase">
             {language === 'en' ? 'Category' : 'कैटेगरी'}
           </p>
           <button
@@ -458,7 +458,7 @@ export default function Dashboard() {
                   </svg>
 
                   {/* spent amount */}
-                  <span className={`text-[9px] font-black leading-tight ${amtColor}`}>
+                  <span className={`text-xs font-black leading-tight ${amtColor}`}>
                     {spent > 0 ? fmtShort(spent) : '–'}
                   </span>
                 </button>
@@ -475,7 +475,7 @@ export default function Dashboard() {
             ].map((l) => (
               <div key={l.en} className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
-                <span className="text-[9px] text-gray-400">
+                <span className="text-xs text-gray-400">
                   {language === 'en' ? l.en : l.hi}
                 </span>
               </div>
@@ -488,7 +488,7 @@ export default function Dashboard() {
       {/* ── アイデア2: Visual-first recent transactions ─────────────────────── */}
       <div className="px-4">
         <div className="flex items-center justify-between mb-2 ml-1">
-          <p className="text-xs text-gray-400 font-semibold uppercase">
+          <p className="text-sm text-gray-400 font-semibold uppercase">
             {showGroup
               ? (language === 'en' ? 'Recent' : 'हालिया')
               : (language === 'en' ? 'Your recent' : 'आपका हालिया')}
@@ -531,10 +531,10 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold text-gray-800 truncate">
                       {data.note || (language === 'en' ? '(no note)' : '(メモなし)')}
                     </p>
-                    <p className="text-[10px] text-gray-300">{relativeDate(data.date, language)}</p>
+                    <p className="text-xs text-gray-300">{relativeDate(data.date, language)}</p>
                   </div>
                   <span className="text-sm font-black text-rose-500 shrink-0">−{fmt(data.amount)}</span>
-                  <Pencil className="w-3.5 h-3.5 text-gray-200 shrink-0" />
+                  <Pencil className="w-6 h-6 text-gray-200 shrink-0" />
                 </button>
               );
             } else {
@@ -560,10 +560,10 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold text-gray-800 truncate">
                       {data.note || (language === 'en' ? '(no note)' : '(メモなし)')}
                     </p>
-                    <p className="text-[10px] text-gray-300">{relativeDate(data.date, language)}</p>
+                    <p className="text-xs text-gray-300">{relativeDate(data.date, language)}</p>
                   </div>
                   <span className="text-sm font-black text-emerald-500 shrink-0">+{fmt(data.amount)}</span>
-                  <Pencil className="w-3.5 h-3.5 text-gray-200 shrink-0" />
+                  <Pencil className="w-6 h-6 text-gray-200 shrink-0" />
                 </button>
               );
             }

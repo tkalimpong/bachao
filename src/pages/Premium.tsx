@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { canUsePremium, getMemberRole } from '../lib/permissions';
 import { isPlus, planLabel, type Plan } from '../lib/plan';
@@ -77,7 +77,7 @@ export default function Premium() {
 
       <div className="px-5 -mt-2">
         <div className="flex items-center gap-2 mb-1">
-          <Zap className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+          <Zap className="w-6 h-6 text-yellow-400 fill-yellow-400" />
           <p className="text-sm font-semibold text-gray-700">
             {L('Current plan', 'वर्तमान प्लान')}: {planLabel(plan, language)}
           </p>
@@ -130,8 +130,8 @@ export default function Premium() {
                     ]
                 ).map((f) => (
                   <div key={f.en} className="flex items-center gap-1.5">
-                    <Check className="w-3 h-3 shrink-0" style={{ color }} />
-                    <span className="text-[11px] text-gray-600">
+                    <Check className="w-6 h-6 shrink-0" style={{ color }} />
+                    <span className="text-sm text-gray-600">
                       {L(f.en, f.hi)}
                     </span>
                   </div>
@@ -153,7 +153,7 @@ export default function Premium() {
               <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
             ) : (
               <>
-                <Zap className="w-5 h-5 fill-white" />
+                <Zap className="w-6 h-6 fill-white" />
                 {L('Upgrade to Plus · ₹99/mo', 'Plus · ₹99/माह')}
               </>
             )}
@@ -169,7 +169,7 @@ export default function Premium() {
         <div className="px-4">
           <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center shrink-0">
-              <Check className="w-5 h-5 text-white" />
+              <Check className="w-6 h-6 text-white" />
             </div>
             <div>
               <p className="font-bold text-green-800 text-sm">
@@ -185,11 +185,11 @@ export default function Premium() {
 
       {/* Comparison */}
       <div className="px-4">
-        <p className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-2">
+        <p className="text-sm text-gray-400 font-semibold uppercase ml-1 mb-2">
           {L('Free vs Plus', 'Free बनाम Plus')}
         </p>
         <div className="bg-white rounded-2xl overflow-hidden divide-y divide-gray-50">
-          <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-4 py-2 bg-gray-50 text-[10px] font-bold text-gray-400 uppercase">
+          <div className="grid grid-cols-[1fr_1fr_1fr] gap-2 px-4 py-2 bg-gray-50 text-xs font-bold text-gray-400 uppercase">
             <span>{L('Feature', 'फीचर')}</span>
             <span className="text-center">Free</span>
             <span className="text-center text-violet-600">Plus</span>
@@ -200,10 +200,10 @@ export default function Premium() {
                 <span className="text-base shrink-0">{row.icon}</span>
                 <span className="text-xs text-gray-700">{L(row.en, row.hi)}</span>
               </div>
-              <p className="text-[10px] text-gray-500 text-center leading-snug">
+              <p className="text-xs text-gray-500 text-center leading-snug">
                 {L(row.freeEn, row.freeHi)}
               </p>
-              <p className="text-[10px] text-violet-700 text-center leading-snug font-medium">
+              <p className="text-xs text-violet-700 text-center leading-snug font-medium">
                 {L(row.plusEn, row.plusHi)}
               </p>
             </div>

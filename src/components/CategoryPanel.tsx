@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, type Category, type Expense } from '../store/useStore';
 import { isLiveFirebase } from '../lib/appMode';
 import { getVisibleCategories } from '../lib/categories';
@@ -97,25 +97,25 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
         <div className="px-5">
           <div className="flex items-center gap-2 mb-0.5">
             {syncStatus === 'live' && (
-              <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 text-xs font-bold px-2 py-0.5 rounded-full">
                 <Wifi className="w-2.5 h-2.5" />
                 {L('Live', 'लाइव')}
               </div>
             )}
             {syncStatus === 'connecting' && (
-              <div className="flex items-center gap-1 bg-amber-50 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">
+              <div className="flex items-center gap-1 bg-amber-50 text-amber-500 text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
                 <Wifi className="w-2.5 h-2.5" />
                 {L('Syncing…', 'सिंक हो रहा है…')}
               </div>
             )}
             {syncStatus === 'offline' && isLiveFirebase() && (
-              <div className="flex items-center gap-1 bg-gray-100 text-gray-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <div className="flex items-center gap-1 bg-gray-100 text-gray-400 text-xs font-bold px-2 py-0.5 rounded-full">
                 <WifiOff className="w-2.5 h-2.5" />
                 {L('Offline', 'ऑफ़लाइन')}
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="text-sm text-gray-400">
             {L('Shared with family · updates in real-time', 'परिवार के साथ साझा · रियल-टाइम अपडेट')}
           </p>
         </div>
@@ -124,7 +124,7 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
           <div className="bg-white rounded-2xl px-4 py-3">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-gray-400" />
+                <Users className="w-6 h-6 text-gray-400" />
                 <span className="text-xs text-gray-500 font-medium">
                   {L(`Spent in ${monthLabel}`, `${monthLabel} में खर्च`)}
                 </span>
@@ -143,12 +143,12 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
               />
             </div>
             <div className="flex justify-between mt-1.5">
-              <span className="text-[10px] text-gray-400">
+              <span className="text-xs text-gray-400">
                 {monthlyAvg > 0
                   ? `${Math.round(Math.min((totalSpent / monthlyAvg) * 100, 110))}% ${L('of mo. avg', 'मासिक औसत का')}`
                   : ''}
               </span>
-              <span className="text-[11px] font-bold text-gray-400">
+              <span className="text-sm font-bold text-gray-400">
                 {L('Mo. avg', 'मासिक औसत')}
               </span>
             </div>
@@ -186,12 +186,12 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
                       </span>
                       <div className="flex items-center gap-1.5">
                         {isOver && (
-                          <span className="text-[9px] bg-rose-100 text-rose-600 font-bold px-1.5 py-0.5 rounded-full">
+                          <span className="text-xs bg-rose-100 text-rose-600 font-bold px-1.5 py-0.5 rounded-full">
                             {L('OVER', 'पार')}
                           </span>
                         )}
                         {isWarn && (
-                          <span className="text-[9px] bg-amber-100 text-amber-600 font-bold px-1.5 py-0.5 rounded-full">
+                          <span className="text-xs bg-amber-100 text-amber-600 font-bold px-1.5 py-0.5 rounded-full">
                             {L('NEAR', 'पास')}
                           </span>
                         )}
@@ -213,7 +213,7 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
                       />
                     </div>
                     <div className="flex justify-between items-center mt-1">
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-xs text-gray-400">
                         {avg > 0
                           ? `${fmt(spent)} / ${fmt(avg)} ${L('mo. avg', 'मासिक औसत')}`
                           : spent > 0
@@ -221,7 +221,7 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
                           : L('no history', 'कोई इतिहास नहीं')}
                       </span>
                       {txns.length > 0 && (
-                        <span className="text-[10px] text-gray-300">
+                        <span className="text-xs text-gray-300">
                           {txns.length} {L('txns', 'लेनदेन')}
                         </span>
                       )}
@@ -261,14 +261,14 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
                               <p className="text-xs font-semibold text-gray-700 truncate">
                                 {tx.note || L('(no note)', '(नोट नहीं)')}
                               </p>
-                              <p className="text-[10px] text-gray-400">
+                              <p className="text-sm text-gray-400">
                                 {member?.name} · {timeAgo(tx.date)}
                               </p>
                             </div>
                             <span className="text-xs font-bold text-rose-500 shrink-0">
                               −{fmt(tx.amount)}
                             </span>
-                            <Pencil className="w-3 h-3 text-gray-300 shrink-0" />
+                            <Pencil className="w-6 h-6 text-gray-300 shrink-0" />
                           </button>
                         );
                       })

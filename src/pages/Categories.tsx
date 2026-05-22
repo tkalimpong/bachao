@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Check, RotateCcw, EyeOff, Eye, Lock } from 'lucide-react';
 import { useStore, type Category } from '../store/useStore';
 import {
@@ -75,7 +75,7 @@ export default function Categories() {
             <p className={`text-sm font-semibold ${isHidden ? 'text-gray-400' : 'text-gray-900'}`}>
               {label}
             </p>
-            <p className="text-[10px] text-gray-400">
+            <p className="text-sm text-gray-400">
               {isHidden
                 ? L('Hidden from lists', 'सूची से छुपा')
                 : customized && label !== defaultLabel
@@ -84,7 +84,7 @@ export default function Categories() {
             </p>
           </div>
           {customized && !isHidden && (
-            <span className="text-[9px] font-bold bg-brand-50 text-brand-500 px-2 py-0.5 rounded-full shrink-0">
+            <span className="text-xs font-bold bg-brand-50 text-brand-500 px-2 py-0.5 rounded-full shrink-0">
               {L('Edited', 'संपादित')}
             </span>
           )}
@@ -112,7 +112,7 @@ export default function Categories() {
 
       {!plus ? (
         <div className="mx-4 mb-4 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 flex items-start gap-2">
-          <Lock className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+          <Lock className="w-6 h-6 text-gray-400 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs text-gray-600 leading-relaxed">
               {L(
@@ -146,7 +146,7 @@ export default function Categories() {
 
       {plus && hidden.length > 0 && (
         <>
-          <p className="text-xs text-gray-400 font-semibold uppercase ml-5 mt-4 mb-2">
+          <p className="text-sm text-gray-400 font-semibold uppercase ml-5 mt-4 mb-2">
             {L('Hidden', 'छुपी हुई')}
           </p>
           <div className="px-4 flex flex-col gap-2">
@@ -164,13 +164,13 @@ export default function Categories() {
               <h3 className="text-base font-bold text-gray-900 mb-1">
                 {L('Edit category', 'कैटेगरी संपादित करें')}
               </h3>
-              <p className="text-[11px] text-gray-400 mb-4">
+              <p className="text-sm text-gray-400 mb-4">
                 {L('Set names for English and Hindi UI', 'अंग्रेज़ी और हिन्दी दोनों के नाम')}
               </p>
 
               <div className="flex flex-col gap-3 mb-4">
                 <div>
-                  <label className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-1 block">
+                  <label className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-1 block">
                     {L('Icon', 'आइकन')}
                   </label>
                   <input
@@ -181,7 +181,7 @@ export default function Categories() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-1 block">
+                  <label className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-1 block">
                     {L('Name (English)', 'नाम (English)')}
                   </label>
                   <input
@@ -192,7 +192,7 @@ export default function Categories() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-1 block">
+                  <label className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-1 block">
                     {L('Name (Hindi)', 'नाम (हिन्दी)')}
                   </label>
                   <input

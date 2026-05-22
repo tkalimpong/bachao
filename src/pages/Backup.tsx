@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+﻿import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { CloudUpload, CloudDownload, Download, Upload, AlertTriangle, Check, Loader2, Clock } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { exportFamilyBackup, readBackupFile } from '../lib/backup';
@@ -260,7 +260,7 @@ export default function Backup() {
 
       {isLiveFirebase() && (
         <div className="mx-4 bg-sky-50 border border-sky-100 rounded-2xl px-4 py-3">
-          <p className="text-[11px] text-sky-800 leading-relaxed">
+          <p className="text-sm text-sky-800 leading-relaxed">
             {loadingMeta
               ? L('Checking Google Drive…', 'Google Drive जाँच…')
               : meta
@@ -279,7 +279,7 @@ export default function Backup() {
           )}
           {success && (
             <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3 flex items-center gap-2 text-xs text-green-700">
-              <Check className="w-4 h-4 shrink-0" />
+              <Check className="w-6 h-6 shrink-0" />
               {success}
             </div>
           )}
@@ -288,19 +288,19 @@ export default function Backup() {
 
       {isLiveFirebase() && (
         <div className="px-4">
-          <p className="text-[10px] font-semibold uppercase text-gray-400 ml-1 mb-2">
+          <p className="text-xs font-semibold uppercase text-gray-400 ml-1 mb-2">
             {L('Automatic backup', 'स्वचालित बैकअप')}
           </p>
           <div className="bg-white rounded-2xl p-4 flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5 text-amber-500" />
+                <Clock className="w-6 h-6 text-amber-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-base font-semibold text-gray-900">
                   {L('Scheduled backup', 'निर्धारित बैकअप')}
                 </p>
-                <p className="text-xs text-gray-400 leading-relaxed">
+                <p className="text-sm text-gray-400 leading-relaxed">
                   {L(
                     'Runs when you open the app if the schedule is due.',
                     'ऐप खोलने पर, समय होने पर बैकअप चलता है।',
@@ -344,7 +344,7 @@ export default function Backup() {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-gray-400 leading-relaxed px-1">
+                <p className="text-sm text-gray-400 leading-relaxed px-1">
                   {lastAutoAt
                     ? L(
                         `Last auto backup: ${fmtWhen(lastAutoAt, language)}`,
@@ -368,7 +368,7 @@ export default function Backup() {
       )}
 
       <div className="px-4">
-        <p className="text-[10px] font-semibold uppercase text-gray-400 ml-1 mb-2">
+        <p className="text-xs font-semibold uppercase text-gray-400 ml-1 mb-2">
           {L('Manual backup', 'मैन्युअल बैकअप')}
         </p>
       </div>
@@ -384,14 +384,14 @@ export default function Backup() {
             >
               <div className="w-11 h-11 rounded-xl bg-sky-50 flex items-center justify-center shrink-0">
                 {busy === 'save'
-                  ? <Loader2 className="w-5 h-5 text-sky-500 animate-spin" />
-                  : <CloudUpload className="w-5 h-5 text-sky-500" />}
+                  ? <Loader2 className="w-6 h-6 text-sky-500 animate-spin" />
+                  : <CloudUpload className="w-6 h-6 text-sky-500" />}
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-base font-semibold text-gray-900">
                   {L('Save to Google Drive', 'Google Drive पर सहेजें')}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-sm text-gray-400">
                   {L('Overwrite your latest cloud backup', 'नवीनतम क्लाउड बैकअप बदलें')}
                 </p>
               </div>
@@ -405,14 +405,14 @@ export default function Backup() {
             >
               <div className="w-11 h-11 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
                 {busy === 'restore'
-                  ? <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />
-                  : <CloudDownload className="w-5 h-5 text-violet-500" />}
+                  ? <Loader2 className="w-6 h-6 text-violet-500 animate-spin" />
+                  : <CloudDownload className="w-6 h-6 text-violet-500" />}
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-base font-semibold text-gray-900">
                   {L('Restore from Google Drive', 'Google Drive से पुनर्स्थापित')}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-sm text-gray-400">
                   {L('Replace current data with cloud backup', 'क्लाउड बैकअप से डेटा बदलें')}
                 </p>
               </div>
@@ -426,13 +426,13 @@ export default function Backup() {
           className="w-full bg-white rounded-2xl p-4 flex items-center gap-3 active:bg-gray-50"
         >
           <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-            <Download className="w-5 h-5 text-emerald-500" />
+            <Download className="w-6 h-6 text-emerald-500" />
           </div>
           <div className="flex-1 text-left">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-base font-semibold text-gray-900">
               {L('Download JSON file', 'JSON फ़ाइल डाउनलोड')}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-sm text-gray-400">
               {L('Save a copy on this device', 'इस डिवाइस पर कॉपी सहेजें')}
             </p>
           </div>
@@ -446,14 +446,14 @@ export default function Backup() {
         >
           <div className="w-11 h-11 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
             {busy === 'restore'
-              ? <Loader2 className="w-5 h-5 text-teal-500 animate-spin" />
-              : <Upload className="w-5 h-5 text-teal-500" />}
+              ? <Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
+              : <Upload className="w-6 h-6 text-teal-500" />}
           </div>
           <div className="flex-1 text-left">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-base font-semibold text-gray-900">
               {L('Restore from JSON file', 'JSON फ़ाइल से पुनर्स्थापित')}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-sm text-gray-400">
               {L('Pick a backup file saved on this device', 'इस डिवाइस की बैकअप फ़ाइल चुनें')}
             </p>
           </div>
@@ -479,7 +479,7 @@ export default function Backup() {
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-w-sm mx-auto px-5 pt-4 pb-6">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                <AlertTriangle className="w-6 h-6 text-amber-500" />
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-900">

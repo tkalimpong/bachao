@@ -58,9 +58,8 @@ export function useNavigationBack(): void {
       void App.addListener('backButton', () => {
         if (canNavigateBack()) {
           navigateBack();
-        } else {
-          void App.exitApp();
         }
+        // At root: do nothing — do not exit the app on back / swipe-back.
       }).then((handle) => {
         removeBackButton = () => void handle.remove();
       });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect } from 'react';
+﻿import { useState, useEffect, useLayoutEffect } from 'react';
 import { resetMainScroll, resetMainScrollThoroughly } from '../lib/mainScroll';
 import { navigateBack } from '../lib/navigationBack';
 import { useBackHandler } from '../hooks/useBackHandler';
@@ -126,12 +126,12 @@ export default function AddExpense() {
             }`}
           >
             {mode === 'expense' ? (
-              <TrendingDown className="w-5 h-5 text-white" />
+              <TrendingDown className="w-6 h-6 text-white" />
             ) : (
-              <TrendingUp className="w-5 h-5 text-white" />
+              <TrendingUp className="w-6 h-6 text-white" />
             )}
           </div>
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-gray-900">
             {mode === 'expense'
               ? (language === 'en' ? 'Add Expense' : 'खर्च जोड़ें')
               : (language === 'en' ? 'Add Income' : 'आय जोड़ें')}
@@ -141,7 +141,7 @@ export default function AddExpense() {
 
       {/* Category / Source grid */}
       <div className="px-4 mb-4">
-        <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
+        <p className="text-sm text-gray-400 font-semibold uppercase ml-1 mb-2">
           {mode === 'expense'
             ? (language === 'en' ? 'Category' : 'कैटेगरी')
             : (language === 'en' ? 'Income source' : 'आय का स्रोत')}
@@ -196,7 +196,7 @@ export default function AddExpense() {
                 }`}
               >
                 <span className="text-2xl">{src.icon}</span>
-                <span className="text-[10px] font-medium text-gray-600">
+                <span className="text-xs font-medium text-gray-600">
                   {language === 'en' ? src.en : src.hi}
                 </span>
               </button>
@@ -261,7 +261,7 @@ export default function AddExpense() {
       {/* Date */}
       <div className="px-4 mb-4">
         <div className="bg-white rounded-2xl px-4 h-12 flex items-center gap-3">
-          <CalendarDays className="w-4 h-4 text-gray-300 shrink-0" />
+          <CalendarDays className="w-6 h-6 text-gray-300 shrink-0" />
           <input
             type="date"
             value={date}
@@ -273,7 +273,7 @@ export default function AddExpense() {
 
       {showGroup && (
       <div className="px-4 mb-6">
-        <p className="text-[10px] text-gray-400 font-semibold uppercase ml-1 mb-2">
+        <p className="text-sm text-gray-400 font-semibold uppercase ml-1 mb-2">
           {language === 'en' ? 'Who?' : 'कौन?'}
         </p>
         <div className="flex gap-2">
@@ -286,7 +286,7 @@ export default function AddExpense() {
               }`}
             >
               <div
-                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
                 style={{ background: m.color }}
               >
                 {m.avatar}

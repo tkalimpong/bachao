@@ -1,4 +1,4 @@
-import {
+﻿import {
   Tag, Zap, Users, ChevronRight, Globe, Lock, LogOut, Download,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
@@ -90,10 +90,10 @@ export default function Settings() {
   return (
     <div className="flex flex-col gap-4 pb-24 pt-10">
       <div className="px-5">
-        <h1 className="text-xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900">
           {L('Settings', 'सेटिंग')}
         </h1>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <p className="text-sm text-gray-400 mt-0.5">
           {L('Manage members, categories & plan', 'सदस्य, कैटेगरी और प्लान')}
         </p>
       </div>
@@ -113,10 +113,10 @@ export default function Settings() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
+              <p className="text-base font-semibold text-gray-900 truncate">
                 {auth.user.displayName ?? L('Google account', 'Google खाता')}
               </p>
-              <p className="text-xs text-gray-400 truncate">{auth.user.email}</p>
+              <p className="text-sm text-gray-400 truncate">{auth.user.email}</p>
             </div>
           </div>
           <button
@@ -125,13 +125,13 @@ export default function Settings() {
             className="w-full mt-2 bg-white rounded-2xl p-4 flex items-center gap-3 active:bg-gray-50 transition-colors text-left"
           >
             <div className="w-11 h-11 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
-              <LogOut className="w-5 h-5 text-rose-500" />
+              <LogOut className="w-6 h-6 text-rose-500" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-base font-semibold text-gray-900">
                 {L('Sign out', 'साइन आउट')}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-sm text-gray-400">
                 {L('Switch Google account', 'Google खाता बदलें')}
               </p>
             </div>
@@ -148,23 +148,23 @@ export default function Settings() {
             className="w-full bg-white rounded-2xl p-4 flex items-center gap-3 active:bg-gray-50 transition-colors text-left disabled:opacity-50"
           >
             <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: bg }}
             >
-              <Icon className="w-5 h-5" style={{ color }} />
+              <Icon className="w-6 h-6" style={{ color }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-base font-semibold text-gray-900">
                 {L(en, hi)}
               </p>
-              <p className="text-xs text-gray-400 truncate">
+              <p className="text-sm text-gray-400 truncate">
                 {L(subEn, subHi)}
               </p>
             </div>
             {locked ? (
-              <Lock className="w-4 h-4 text-gray-300 shrink-0" />
+              <Lock className="w-6 h-6 text-gray-300 shrink-0" />
             ) : (
-              <ChevronRight className="w-5 h-5 text-gray-300 shrink-0" />
+              <ChevronRight className="w-6 h-6 text-gray-300 shrink-0" />
             )}
           </button>
         ))}
@@ -176,13 +176,13 @@ export default function Settings() {
           className="w-full bg-white rounded-2xl p-4 flex items-center gap-3 active:bg-gray-50 transition-colors"
         >
           <div className="w-11 h-11 rounded-xl bg-sky-50 flex items-center justify-center shrink-0">
-            <Globe className="w-5 h-5 text-sky-500" />
+            <Globe className="w-6 h-6 text-sky-500" />
           </div>
           <div className="flex-1 text-left">
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-base font-semibold text-gray-900">
               {L('Language', 'भाषा')}
             </p>
-            <p className="text-xs text-gray-400">
+            <p className="text-sm text-gray-400">
               {language === 'en' ? 'English' : 'हिन्दी'}
             </p>
           </div>
