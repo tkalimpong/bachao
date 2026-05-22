@@ -1,7 +1,8 @@
 ﻿import { useState } from 'react';
 import { useStore, type Category, type Expense, type Income } from '../store/useStore';
-import { getCat, getVisibleCategories } from '../lib/categories';
-import { SOURCE_ICONS } from '../lib/incomeSources';
+import { getVisibleCategories, resolveCategoryAppearance } from '../lib/categories';
+import CategoryIcon from '../components/CategoryIcon';
+import IncomeSourceIcon from '../components/IncomeSourceIcon';
 import AppLogo from '../components/AppLogo';
 import GullakPotIcon from '../components/GullakPotIcon';
 import { appName } from '../lib/appBrand';
@@ -86,6 +87,8 @@ export default function Dashboard() {
     expenses, incomes, members, language, toggleLanguage, setTab,
     setHistoryView, setCategoryExpandCategory, setCategoryScrollTarget, currentUserId,
     hiddenCategories,
+    categoryOverrides,
+    incomeSourceOverrides,
   } =
     useStore();
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
@@ -431,6 +434,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-5 gap-1">
             {gaugeData.map(({ cat, spent, avg, isWarn, isOver }) => {
               const amtColor = isOver ? 'text-rose-500' : isWarn ? 'text-orange-500' : 'text-gray-600';
+              const appearance = resolveCategoryAppearance(cat.id as Category, categoryOverrides);
 
               return (
                 <button
@@ -446,15 +450,17 @@ export default function Dashboard() {
                   {/* SVG ring + icon */}
                   <svg width="58" height="58" viewBox="0 0 58 58">
                     <GaugeRing baseline={avg} spent={spent} />
-                    <circle cx="29" cy="29" r="17" fill={cat.bg} />
-                    <text
-                      x="29" y="35"
-                      textAnchor="middle"
-                      fontSize="18"
-                      style={{ fontFamily: 'system-ui' }}
-                    >
-                      {cat.icon}
-                    </text>
+                    <circle cx="29" cy="29" r="16" fill={appearance.bg} />
+                    <foreignObject x="16" y="16" width="26" height="26">
+                      <div className="w-full h-full flex items-center justify-center">
+                        <CategoryIcon
+                          categoryId={cat.id as Category}
+                          overrides={categoryOverrides}
+                          variant="plain"
+                          size="md"
+                        />
+                      </div>
+                    </foreignObject>
                   </svg>
 
                   {/* spent amount */}
@@ -506,7 +512,7 @@ export default function Dashboard() {
             const member = members.find((m) => m.id === data.memberId);
 
             if (kind === 'expense') {
-              const cat = getCat(data.category as any);
+              const catId = data.category as Category;
               return (
                 <button
                   key={data.id}
@@ -521,15 +527,10 @@ export default function Dashboard() {
                     {member?.avatar ?? '?'}
                   </div>
                   )}
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
-                    style={{ background: cat.bg }}
-                  >
-                    {cat.icon}
-                  </div>
+                  <CategoryIcon categoryId={catId} overrides={categoryOverrides} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">
-                      {data.note || (language === 'en' ? '(no note)' : '(メモなし)')}
+                      {data.note || (language === 'en' ? '(no note)' : '(नोट नहीं)')}
                     </p>
                     <p className="text-xs text-gray-300">{relativeDate(data.date, language)}</p>
                   </div>
@@ -538,7 +539,7 @@ export default function Dashboard() {
                 </button>
               );
             } else {
-              const icon = SOURCE_ICONS[(data as Income).source] ?? '💸';
+              const incomeId = (data as Income).source;
               return (
                 <button
                   key={data.id}
@@ -553,12 +554,10 @@ export default function Dashboard() {
                     {member?.avatar ?? '?'}
                   </div>
                   )}
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0 bg-emerald-50">
-                    {icon}
-                  </div>
+                  <IncomeSourceIcon sourceId={incomeId} overrides={incomeSourceOverrides} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800 truncate">
-                      {data.note || (language === 'en' ? '(no note)' : '(メモなし)')}
+                      {data.note || (language === 'en' ? '(no note)' : '(नोट नहीं)')}
                     </p>
                     <p className="text-xs text-gray-300">{relativeDate(data.date, language)}</p>
                   </div>

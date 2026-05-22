@@ -1,4 +1,5 @@
 import type { CategoryOverrides } from './categories';
+import { normalizeCategoryOverrides } from './categories';
 import { migrateStorageKey } from './storageMigrate';
 
 const STORAGE_KEY = 'familygullak_category_overrides';
@@ -12,7 +13,7 @@ export function loadStoredCategoryOverrides(): CategoryOverrides {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
-    return JSON.parse(raw) as CategoryOverrides;
+    return normalizeCategoryOverrides(JSON.parse(raw) as CategoryOverrides);
   } catch {
     return {};
   }

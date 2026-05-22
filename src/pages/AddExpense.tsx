@@ -4,8 +4,20 @@ import { navigateBack } from '../lib/navigationBack';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Category, type IncomeSource } from '../store/useStore';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
-import { getVisibleCategories, defaultCategoryNote } from '../lib/categories';
-import { INCOME_SOURCES } from '../lib/incomeSources';
+import {
+  getVisibleCategories,
+  defaultCategoryNote,
+  resolveCategoryAppearance,
+  resolveCategoryLabel,
+} from '../lib/categories';
+import CategoryIcon from '../components/CategoryIcon';
+import {
+  defaultIncomeSourceNote,
+  INCOME_SOURCE_DEFS,
+  resolveIncomeSourceAppearance,
+  resolveIncomeSourceLabel,
+} from '../lib/incomeSources';
+import IncomeSourceIcon from '../components/IncomeSourceIcon';
 import { Check, TrendingDown, TrendingUp, CalendarDays } from 'lucide-react';
 
 function fmt(n: number) {
@@ -18,6 +30,8 @@ export default function AddExpense() {
     members, activeMemberId, setActiveMember,
     categoryBudgets, expenses, currentUserId,
     hiddenCategories,
+    categoryOverrides,
+    incomeSourceOverrides,
     addPrefillCategory,
     clearAddPrefill,
     cancelAddNavigation,
@@ -75,10 +89,8 @@ export default function AddExpense() {
   function resolveNote(): string {
     const trimmed = note.trim();
     if (trimmed) return trimmed;
-    if (mode === 'expense') return defaultCategoryNote(category, language);
-    const src = INCOME_SOURCES.find((s) => s.id === source)!;
-    const label = language === 'en' ? src.en : src.hi;
-    return `(${label})`;
+    if (mode === 'expense') return defaultCategoryNote(category, language, categoryOverrides);
+    return defaultIncomeSourceNote(source, language, incomeSourceOverrides);
   }
 
   function navigateAfterAdd() {
@@ -158,6 +170,8 @@ export default function AddExpense() {
               const warn    = env?.budget ? fill >= 75 && !over : false;
               const dotColor = over ? '#f43f5e' : warn ? '#f59e0b' : '#22c55e';
               const isSelected = category === cat.id;
+              const appearance = resolveCategoryAppearance(cat.id, categoryOverrides);
+              const shortLabel = resolveCategoryLabel(cat.id, language, categoryOverrides);
 
               return (
                 <button
@@ -166,11 +180,11 @@ export default function AddExpense() {
                   className={`flex flex-col items-center gap-1 rounded-2xl py-2.5 transition-all active:scale-95 ${
                     isSelected ? 'ring-2 ring-brand-500 scale-105' : 'bg-white'
                   }`}
-                  style={isSelected ? { background: cat.bg } : {}}
+                  style={isSelected ? { background: appearance.bg } : {}}
                 >
-                  <span className="text-2xl">{cat.icon}</span>
-                  <span className="text-[8px] font-medium text-gray-500 leading-tight text-center px-0.5">
-                    {language === 'en' ? cat.id.slice(0, 5) : cat.id.slice(0, 4)}
+                  <CategoryIcon categoryId={cat.id} overrides={categoryOverrides} size="md" />
+                  <span className="text-[10px] font-medium text-gray-500 leading-tight text-center px-0.5 line-clamp-2">
+                    {shortLabel.length > 8 ? `${shortLabel.slice(0, 7)}…` : shortLabel}
                   </span>
                   {/* spending dot indicator */}
                   {spent > 0 && (
@@ -187,20 +201,26 @@ export default function AddExpense() {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
-            {INCOME_SOURCES.map((src) => (
-              <button
-                key={src.id}
-                onClick={() => setSource(src.id)}
-                className={`flex flex-col items-center gap-1.5 rounded-2xl py-3 transition-all active:scale-95 ${
-                  source === src.id ? 'ring-2 ring-emerald-500 scale-105 bg-emerald-50' : 'bg-white'
-                }`}
-              >
-                <span className="text-2xl">{src.icon}</span>
-                <span className="text-xs font-medium text-gray-600">
-                  {language === 'en' ? src.en : src.hi}
-                </span>
-              </button>
-            ))}
+            {INCOME_SOURCE_DEFS.map((src) => {
+              const isSelected = source === src.id;
+              const appearance = resolveIncomeSourceAppearance(src.id, incomeSourceOverrides);
+              const shortLabel = resolveIncomeSourceLabel(src.id, language, incomeSourceOverrides);
+              return (
+                <button
+                  key={src.id}
+                  onClick={() => setSource(src.id)}
+                  className={`flex flex-col items-center gap-1.5 rounded-2xl py-3 transition-all active:scale-95 ${
+                    isSelected ? 'ring-2 ring-emerald-500 scale-105' : 'bg-white'
+                  }`}
+                  style={isSelected ? { background: appearance.bg } : {}}
+                >
+                  <IncomeSourceIcon sourceId={src.id} overrides={incomeSourceOverrides} size="md" />
+                  <span className="text-xs font-medium text-gray-600 text-center line-clamp-2 px-0.5">
+                    {shortLabel.length > 10 ? `${shortLabel.slice(0, 9)}…` : shortLabel}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

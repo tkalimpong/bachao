@@ -12,9 +12,14 @@ import {
 import { db } from '../lib/firebase';
 import { isLiveFirebase } from '../lib/appMode';
 import { saveStoredCategoryOverrides } from '../lib/categoryOverridesStorage';
+import { saveStoredIncomeSourceOverrides } from '../lib/incomeSourceOverridesStorage';
 import { saveStoredHiddenCategories, saveStoredPlan } from '../lib/planStorage';
 import type { Plan } from '../lib/plan';
-import type { CategoryOverrides } from '../lib/categories';
+import { normalizeCategoryOverrides, type CategoryOverrides } from '../lib/categories';
+import {
+  normalizeIncomeSourceOverrides,
+  type IncomeSourceOverrides,
+} from '../lib/incomeSources';
 import {
   useStore,
   type Category,
@@ -61,6 +66,7 @@ export function useFirestoreSync(enabled = true) {
     setCategoryBudgets,
     setMembers,
     setCategoryOverrides,
+    setIncomeSourceOverrides,
     setSyncStatus,
   } = useStore();
 
@@ -217,7 +223,7 @@ export function useFirestoreSync(enabled = true) {
 
         const raw = data.categoryOverrides;
         if (raw && typeof raw === 'object') {
-          const categoryOverrides = raw as CategoryOverrides;
+          const categoryOverrides = normalizeCategoryOverrides(raw as CategoryOverrides);
           setCategoryOverrides(categoryOverrides);
           saveStoredCategoryOverrides(categoryOverrides);
         }
@@ -226,6 +232,15 @@ export function useFirestoreSync(enabled = true) {
           const hiddenCategories = data.hiddenCategories as Category[];
           useStore.setState({ hiddenCategories });
           saveStoredHiddenCategories(hiddenCategories);
+        }
+
+        const rawIncome = data.incomeSourceOverrides;
+        if (rawIncome && typeof rawIncome === 'object') {
+          const incomeSourceOverrides = normalizeIncomeSourceOverrides(
+            rawIncome as IncomeSourceOverrides,
+          );
+          setIncomeSourceOverrides(incomeSourceOverrides);
+          saveStoredIncomeSourceOverrides(incomeSourceOverrides);
         }
       }),
     );

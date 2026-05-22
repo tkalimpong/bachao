@@ -1,8 +1,10 @@
 ﻿import { useState, useMemo, useEffect } from 'react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Expense, type Income } from '../store/useStore';
-import { getCat } from '../lib/categories';
-import { SOURCE_ICONS } from '../lib/incomeSources';
+import { resolveCategoryLabel, type CategoryOverrides } from '../lib/categories';
+import CategoryIcon from '../components/CategoryIcon';
+import { resolveIncomeSourceLabel, type IncomeSourceOverrides } from '../lib/incomeSources';
+import IncomeSourceIcon from '../components/IncomeSourceIcon';
 import { Search, X, ChevronLeft, ChevronRight, Pencil, ChevronDown, Check } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
 import CategoryPanel from '../components/CategoryPanel';
@@ -58,20 +60,23 @@ function EmptyState({ L }: { L: (en: string, hi: string) => string }) {
 }
 
 function TxList({
-  txs, members, showMember, onEdit, L,
+  txs, members, showMember, onEdit, L, language, categoryOverrides, incomeSourceOverrides,
 }: {
   txs: TxEntry[];
   members: { id: string; name: string; avatar: string; color: string }[];
   showMember: boolean;
   onEdit: (t: EditTarget) => void;
   L: (en: string, hi: string) => string;
+  language: 'en' | 'hi';
+  categoryOverrides: CategoryOverrides;
+  incomeSourceOverrides: IncomeSourceOverrides;
 }) {
   return (
     <div className="bg-white rounded-b-2xl overflow-hidden divide-y divide-gray-50">
       {txs.map(({ kind, data }) => {
         const member = members.find((m) => m.id === data.memberId);
         if (kind === 'expense') {
-          const cat = getCat((data as Expense).category);
+          const catId = (data as Expense).category;
           return (
             <button
               key={data.id}
@@ -86,24 +91,21 @@ function TxList({
                   {member?.avatar ?? '?'}
                 </div>
               )}
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0"
-                style={{ background: cat.bg }}
-              >
-                {cat.icon}
-              </div>
+              <CategoryIcon categoryId={catId} overrides={categoryOverrides} size="md" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 truncate">
                   {data.note || L('(no note)', '(नोट नहीं)')}
                 </p>
-                <p className="text-xs text-gray-300 capitalize">{(data as Expense).category}</p>
+                <p className="text-xs text-gray-300">
+                  {resolveCategoryLabel(catId, language === 'en' ? 'en' : 'hi', categoryOverrides)}
+                </p>
               </div>
               <span className="text-sm font-black text-rose-500 shrink-0">−{fmt(data.amount)}</span>
               <Pencil className="w-6 h-6 text-gray-200 shrink-0" />
             </button>
           );
         } else {
-          const icon = SOURCE_ICONS[(data as Income).source] ?? '💰';
+          const incomeId = (data as Income).source;
           return (
             <button
               key={data.id}
@@ -118,15 +120,13 @@ function TxList({
                   {member?.avatar ?? '?'}
                 </div>
               )}
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xl shrink-0 bg-emerald-50">
-                {icon}
-              </div>
+              <IncomeSourceIcon sourceId={incomeId} overrides={incomeSourceOverrides} size="md" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800 truncate">
                   {data.note || L('(no note)', '(नोट नहीं)')}
                 </p>
-                <p className="text-xs text-gray-300 capitalize">
-                  {(data as Income).source.replace('_', ' ')}
+                <p className="text-xs text-gray-300">
+                  {resolveIncomeSourceLabel(incomeId, language, incomeSourceOverrides)}
                 </p>
               </div>
               <span className="text-sm font-black text-emerald-500 shrink-0">+{fmt(data.amount)}</span>
@@ -148,6 +148,8 @@ export default function History() {
     historyView, setHistoryView,
     categoryExpandCategory,
     currentUserId,
+    categoryOverrides,
+    incomeSourceOverrides,
   } = useStore();
 
   const myRole = getMemberRole(members, currentUserId);
@@ -464,7 +466,16 @@ export default function History() {
               <div className="mb-2 px-1">
                 <span className="text-xs font-bold text-gray-400">{formatDayHeader(date, language)}</span>
               </div>
-              <TxList txs={txs} members={members} showMember onEdit={setEditTarget} L={L} />
+              <TxList
+                txs={txs}
+                members={members}
+                showMember
+                onEdit={setEditTarget}
+                L={L}
+                language={language}
+                categoryOverrides={categoryOverrides}
+                incomeSourceOverrides={incomeSourceOverrides}
+              />
             </div>
           ))
         )}

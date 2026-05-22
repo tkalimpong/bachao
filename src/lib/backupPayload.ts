@@ -6,6 +6,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import type { CategoryOverrides } from './categories';
+import type { IncomeSourceOverrides } from './incomeSources';
 import { db } from './firebase';
 import { isLiveFirebase } from './appMode';
 import type { Plan } from './plan';
@@ -21,6 +22,9 @@ import {
 import {
   saveStoredCategoryOverrides,
 } from './categoryOverridesStorage';
+import {
+  saveStoredIncomeSourceOverrides,
+} from './incomeSourceOverridesStorage';
 import {
   saveStoredHiddenCategories,
   saveStoredPlan,
@@ -48,6 +52,7 @@ export interface BackupPayload {
   categoryBudgets: CategoryBudget[];
   categoryOverrides: CategoryOverrides;
   hiddenCategories: Category[];
+  incomeSourceOverrides?: IncomeSourceOverrides;
 }
 
 export function buildBackupPayload(): BackupPayload {
@@ -59,6 +64,7 @@ export function buildBackupPayload(): BackupPayload {
     categoryBudgets,
     categoryOverrides,
     hiddenCategories,
+    incomeSourceOverrides,
     plan,
     groupId,
   } = useStore.getState();
@@ -75,6 +81,7 @@ export function buildBackupPayload(): BackupPayload {
     categoryBudgets,
     categoryOverrides,
     hiddenCategories,
+    incomeSourceOverrides,
   };
 }
 
@@ -182,6 +189,7 @@ function applyToLocalStore(payload: BackupPayload): void {
   saveStoredPlan(payload.plan ?? 'free');
   saveStoredCategoryOverrides(payload.categoryOverrides ?? {});
   saveStoredHiddenCategories(payload.hiddenCategories ?? []);
+  saveStoredIncomeSourceOverrides(payload.incomeSourceOverrides ?? {});
 
   useStore.setState({
     plan: payload.plan ?? 'free',
@@ -191,6 +199,7 @@ function applyToLocalStore(payload: BackupPayload): void {
     categoryBudgets: payload.categoryBudgets ?? useStore.getState().categoryBudgets,
     categoryOverrides: payload.categoryOverrides ?? {},
     hiddenCategories: payload.hiddenCategories ?? [],
+    incomeSourceOverrides: payload.incomeSourceOverrides ?? {},
     ...(isLiveFirebase() ? {} : { members: payload.members }),
   });
 }
@@ -250,6 +259,7 @@ async function upsertTransactions(groupId: string, payload: BackupPayload): Prom
       plan: payload.plan ?? 'free',
       categoryOverrides: payload.categoryOverrides ?? {},
       hiddenCategories: payload.hiddenCategories ?? [],
+      incomeSourceOverrides: payload.incomeSourceOverrides ?? {},
     },
     { merge: true },
   );

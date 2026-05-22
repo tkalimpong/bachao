@@ -1,21 +1,41 @@
 ﻿import { useState } from 'react';
-import { Check, RotateCcw, EyeOff, Eye, Lock } from 'lucide-react';
-import { useStore, type Category } from '../store/useStore';
+import { Eye, EyeOff, Lock } from 'lucide-react';
+import { useStore, type Category, type IncomeSource } from '../store/useStore';
 import {
-  CATEGORIES,
+  CATEGORY_DEFS,
   CATEGORY_LABELS,
   getVisibleCategories,
-  resolveCategoryIcon,
+  isCategoryCustomized,
+  resolveCategoryAppearance,
   resolveCategoryLabel,
 } from '../lib/categories';
+import {
+  INCOME_SOURCE_DEFS,
+  INCOME_SOURCE_LABELS,
+  isIncomeSourceCustomized,
+  resolveIncomeSourceAppearance,
+  resolveIncomeSourceLabel,
+} from '../lib/incomeSources';
+import {
+  CATEGORY_COLOR_PRESETS,
+  EXPENSE_ICON_SECTIONS,
+  INCOME_ICON_SECTION,
+  type CategoryIconSectionDef,
+} from '../lib/categoryIcons';
+import CategoryIcon from '../components/CategoryIcon';
+import IncomeSourceIcon from '../components/IncomeSourceIcon';
+import TypeIconEditSheet from '../components/TypeIconEditSheet';
 import { canEditCategories, isPlus } from '../lib/plan';
 import SubScreenHeader from '../components/SubScreenHeader';
 import { goBackToTab } from '../lib/mainScroll';
+
+type SectionTab = 'expense' | 'income';
 
 export default function Categories() {
   const {
     language, plan, setTab,
     categoryOverrides, setCategoryOverride, resetCategoryOverride,
+    incomeSourceOverrides, setIncomeSourceOverride, resetIncomeSourceOverride,
     hiddenCategories, setCategoryHidden,
   } = useStore();
 
@@ -23,36 +43,85 @@ export default function Categories() {
   const plus = isPlus(plan);
   const canEdit = canEditCategories(plan);
   const visible = getVisibleCategories(hiddenCategories);
-  const hidden = CATEGORIES.filter((c) => hiddenCategories.includes(c.id));
+  const hidden = CATEGORY_DEFS.filter((c) => hiddenCategories.includes(c.id));
 
-  const [editing, setEditing] = useState<Category | null>(null);
-  const [icon, setIcon] = useState('');
-  const [en, setEn] = useState('');
-  const [hi, setHi] = useState('');
+  const [sectionTab, setSectionTab] = useState<SectionTab>('expense');
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingIncome, setEditingIncome] = useState<IncomeSource | null>(null);
+  const [iconId, setIconId] = useState('');
+  const [color, setColor] = useState('');
+  const [name, setName] = useState('');
 
-  function startEdit(id: Category) {
+  function startEditCategory(id: Category) {
     if (!canEdit) {
       setTab('premium');
       return;
     }
-    const base = CATEGORY_LABELS[id];
     const o = categoryOverrides[id];
-    setEditing(id);
-    setIcon(o?.icon ?? CATEGORIES.find((c) => c.id === id)!.icon);
-    setEn(o?.en ?? base.en);
-    setHi(o?.hi ?? base.hi);
+    const appearance = resolveCategoryAppearance(id, categoryOverrides);
+    setSectionTab('expense');
+    setEditingIncome(null);
+    setEditingCategory(id);
+    setIconId(o?.iconId ?? appearance.iconId);
+    setColor(o?.color ?? appearance.color);
+    setName(o?.label?.trim() || resolveCategoryLabel(id, language, categoryOverrides));
   }
 
-  function saveEdit() {
-    if (!editing || !icon.trim() || !en.trim() || !hi.trim()) return;
-    setCategoryOverride(editing, { icon: icon.trim(), en: en.trim(), hi: hi.trim() });
-    setEditing(null);
+  function startEditIncome(id: IncomeSource) {
+    if (!canEdit) {
+      setTab('premium');
+      return;
+    }
+    const o = incomeSourceOverrides[id];
+    const appearance = resolveIncomeSourceAppearance(id, incomeSourceOverrides);
+    setSectionTab('income');
+    setEditingCategory(null);
+    setEditingIncome(id);
+    setIconId(o?.iconId ?? appearance.iconId);
+    setColor(o?.color ?? appearance.color);
+    setName(o?.label?.trim() || resolveIncomeSourceLabel(id, language, incomeSourceOverrides));
   }
 
-  function renderCategoryRow(cat: typeof CATEGORIES[number], isHidden: boolean) {
+  function closeEdit() {
+    setEditingCategory(null);
+    setEditingIncome(null);
+  }
+
+  function saveCategoryEdit() {
+    if (!editingCategory || !iconId || !color) return;
+    const trimmed = name.trim();
+    const existing = categoryOverrides[editingCategory]?.label?.trim();
+    const label = trimmed || existing;
+    setCategoryOverride(editingCategory, {
+      iconId,
+      color,
+      ...(label ? { label } : {}),
+    });
+    closeEdit();
+  }
+
+  function saveIncomeEdit() {
+    if (!editingIncome || !iconId || !color) return;
+    const trimmed = name.trim();
+    const existing = incomeSourceOverrides[editingIncome]?.label?.trim();
+    const label = trimmed || existing;
+    setIncomeSourceOverride(editingIncome, {
+      iconId,
+      color,
+      ...(label ? { label } : {}),
+    });
+    closeEdit();
+  }
+
+  const previewBg =
+    CATEGORY_COLOR_PRESETS.find((p) => p.color === color)?.bg ?? '#f3f4f6';
+  const sectionTitle = (section: CategoryIconSectionDef) => L(section.labelEn, section.labelHi);
+  const expenseIconSections = EXPENSE_ICON_SECTIONS;
+  const incomeIconSections = [...EXPENSE_ICON_SECTIONS, INCOME_ICON_SECTION];
+
+  function renderCategoryRow(cat: typeof CATEGORY_DEFS[number], isHidden: boolean) {
     const label = resolveCategoryLabel(cat.id, language, categoryOverrides);
-    const iconDisplay = resolveCategoryIcon(cat.id, categoryOverrides);
-    const customized = !!categoryOverrides[cat.id];
+    const customized = isCategoryCustomized(cat.id, categoryOverrides);
     const defaultLabel = CATEGORY_LABELS[cat.id][language];
 
     return (
@@ -62,17 +131,17 @@ export default function Categories() {
       >
         <button
           type="button"
-          onClick={() => startEdit(cat.id)}
+          onClick={() => startEditCategory(cat.id)}
           className="flex items-center gap-3 flex-1 min-w-0 text-left active:opacity-80"
         >
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
-            style={{ background: cat.bg, opacity: isHidden ? 0.5 : 1 }}
-          >
-            {iconDisplay}
-          </div>
+          <CategoryIcon
+            categoryId={cat.id}
+            overrides={categoryOverrides}
+            size="lg"
+            faded={isHidden}
+          />
           <div className="flex-1 min-w-0">
-            <p className={`text-sm font-semibold ${isHidden ? 'text-gray-400' : 'text-gray-900'}`}>
+            <p className={`text-base font-semibold ${isHidden ? 'text-gray-400' : 'text-gray-900'}`}>
               {label}
             </p>
             <p className="text-sm text-gray-400">
@@ -96,34 +165,85 @@ export default function Categories() {
             className="p-2 rounded-xl text-gray-400 active:bg-gray-100 shrink-0"
             aria-label={isHidden ? L('Restore', 'वापस') : L('Hide', 'छुपाएं')}
           >
-            {isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            {isHidden ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
           </button>
         )}
       </div>
     );
   }
 
+  function renderIncomeRow(src: typeof INCOME_SOURCE_DEFS[number]) {
+    const label = resolveIncomeSourceLabel(src.id, language, incomeSourceOverrides);
+    const customized = isIncomeSourceCustomized(src.id, incomeSourceOverrides);
+    const defaultLabel = INCOME_SOURCE_LABELS[src.id][language];
+
+    return (
+      <button
+        key={src.id}
+        type="button"
+        onClick={() => startEditIncome(src.id)}
+        className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 text-left active:opacity-80"
+      >
+        <IncomeSourceIcon sourceId={src.id} overrides={incomeSourceOverrides} size="lg" />
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-semibold text-gray-900">{label}</p>
+          <p className="text-sm text-gray-400">
+            {customized && label !== defaultLabel
+              ? L(`Default: ${defaultLabel}`, `डिफ़ॉल्ट: ${defaultLabel}`)
+              : src.id}
+          </p>
+        </div>
+        {customized && (
+          <span className="text-xs font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full shrink-0">
+            {L('Edited', 'संपादित')}
+          </span>
+        )}
+      </button>
+    );
+  }
+
   return (
     <div className="flex flex-col pb-24">
       <SubScreenHeader
-        title={L('Categories', 'कैटेगरी')}
+        title={L('Categories & income', 'कैटेगरी और आय')}
         onBack={() => goBackToTab('settings')}
       />
+
+      <div className="mx-4 mb-4 flex rounded-2xl bg-gray-100 p-1">
+        {([
+          ['expense', L('Expense', 'खर्च'), L('Categories', 'कैटेगरी')],
+          ['income', L('Income', 'आय'), L('Sources', 'स्रोत')],
+        ] as const).map(([id, en, hi]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => {
+              setSectionTab(id);
+              closeEdit();
+            }}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              sectionTab === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            {L(en, hi)}
+          </button>
+        ))}
+      </div>
 
       {!plus ? (
         <div className="mx-4 mb-4 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3 flex items-start gap-2">
           <Lock className="w-6 h-6 text-gray-400 shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed">
               {L(
-                'Category editing is a Plus feature. Free uses the default list.',
-                'कैटेगरी संपादन Plus में। Free में डिफ़ॉल्ट सूची।',
+                'Editing categories and income sources is a Plus feature.',
+                'कैटेगरी और आय स्रोत संपादन Plus में है।',
               )}
             </p>
             <button
               type="button"
               onClick={() => setTab('premium')}
-              className="text-xs font-bold text-brand-600 mt-2"
+              className="text-sm font-bold text-brand-600 mt-2"
             >
               {L('Upgrade to Plus →', 'Plus में अपग्रेड →')}
             </button>
@@ -131,103 +251,94 @@ export default function Categories() {
         </div>
       ) : (
         <div className="mx-4 mb-4 bg-violet-50 border border-violet-100 rounded-2xl px-4 py-3">
-          <p className="text-xs text-violet-700 leading-relaxed">
-            {L(
-              'Tap to edit name and icon. Use the eye icon to hide or restore categories.',
-              'नाम/आइकन बदलने के लिए टैप करें। आँख से छुपाएं या वापस लाएं।',
-            )}
+          <p className="text-sm text-violet-700 leading-relaxed">
+            {sectionTab === 'expense'
+              ? L(
+                  'Tap to edit name, color and icon. Use the eye to hide categories.',
+                  'नाम, रंग, आइकन बदलें। आँख से छुपाएं।',
+                )
+              : L(
+                  'Tap to edit income source name, color and icon.',
+                  'आय स्रोत का नाम, रंग और आइकन बदलें।',
+                )}
           </p>
         </div>
       )}
 
-      <div className="px-4 flex flex-col gap-2">
-        {visible.map((cat) => renderCategoryRow(cat, false))}
-      </div>
-
-      {plus && hidden.length > 0 && (
+      {sectionTab === 'expense' ? (
         <>
-          <p className="text-sm text-gray-400 font-semibold uppercase ml-5 mt-4 mb-2">
-            {L('Hidden', 'छुपी हुई')}
-          </p>
           <div className="px-4 flex flex-col gap-2">
-            {hidden.map((cat) => renderCategoryRow(cat, true))}
+            {visible.map((cat) => renderCategoryRow(cat, false))}
           </div>
+          {plus && hidden.length > 0 && (
+            <>
+              <p className="text-sm text-gray-400 font-semibold uppercase ml-5 mt-4 mb-2">
+                {L('Hidden', 'छुपी हुई')}
+              </p>
+              <div className="px-4 flex flex-col gap-2">
+                {hidden.map((cat) => renderCategoryRow(cat, true))}
+              </div>
+            </>
+          )}
         </>
+      ) : (
+        <div className="px-4 flex flex-col gap-2">
+          {INCOME_SOURCE_DEFS.map(renderIncomeRow)}
+        </div>
       )}
 
-      {editing && canEdit && (
-        <>
-          <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setEditing(null)} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl max-w-sm mx-auto">
-            <div className="pt-3 pb-4 px-5">
-              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-              <h3 className="text-base font-bold text-gray-900 mb-1">
-                {L('Edit category', 'कैटेगरी संपादित करें')}
-              </h3>
-              <p className="text-sm text-gray-400 mb-4">
-                {L('Set names for English and Hindi UI', 'अंग्रेज़ी और हिन्दी दोनों के नाम')}
-              </p>
+      {editingCategory && canEdit && (
+        <TypeIconEditSheet
+          onClose={closeEdit}
+          title={L('Edit category', 'कैटेगरी संपादित करें')}
+            nameLabel={L('Name', 'नाम')}
+            namePlaceholder={CATEGORY_LABELS[editingCategory][language]}
+            name={name}
+            onNameChange={setName}
+            colorLabel={L('Color', 'रंग')}
+            iconLabel={L('Icon', 'आइकन')}
+            iconSections={expenseIconSections}
+            sectionTitle={sectionTitle}
+            color={color}
+            onColorChange={setColor}
+            iconId={iconId}
+            onIconIdChange={setIconId}
+            previewBg={previewBg}
+            onSave={saveCategoryEdit}
+            onReset={() => {
+              resetCategoryOverride(editingCategory);
+              closeEdit();
+            }}
+            saveLabel={L('Save', 'सहेजें')}
+            resetLabel={L('Reset', 'रीसेट')}
+          />
+      )}
 
-              <div className="flex flex-col gap-3 mb-4">
-                <div>
-                  <label className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-1 block">
-                    {L('Icon', 'आइकन')}
-                  </label>
-                  <input
-                    value={icon}
-                    onChange={(e) => setIcon(e.target.value)}
-                    maxLength={4}
-                    className="w-full bg-gray-50 rounded-xl px-4 h-12 text-2xl text-center outline-none focus:ring-2 focus:ring-brand-200"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-1 block">
-                    {L('Name (English)', 'नाम (English)')}
-                  </label>
-                  <input
-                    value={en}
-                    onChange={(e) => setEn(e.target.value)}
-                    placeholder={CATEGORY_LABELS[editing].en}
-                    className="w-full bg-gray-50 rounded-xl px-4 h-11 text-sm outline-none focus:ring-2 focus:ring-brand-200"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-1 block">
-                    {L('Name (Hindi)', 'नाम (हिन्दी)')}
-                  </label>
-                  <input
-                    value={hi}
-                    onChange={(e) => setHi(e.target.value)}
-                    placeholder={CATEGORY_LABELS[editing].hi}
-                    className="w-full bg-gray-50 rounded-xl px-4 h-11 text-sm outline-none focus:ring-2 focus:ring-brand-200"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetCategoryOverride(editing);
-                    setEditing(null);
-                  }}
-                  className="flex-1 h-12 rounded-2xl bg-gray-100 text-gray-600 font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  {L('Reset', 'रीसेट')}
-                </button>
-                <button
-                  type="button"
-                  onClick={saveEdit}
-                  className="flex-[2] h-12 rounded-2xl bg-brand-500 text-white font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95"
-                >
-                  <Check className="w-4 h-4" />
-                  {L('Save', 'सहेजें')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
+      {editingIncome && canEdit && (
+        <TypeIconEditSheet
+          onClose={closeEdit}
+          title={L('Edit income source', 'आय स्रोत संपादित करें')}
+            nameLabel={L('Name', 'नाम')}
+            namePlaceholder={INCOME_SOURCE_LABELS[editingIncome][language]}
+            name={name}
+            onNameChange={setName}
+            colorLabel={L('Color', 'रंग')}
+            iconLabel={L('Icon', 'आइकन')}
+            iconSections={incomeIconSections}
+            sectionTitle={sectionTitle}
+            color={color}
+            onColorChange={setColor}
+            iconId={iconId}
+            onIconIdChange={setIconId}
+            previewBg={previewBg}
+            onSave={saveIncomeEdit}
+            onReset={() => {
+              resetIncomeSourceOverride(editingIncome);
+              closeEdit();
+            }}
+            saveLabel={L('Save', 'सहेजें')}
+            resetLabel={L('Reset', 'रीसेट')}
+          />
       )}
     </div>
   );

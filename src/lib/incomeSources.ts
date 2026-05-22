@@ -1,24 +1,196 @@
 import type { IncomeSource } from '../store/useStore';
+import type { CategoryIconId } from './categoryIcons';
+import {
+  bgForCategoryColor,
+  normalizeIconId,
+} from './categoryIcons';
 
-export const INCOME_SOURCES: {
+export type IncomeSourceOverride = {
+  iconId?: string;
+  color?: string;
+  label?: string;
+  en?: string;
+  hi?: string;
+  icon?: string;
+};
+
+export type IncomeSourceOverrides = Partial<Record<IncomeSource, IncomeSourceOverride>>;
+
+export type IncomeSourceAppearance = {
+  iconId: CategoryIconId;
+  color: string;
+  bg: string;
+};
+
+export type IncomeSourceDef = {
   id: IncomeSource;
-  icon: string;
-  en: string;
-  hi: string;
-}[] = [
-  { id: 'salary',       icon: '💼', en: 'Salary',  hi: 'तनख्वाह' },
-  { id: 'freelance',    icon: '🐄', en: 'Farming', hi: 'खेती' },
-  { id: 'business',     icon: '🏪', en: 'Business', hi: 'व्यापार' },
-  { id: 'gift',         icon: '🎁', en: 'Gift',     hi: 'उपहार' },
-  { id: 'rent',         icon: '🏠', en: 'Rent',     hi: 'किराया' },
-  { id: 'other_income', icon: '💸', en: 'Other',    hi: 'अन्य' },
+  iconId: CategoryIconId;
+  color: string;
+  bg: string;
+  labelEn: string;
+  labelHi: string;
+};
+
+/** Default icon, color, and name for each income source. */
+export const INCOME_SOURCE_DEFS: IncomeSourceDef[] = [
+  {
+    id: 'salary',
+    iconId: 'briefcase',
+    color: '#3b82f6',
+    bg: '#eff6ff',
+    labelEn: 'Salary',
+    labelHi: 'वेतन',
+  },
+  {
+    id: 'freelance',
+    iconId: 'tractor',
+    color: '#22c55e',
+    bg: '#f0fdf4',
+    labelEn: 'Farming',
+    labelHi: 'खेती',
+  },
+  {
+    id: 'business',
+    iconId: 'store',
+    color: '#f97316',
+    bg: '#fff7ed',
+    labelEn: 'Business',
+    labelHi: 'व्यापार',
+  },
+  {
+    id: 'gift',
+    iconId: 'gift',
+    color: '#ec4899',
+    bg: '#fdf2f8',
+    labelEn: 'Gift',
+    labelHi: 'उपहार',
+  },
+  {
+    id: 'rent',
+    iconId: 'receipt-rupee',
+    color: '#78716c',
+    bg: '#fafaf9',
+    labelEn: 'Rent',
+    labelHi: 'किराया',
+  },
+  {
+    id: 'other_income',
+    iconId: 'indian-rupee',
+    color: '#6366f1',
+    bg: '#eef2ff',
+    labelEn: 'Other',
+    labelHi: 'अन्य',
+  },
 ];
 
-export const SOURCE_ICONS: Record<IncomeSource, string> = Object.fromEntries(
-  INCOME_SOURCES.map((s) => [s.id, s.icon]),
-) as Record<IncomeSource, string>;
+export const INCOME_SOURCE_LABELS: Record<IncomeSource, { en: string; hi: string }> = Object.fromEntries(
+  INCOME_SOURCE_DEFS.map((d) => [d.id, { en: d.labelEn, hi: d.labelHi }]),
+) as Record<IncomeSource, { en: string; hi: string }>;
 
+/** @deprecated Use INCOME_SOURCE_DEFS */
+export const INCOME_SOURCES = INCOME_SOURCE_DEFS.map((def) => ({
+  id: def.id,
+  icon: '',
+  en: def.labelEn,
+  hi: def.labelHi,
+}));
+
+const LEGACY_EMOJI_ICON: Record<string, CategoryIconId> = {
+  '💼': 'briefcase',
+  '🐄': 'tractor',
+  '🏪': 'store',
+  '🎁': 'gift',
+  '🏠': 'receipt-rupee',
+  '💸': 'indian-rupee',
+  '💰': 'indian-rupee',
+};
+
+function normalizeIncomeIconId(iconId?: string, legacyEmoji?: string): CategoryIconId {
+  if (legacyEmoji) {
+    const mapped = LEGACY_EMOJI_ICON[legacyEmoji.trim()];
+    if (mapped) return mapped;
+  }
+  if (iconId) return normalizeIconId(iconId);
+  return 'tag';
+}
+
+export function getIncomeSourceDef(id: IncomeSource): IncomeSourceDef {
+  return INCOME_SOURCE_DEFS.find((s) => s.id === id) ?? INCOME_SOURCE_DEFS[INCOME_SOURCE_DEFS.length - 1];
+}
+
+export function incomeSourceDefaultLabel(id: IncomeSource, lang: 'en' | 'hi'): string {
+  const def = getIncomeSourceDef(id);
+  return lang === 'en' ? def.labelEn : def.labelHi;
+}
+
+export function resolveIncomeSourceAppearance(
+  id: IncomeSource,
+  overrides?: IncomeSourceOverrides,
+): IncomeSourceAppearance {
+  const base = getIncomeSourceDef(id);
+  const o = overrides?.[id];
+  const iconId = o?.iconId || o?.icon
+    ? normalizeIncomeIconId(o.iconId, o.icon)
+    : base.iconId;
+  const color = o?.color ?? base.color;
+  const bg = bgForCategoryColor(color, base.bg);
+  return { iconId, color, bg };
+}
+
+export function resolveIncomeSourceLabel(
+  id: IncomeSource,
+  lang: 'en' | 'hi',
+  overrides?: IncomeSourceOverrides,
+): string {
+  const o = overrides?.[id];
+  const custom = o?.label?.trim() || o?.en?.trim() || o?.hi?.trim();
+  if (custom) return custom;
+  return incomeSourceDefaultLabel(id, lang);
+}
+
+export function defaultIncomeSourceNote(
+  source: IncomeSource,
+  lang: 'en' | 'hi',
+  overrides?: IncomeSourceOverrides,
+): string {
+  return `(${resolveIncomeSourceLabel(source, lang, overrides)})`;
+}
+
+export function isIncomeSourceCustomized(
+  id: IncomeSource,
+  overrides?: IncomeSourceOverrides,
+): boolean {
+  const o = overrides?.[id];
+  if (!o) return false;
+  if (o.label?.trim() || o.en?.trim() || o.hi?.trim()) return true;
+  const base = getIncomeSourceDef(id);
+  if (o.color && o.color !== base.color) return true;
+  if (o.iconId && normalizeIncomeIconId(o.iconId, o.icon) !== base.iconId) return true;
+  return false;
+}
+
+export function normalizeIncomeSourceOverrides(raw: IncomeSourceOverrides): IncomeSourceOverrides {
+  const out: IncomeSourceOverrides = {};
+  for (const [key, o] of Object.entries(raw) as [IncomeSource, IncomeSourceOverride][]) {
+    if (!o) continue;
+    const base = getIncomeSourceDef(key);
+    const iconId = normalizeIncomeIconId(o.iconId, o.icon);
+    const color = o.color ?? base.color;
+    const label = o.label?.trim() || o.en?.trim() || o.hi?.trim();
+    const hasLabel = !!label;
+    const hasIcon = iconId !== base.iconId;
+    const hasColor = !!o.color && o.color !== base.color;
+    if (!hasLabel && !hasIcon && !hasColor) continue;
+    out[key] = {
+      iconId,
+      color,
+      ...(hasLabel ? { label } : {}),
+    };
+  }
+  return out;
+}
+
+/** @deprecated Use resolveIncomeSourceLabel */
 export function incomeSourceLabel(id: IncomeSource, lang: 'en' | 'hi'): string {
-  const src = INCOME_SOURCES.find((s) => s.id === id);
-  return src ? src[lang === 'en' ? 'en' : 'hi'] : id.replace('_', ' ');
+  return resolveIncomeSourceLabel(id, lang);
 }

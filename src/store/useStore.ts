@@ -28,6 +28,12 @@ import {
   saveStoredHiddenCategories,
   saveStoredPlan,
 } from '../lib/planStorage';
+import type { CategoryOverride } from '../lib/categories';
+import type { IncomeSourceOverride } from '../lib/incomeSources';
+import {
+  loadStoredIncomeSourceOverrides,
+  saveStoredIncomeSourceOverrides,
+} from '../lib/incomeSourceOverridesStorage';
 import { seedExpenses, seedIncomes, seedTransfers } from '../lib/seedData';
 
 export type Category =
@@ -137,14 +143,16 @@ interface AppState {
   setPlan: (plan: Plan) => void;
   language: 'en' | 'hi';
   toggleLanguage: () => void;
-  categoryOverrides: Partial<Record<Category, { icon: string; en: string; hi: string }>>;
-  setCategoryOverrides: (
-    overrides: Partial<Record<Category, { icon: string; en: string; hi: string }>>,
-  ) => void;
-  setCategoryOverride: (id: Category, data: { icon: string; en: string; hi: string }) => void;
+  categoryOverrides: Partial<Record<Category, CategoryOverride>>;
+  setCategoryOverrides: (overrides: Partial<Record<Category, CategoryOverride>>) => void;
+  setCategoryOverride: (id: Category, data: CategoryOverride) => void;
   resetCategoryOverride: (id: Category) => void;
   hiddenCategories: Category[];
   setCategoryHidden: (id: Category, hidden: boolean) => void;
+  incomeSourceOverrides: Partial<Record<IncomeSource, IncomeSourceOverride>>;
+  setIncomeSourceOverrides: (overrides: Partial<Record<IncomeSource, IncomeSourceOverride>>) => void;
+  setIncomeSourceOverride: (id: IncomeSource, data: IncomeSourceOverride) => void;
+  resetIncomeSourceOverride: (id: IncomeSource) => void;
 
   // ── expenses ──────────────────────────────────────────────────
   expenses: Expense[];
@@ -216,8 +224,9 @@ const ROOT_TABS = new Set(['home', 'settings', 'family', 'history']);
 
 type GroupSettingsPatch = {
   plan?: Plan;
-  categoryOverrides?: Partial<Record<Category, { icon: string; en: string; hi: string }>>;
+  categoryOverrides?: Partial<Record<Category, CategoryOverride>>;
   hiddenCategories?: Category[];
+  incomeSourceOverrides?: Partial<Record<IncomeSource, IncomeSourceOverride>>;
 };
 
 function persistGroupSettings(patch: GroupSettingsPatch) {
@@ -225,17 +234,19 @@ function persistGroupSettings(patch: GroupSettingsPatch) {
   const plan = patch.plan ?? state.plan;
   const categoryOverrides = patch.categoryOverrides ?? state.categoryOverrides;
   const hiddenCategories = patch.hiddenCategories ?? state.hiddenCategories;
+  const incomeSourceOverrides = patch.incomeSourceOverrides ?? state.incomeSourceOverrides;
 
   saveStoredPlan(plan);
   saveStoredCategoryOverrides(categoryOverrides);
   saveStoredHiddenCategories(hiddenCategories);
+  saveStoredIncomeSourceOverrides(incomeSourceOverrides);
 
   if (isLiveFirebase() && db) {
     const { groupId } = state;
     if (groupId) {
       setDoc(
         doc(db, `groups/${groupId}/settings/main`),
-        { plan, categoryOverrides, hiddenCategories },
+        { plan, categoryOverrides, hiddenCategories, incomeSourceOverrides },
         { merge: true },
       );
     }
@@ -388,6 +399,24 @@ export const useStore = create<AppState>((set, get) => ({
         : s.hiddenCategories.filter((c) => c !== id);
       persistGroupSettings({ hiddenCategories });
       return { hiddenCategories };
+    }),
+  incomeSourceOverrides: loadStoredIncomeSourceOverrides(),
+  setIncomeSourceOverrides: (incomeSourceOverrides) => {
+    saveStoredIncomeSourceOverrides(incomeSourceOverrides);
+    set({ incomeSourceOverrides });
+  },
+  setIncomeSourceOverride: (id, data) =>
+    set((s) => {
+      const incomeSourceOverrides = { ...s.incomeSourceOverrides, [id]: data };
+      persistGroupSettings({ incomeSourceOverrides });
+      return { incomeSourceOverrides };
+    }),
+  resetIncomeSourceOverride: (id) =>
+    set((s) => {
+      const next = { ...s.incomeSourceOverrides };
+      delete next[id];
+      persistGroupSettings({ incomeSourceOverrides: next });
+      return { incomeSourceOverrides: next };
     }),
 
   // ── expenses ──────────────────────────────────────────────────

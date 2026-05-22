@@ -3,8 +3,18 @@ import { useUiOverlay } from '../hooks/useUiOverlay';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Expense, type Income, type Category, type IncomeSource } from '../store/useStore';
 import { canEditTransaction, getMemberRole } from '../lib/permissions';
-import { getSelectableCategories } from '../lib/categories';
-import { INCOME_SOURCES } from '../lib/incomeSources';
+import {
+  getSelectableCategories,
+  resolveCategoryAppearance,
+  resolveCategoryLabel,
+} from '../lib/categories';
+import CategoryIcon from './CategoryIcon';
+import {
+  INCOME_SOURCE_DEFS,
+  resolveIncomeSourceAppearance,
+  resolveIncomeSourceLabel,
+} from '../lib/incomeSources';
+import IncomeSourceIcon from './IncomeSourceIcon';
 import { Check, Trash2, X } from 'lucide-react';
 
 type EditTarget =
@@ -28,6 +38,8 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
     updateExpense, deleteExpense,
     updateIncome,  deleteIncome,
     hiddenCategories,
+    categoryOverrides,
+    incomeSourceOverrides,
   } = useStore();
 
   const isExpense = target.kind === 'expense';
@@ -110,38 +122,47 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
                 {getSelectableCategories(
                   hiddenCategories,
                   isExpense ? (original as Expense).category : undefined,
-                ).map((cat) => (
+                ).map((cat) => {
+                  const appearance = resolveCategoryAppearance(cat.id, categoryOverrides);
+                  const shortLabel = resolveCategoryLabel(cat.id, language, categoryOverrides);
+                  return (
                   <button
                     key={cat.id}
                     onClick={() => setCategory(cat.id)}
                     className={`flex flex-col items-center gap-1 rounded-2xl py-2 transition-all active:scale-95 ${
                       category === cat.id ? 'ring-2 ring-brand-500 scale-105' : 'bg-white'
                     }`}
-                    style={category === cat.id ? { background: cat.bg } : {}}
+                    style={category === cat.id ? { background: appearance.bg } : {}}
                   >
-                    <span className="text-xl">{cat.icon}</span>
-                    <span className="text-[8px] font-medium text-gray-500 leading-tight">
-                      {cat.id.slice(0, 5)}
+                    <CategoryIcon categoryId={cat.id} overrides={categoryOverrides} size="md" />
+                    <span className="text-[10px] font-medium text-gray-500 leading-tight text-center line-clamp-2">
+                      {shortLabel.length > 8 ? `${shortLabel.slice(0, 7)}…` : shortLabel}
                     </span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-2">
-                {INCOME_SOURCES.map((src) => (
+                {INCOME_SOURCE_DEFS.map((src) => {
+                  const appearance = resolveIncomeSourceAppearance(src.id, incomeSourceOverrides);
+                  const shortLabel = resolveIncomeSourceLabel(src.id, language, incomeSourceOverrides);
+                  return (
                   <button
                     key={src.id}
                     onClick={() => setSource(src.id)}
                     className={`flex flex-col items-center gap-1.5 rounded-2xl py-3 transition-all active:scale-95 ${
-                      source === src.id ? 'ring-2 ring-emerald-500 scale-105 bg-emerald-50' : 'bg-white'
+                      source === src.id ? 'ring-2 ring-emerald-500 scale-105' : 'bg-white'
                     }`}
+                    style={source === src.id ? { background: appearance.bg } : {}}
                   >
-                    <span className="text-2xl">{src.icon}</span>
-                    <span className="text-xs font-medium text-gray-600">
-                      {language === 'en' ? src.en : src.hi}
+                    <IncomeSourceIcon sourceId={src.id} overrides={incomeSourceOverrides} size="md" />
+                    <span className="text-xs font-medium text-gray-600 text-center line-clamp-2">
+                      {shortLabel.length > 10 ? `${shortLabel.slice(0, 9)}…` : shortLabel}
                     </span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

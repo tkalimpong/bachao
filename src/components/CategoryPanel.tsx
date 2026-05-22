@@ -1,7 +1,8 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, type Category, type Expense } from '../store/useStore';
 import { isLiveFirebase } from '../lib/appMode';
-import { getVisibleCategories } from '../lib/categories';
+import { getVisibleCategories, resolveCategoryLabel } from '../lib/categories';
+import CategoryIcon from './CategoryIcon';
 import { categoryMonthProgress, monthlyAvgBeforeMonth } from '../lib/categoryAverage';
 import { ChevronDown, ChevronUp, Wifi, WifiOff, Users, Pencil } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
@@ -34,6 +35,7 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
     setCategoryExpandCategory,
     setCategoryScrollTarget,
     hiddenCategories,
+    categoryOverrides,
   } = useStore();
 
   const [expanded, setExpanded] = useState<Category | null>(null);
@@ -170,19 +172,12 @@ export default function CategoryPanel({ selectedMonth, monthLabel }: Props) {
                   className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-gray-50 transition-colors"
                   onClick={() => setExpanded(isExpanded ? null : cat.id)}
                 >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                    style={{ background: cat.bg }}
-                  >
-                    {cat.icon}
-                  </div>
+                  <CategoryIcon categoryId={cat.id} overrides={categoryOverrides} size="md" />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-1.5">
                       <span className="text-sm font-semibold text-gray-800">
-                        {language === 'en'
-                          ? cat.id.charAt(0).toUpperCase() + cat.id.slice(1)
-                          : cat.id}
+                        {resolveCategoryLabel(cat.id, language, categoryOverrides)}
                       </span>
                       <div className="flex items-center gap-1.5">
                         {isOver && (

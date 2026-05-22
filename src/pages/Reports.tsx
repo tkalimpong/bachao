@@ -2,6 +2,7 @@
 import { useStore } from '../store/useStore';
 import { t } from '../lib/i18n';
 import { getCat, getVisibleCategories } from '../lib/categories';
+import CategoryIcon from '../components/CategoryIcon';
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer,
   PieChart, Pie, Cell, Tooltip,
@@ -15,7 +16,7 @@ function fmt(n: number) {
 const WEEK_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Reports() {
-  const { expenses, language, hiddenCategories } = useStore();
+  const { expenses, language, hiddenCategories, categoryOverrides } = useStore();
   const [view, setView] = useState<'monthly' | 'weekly'>('monthly');
 
   const thisMonth = new Date().toISOString().slice(0, 7);
@@ -158,7 +159,10 @@ export default function Reports() {
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ background: d.color }}
                   />
-                  <span className="text-xs text-gray-600 flex-1">{d.icon} {t(language, d.catId as any)}</span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <CategoryIcon categoryId={d.catId as any} overrides={categoryOverrides} size="sm" />
+                    <span className="text-xs text-gray-600 truncate">{t(language, d.catId as any)}</span>
+                  </div>
                   <span className="text-xs font-bold text-gray-800">{fmt(d.value)}</span>
                 </div>
               ))}
@@ -175,12 +179,7 @@ export default function Reports() {
             const pct = (amt / totalThisMonth) * 100;
             return (
               <div key={cat.id} className="px-4 py-3 flex items-center gap-3">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
-                  style={{ background: cat.bg }}
-                >
-                  {cat.icon}
-                </div>
+                <CategoryIcon categoryId={cat.id} overrides={categoryOverrides} size="md" />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm font-semibold text-gray-800">{t(language, cat.id as any)}</span>
