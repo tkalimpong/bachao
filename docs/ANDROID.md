@@ -14,6 +14,11 @@ Hamro Gullak は **Vite + Capacitor** の Web アプリです。
 | まず触ってみる | Firebase **なし** | ❌ 端末ごとにデモデータ（バラバラ） |
 | 家族で本番利用 | Firebase **あり** | ✅ 同じ家計データをリアルタイム同期 |
 
+| 端末 | 配布方法 |
+|------|----------|
+| **Android** | このドキュメントの APK |
+| **iPhone / iPad** | [docs/WEB.md](./WEB.md) の Web 版 URL（Safari） |
+
 ---
 
 ## 家族で使う — 全体の流れ
@@ -26,7 +31,7 @@ Hamro Gullak は **Vite + Capacitor** の Web アプリです。
 6. **代表者**が Google でサインイン → **Settings → Members** の招待コードを共有
 7. **家族**は各自 Google でサインインし、Login 画面で **招待コード** を入力して参加
 
-全員 **同じ `.env.local` でビルドした同じ APK** を入れ、**各自の Google アカウント**でログインします。
+全員 **同じ `.env.local` でビルドした同じ APK** を Android に入れ、**iPhone は Web 版 URL**（[WEB.md](./WEB.md)）を使い、**各自の Google アカウント**でログインします。
 
 ---
 

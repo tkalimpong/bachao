@@ -4,6 +4,7 @@ Vite + React の家計簿アプリ。
 
 - **PC で開発:** `npm run dev`
 - **Android で自分・家族が使う:** [docs/ANDROID.md](docs/ANDROID.md)（Firebase 設定 → APK ビルド → 端末へ配布）
+- **iPhone / iPad:** [docs/WEB.md](docs/WEB.md)（Firebase Hosting に Web 版を公開 → Safari で URL を開く）
 
 ## 開発
 
@@ -22,6 +23,14 @@ npm run android:apk
 ```
 
 手順の詳細（Firebase・家族共有・インストール）: **[docs/ANDROID.md](docs/ANDROID.md)**
+
+## iPhone / Web（家族の Safari）
+
+```bash
+npm run web:deploy   # ビルド + Firebase Hosting へ公開
+```
+
+手順の詳細: **[docs/WEB.md](docs/WEB.md)**
 
 ---
 
