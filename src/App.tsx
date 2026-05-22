@@ -1,10 +1,13 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { useStore } from './store/useStore';
-import { canAccessTab, getMemberRole, shouldShowBottomNav } from './lib/permissions';
+import { canAccessTab, canUsePremium, getMemberRole, shouldShowBottomNav } from './lib/permissions';
 import { applyScrollForTab, scrollMainToTop, restoreMainScrollTop } from './lib/mainScroll';
 import { useFirestoreSync } from './hooks/useFirestoreSync';
+import { useAutoBackup } from './hooks/useAutoBackup';
+import { useNavigationBack } from './hooks/useNavigationBack';
 import { useAuth } from './context/AuthContext';
 import { isLiveFirebase } from './lib/appMode';
+import { canBackup } from './lib/plan';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import AddExpense from './pages/AddExpense';
@@ -14,6 +17,7 @@ import Members from './pages/Members';
 import Family from './pages/Family';
 import Premium from './pages/Premium';
 import History from './pages/History';
+import Backup from './pages/Backup';
 import Login from './pages/Login';
 
 const SCREENS: Record<string, React.FC> = {
@@ -25,6 +29,7 @@ const SCREENS: Record<string, React.FC> = {
   premium:    Premium,
   family:     Family,
   history:    History,
+  backup:     Backup,
 };
 
 function LoadingScreen({ message }: { message: string }) {
@@ -47,10 +52,19 @@ function AppShell() {
     members,
     currentUserId,
     groupId,
+    plan,
   } = useStore();
   const showBottomNav = shouldShowBottomNav(currentTab, uiOverlayDepth);
   const syncEnabled = isLiveFirebase() && Boolean(groupId && currentUserId);
   useFirestoreSync(syncEnabled);
+
+  const role = getMemberRole(members, currentUserId);
+  const autoBackupEnabled =
+    syncEnabled &&
+    canBackup(plan) &&
+    (role ? canUsePremium(role) : true);
+  useAutoBackup(autoBackupEnabled);
+  useNavigationBack();
 
   useEffect(() => {
     const role = getMemberRole(members, currentUserId);

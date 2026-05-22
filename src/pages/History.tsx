@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Expense, type Income } from '../store/useStore';
 import { getCat } from '../lib/categories';
 import { SOURCE_ICONS } from '../lib/incomeSources';
@@ -256,6 +257,16 @@ export default function History() {
   const balance = totalIn - totalOut;
 
   const L = (en: string, hi: string) => language === 'en' ? en : hi;
+
+  useBackHandler(() => {
+    setShowMonthPicker(false);
+    return true;
+  }, showMonthPicker);
+
+  useBackHandler(() => {
+    setHistoryView('history');
+    return true;
+  }, showGroup && topView === 'category');
 
   return (
     <div className="flex flex-col pb-24">

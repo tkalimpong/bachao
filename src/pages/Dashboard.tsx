@@ -3,7 +3,8 @@ import { useStore, type Category, type Expense, type Income } from '../store/use
 import { getCat, getVisibleCategories } from '../lib/categories';
 import { SOURCE_ICONS } from '../lib/incomeSources';
 import AppLogo from '../components/AppLogo';
-import BachaoPotIcon from '../components/BachaoPotIcon';
+import GullakPotIcon from '../components/GullakPotIcon';
+import { appName } from '../lib/appBrand';
 import { TRUST_BLUE } from '../lib/theme';
 import { Globe, TrendingDown, TrendingUp, Minus, Pencil, ChevronDown } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
@@ -159,7 +160,7 @@ export default function Dashboard() {
                 {new Date().toLocaleString(language === 'en' ? 'en-IN' : 'hi-IN', { month: 'long', year: 'numeric' })}
               </p>
               <h1 className="text-lg font-bold text-gray-900">
-                {language === 'en' ? 'Bachao' : 'बचाओ'}
+                {appName(language)}
               </h1>
             </div>
           </div>
@@ -272,7 +273,7 @@ export default function Dashboard() {
                 monthBalance >= 0 ? 'bg-white/20' : 'bg-rose-100'
               }`}
             >
-              <BachaoPotIcon
+              <GullakPotIcon
                 state={monthBalance >= 0 ? 'savings' : 'overspend'}
                 className={`w-11 h-11 ${monthBalance >= 0 ? 'text-white' : 'text-rose-800'}`}
               />

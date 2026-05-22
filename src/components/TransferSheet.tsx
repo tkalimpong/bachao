@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useUiOverlay } from '../hooks/useUiOverlay';
+import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Transfer } from '../store/useStore';
 import { canEditTransfer, getMemberRole } from '../lib/permissions';
 import { ArrowRightLeft, CalendarDays, Check, Trash2, X } from 'lucide-react';
@@ -18,6 +19,10 @@ export default function TransferSheet({
   onClose,
 }: Props) {
   useUiOverlay();
+  useBackHandler(() => {
+    onClose();
+    return true;
+  });
 
   const {
     language,

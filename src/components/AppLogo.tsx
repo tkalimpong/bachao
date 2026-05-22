@@ -1,3 +1,5 @@
+import { APP_NAME, LOGO_MARK } from '../lib/appBrand';
+
 type Props = {
   size?: number;
   className?: string;
@@ -6,8 +8,8 @@ type Props = {
 export default function AppLogo({ size = 40, className = '' }: Props) {
   return (
     <img
-      src="/bachao-mark.png"
-      alt="Bachao"
+      src={LOGO_MARK}
+      alt={APP_NAME}
       width={size}
       height={size}
       className={`rounded-xl object-cover shadow-sm shrink-0 ${className}`}

@@ -17,6 +17,8 @@ import { db } from '../lib/firebase';
 import {
   canEditMemberRole,
   canManageMembers,
+  canViewGroupFinances,
+  getMemberRole,
   type MemberRole,
 } from '../lib/permissions';
 import type { Plan } from '../lib/plan';
@@ -97,8 +99,12 @@ interface AppState {
 
   // ── navigation ────────────────────────────────────────────────
   currentTab: string;
+  /** Previous tabs for back navigation (sub-screens). */
+  navStack: string[];
   addMode: 'expense' | 'income';
   setTab: (tab: string, addMode?: 'expense' | 'income') => void;
+  popTab: () => boolean;
+  cancelAddNavigation: () => void;
   /** 次のタブ表示で save した scrollTop を復元（戻る・キャンセル用） */
   restoreScrollTab: string | null;
   tabScrollTops: Partial<Record<string, number>>;
@@ -206,6 +212,8 @@ function captureCurrentTabScroll() {
   if (el) saveTabScrollTop(currentTab, el.scrollTop);
 }
 
+const ROOT_TABS = new Set(['home', 'settings', 'family', 'history']);
+
 type GroupSettingsPatch = {
   plan?: Plan;
   categoryOverrides?: Partial<Record<Category, { icon: string; en: string; hi: string }>>;
@@ -243,11 +251,67 @@ export const useStore = create<AppState>((set, get) => ({
 
   // ── navigation ────────────────────────────────────────────────
   currentTab: 'home',
+  navStack: [],
   addMode: 'expense',
   setTab: (tab, addMode) => {
-    const { currentTab } = get();
+    const { currentTab, navStack } = get();
+    if (tab === currentTab && addMode === undefined) return;
     if (tab !== currentTab) captureCurrentTabScroll();
-    set(addMode !== undefined ? { currentTab: tab, addMode } : { currentTab: tab });
+
+    let nextStack = navStack;
+    if (ROOT_TABS.has(tab)) {
+      nextStack = [];
+    } else if (tab !== currentTab) {
+      nextStack = [...navStack, currentTab];
+    }
+
+    const patch: Partial<AppState> = { currentTab: tab, navStack: nextStack };
+    if (addMode !== undefined) patch.addMode = addMode;
+    set(patch);
+  },
+  popTab: () => {
+    const { currentTab, navStack } = get();
+    if (currentTab === 'add') {
+      get().cancelAddNavigation();
+      return true;
+    }
+    if (navStack.length === 0) return false;
+    const prev = navStack[navStack.length - 1];
+    get().requestRestoreScroll(prev);
+    set({ currentTab: prev, navStack: navStack.slice(0, -1) });
+    return true;
+  },
+  cancelAddNavigation: () => {
+    const ctx = get().addReturnContext;
+    get().clearAddNavigation();
+
+    if (ctx) {
+      if (ctx.historyView) get().setHistoryView(ctx.historyView);
+      if (ctx.categoryExpandCategory) {
+        get().setCategoryExpandCategory(ctx.categoryExpandCategory);
+        get().setCategoryScrollTarget(ctx.categoryExpandCategory);
+      }
+      if (ctx.historyNavigateMonth) get().setHistoryNavigateMonth(ctx.historyNavigateMonth);
+      get().requestRestoreScroll(ctx.tab);
+      set((s) => ({
+        currentTab: ctx.tab,
+        navStack: s.navStack.slice(0, -1),
+      }));
+      return;
+    }
+
+    const { navStack, members, currentUserId } = get();
+    const myRole = getMemberRole(members, currentUserId);
+    const showGroup = myRole ? canViewGroupFinances(myRole) : true;
+
+    if (navStack.length > 0) {
+      const prev = navStack[navStack.length - 1];
+      get().requestRestoreScroll(prev);
+      set({ currentTab: prev, navStack: navStack.slice(0, -1) });
+      return;
+    }
+
+    set({ currentTab: showGroup ? 'home' : 'history' });
   },
   restoreScrollTab: null,
   tabScrollTops: {},
@@ -275,8 +339,8 @@ export const useStore = create<AppState>((set, get) => ({
         categoryExpandCategory: category,
         historyNavigateMonth: selectedMonth,
       },
-      // 戻るときだけ展開（ここで set すると Category の scrollIntoView が先に走る）
       categoryExpandCategory: null,
+      navStack: [...s.navStack, s.currentTab],
       currentTab: 'add',
       addMode: 'expense',
       addNavigationKey: s.addNavigationKey + 1,

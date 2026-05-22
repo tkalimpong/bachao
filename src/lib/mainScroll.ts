@@ -1,4 +1,5 @@
 import { useStore } from '../store/useStore';
+import { navigateBack } from './navigationBack';
 
 export function getMainScrollEl(): HTMLElement | null {
   return document.querySelector<HTMLElement>('[data-main-scroll]');
@@ -52,8 +53,6 @@ export function applyScrollForTab(tab: string) {
 }
 
 /** 設定サブ画面など、戻る操作で直前のスクロール位置を復元する */
-export function goBackToTab(tab: string) {
-  const { requestRestoreScroll, setTab } = useStore.getState();
-  requestRestoreScroll(tab);
-  setTab(tab);
+export function goBackToTab(_tab: string) {
+  navigateBack();
 }

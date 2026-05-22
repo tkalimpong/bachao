@@ -57,26 +57,22 @@ function OverspendCracks() {
       fill="none"
       opacity="0.88"
     >
-      {/* primary impact fracture */}
       <path
         d="M10.8 21.2c1.2-1.4 2.8-1.8 4.6-1.1 1.4.5 2.4 1.8 2.7 3.4"
         stroke={CRACK}
         strokeWidth="1.05"
       />
-      {/* long stress crack along the belly */}
       <path
         d="M11.2 9.5c-.6 3.2-.2 6.8 1.1 10.2 1 2.6 2.6 4.4 4.5 5.6"
         stroke={CRACK}
         strokeWidth="0.95"
       />
-      {/* short branch from the belly crack */}
       <path
         d="M12.8 16.2c1.6.3 2.8 1.2 3.6 2.5"
         stroke={CRACK_SOFT}
         strokeWidth="0.75"
         opacity="0.85"
       />
-      {/* hairline at the rim */}
       <path
         d="M10.4 8.4c1.8-.2 3.4.1 4.8 1"
         stroke={CRACK_SOFT}
@@ -95,14 +91,12 @@ function OverspendFallen() {
       <g transform={`rotate(${TIP_ANGLE}, ${x}, ${y})`}>
         <path d={POT} fill="currentColor" />
         <OverspendCracks />
-        {/* impact chip where the pot meets the ground */}
         <path
           d="M7.8 22.6c1.4-.8 2.6-.5 3.4.5-.5.9-1.6 1.2-2.8.6-.7-.3-1.2-.7-.6-1.1Z"
           fill={CRACK}
           opacity="0.45"
         />
       </g>
-      {/* shards scattered beside the fallen pot */}
       <path d="M19.5 25.4l1.3-.6.6 1.3-1.5.4-.4-.9Z" fill={CRACK_SOFT} opacity="0.9" />
       <path d="M21.2 26l.9-.5.4.9-1.1.25-.2-.65Z" fill={CRACK_SOFT} opacity="0.7" />
       <path d="M17.8 26.3l1-.55.45 1.05-1.25.35-.2-.85Z" fill={CRACK} opacity="0.65" />
@@ -110,8 +104,8 @@ function OverspendFallen() {
   );
 }
 
-/** Matka — savings: golden glow from the mouth; overspend: fallen, cracked pot */
-export default function BachaoPotIcon({ className = '', state = 'savings' }: Props) {
+/** Gullak (piggy bank) — savings: golden glow; overspend: fallen, cracked pot */
+export default function GullakPotIcon({ className = '', state = 'savings' }: Props) {
   if (state === 'overspend') {
     return (
       <svg

@@ -101,14 +101,14 @@ export function visibleTabs(_role: MemberRole): string[] {
   return ['home', 'settings', 'add', 'family', 'history'];
 }
 
-export const SETTINGS_SCREENS = ['settings', 'categories', 'premium', 'members'] as const;
+export const SETTINGS_SCREENS = ['settings', 'categories', 'premium', 'members', 'backup'] as const;
 
 export function isSettingsArea(tab: string): boolean {
   return (SETTINGS_SCREENS as readonly string[]).includes(tab);
 }
 
 /** フルスクリーンの編集タブ（BottomNav 非表示） */
-export const EDIT_SCREEN_TABS = ['add', 'categories', 'members', 'premium'] as const;
+export const EDIT_SCREEN_TABS = ['add', 'categories', 'members', 'premium', 'backup'] as const;
 
 export function shouldShowBottomNav(currentTab: string, uiOverlayDepth: number): boolean {
   if (uiOverlayDepth > 0) return false;
@@ -119,6 +119,7 @@ export function canAccessTab(role: MemberRole, tab: string): boolean {
   if (tab === 'premium') return canUsePremium(role);
   if (tab === 'categories') return true;
   if (tab === 'members') return true;
+  if (tab === 'backup') return canUsePremium(role);
   if (isSettingsArea(tab)) return visibleTabs(role).includes('settings');
   return visibleTabs(role).includes(tab);
 }

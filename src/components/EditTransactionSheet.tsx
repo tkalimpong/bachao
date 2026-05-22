@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useUiOverlay } from '../hooks/useUiOverlay';
+import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Expense, type Income, type Category, type IncomeSource } from '../store/useStore';
 import { canEditTransaction, getMemberRole } from '../lib/permissions';
 import { getSelectableCategories } from '../lib/categories';
@@ -17,6 +18,10 @@ interface Props {
 
 export default function EditTransactionSheet({ target, onClose }: Props) {
   useUiOverlay();
+  useBackHandler(() => {
+    onClose();
+    return true;
+  });
 
   const {
     language, members, currentUserId,

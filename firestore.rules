@@ -41,22 +41,28 @@ service cloud.firestore {
       }
 
       match /expenses/{docId} {
-        allow read, write: if isMember(groupId);
+        allow read: if isMember(groupId);
+        allow create, update, delete: if isMember(groupId);
       }
       match /incomes/{docId} {
-        allow read, write: if isMember(groupId);
+        allow read: if isMember(groupId);
+        allow create, update, delete: if isMember(groupId);
       }
       match /transfers/{docId} {
-        allow read, write: if isMember(groupId);
+        allow read: if isMember(groupId);
+        allow create, update, delete: if isMember(groupId);
       }
       match /categoryBudgets/{docId} {
-        allow read, write: if isMember(groupId);
+        allow read: if isMember(groupId);
+        allow create, update, delete: if isMember(groupId);
       }
       match /envelopes/{docId} {
-        allow read, write: if isMember(groupId);
+        allow read: if isMember(groupId);
+        allow create, update, delete: if isMember(groupId);
       }
       match /settings/{docId} {
-        allow read, write: if isMember(groupId);
+        allow read: if isMember(groupId);
+        allow create, update, delete: if isMember(groupId);
       }
     }
   }

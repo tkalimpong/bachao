@@ -1,5 +1,7 @@
 import { useState, useEffect, useLayoutEffect } from 'react';
 import { resetMainScroll, resetMainScrollThoroughly } from '../lib/mainScroll';
+import { navigateBack } from '../lib/navigationBack';
+import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore, type Category, type IncomeSource } from '../store/useStore';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
 import { getVisibleCategories, defaultCategoryNote } from '../lib/categories';
@@ -12,17 +14,19 @@ function fmt(n: number) {
 
 export default function AddExpense() {
   const {
-    addExpense, addIncome, setTab, addMode: mode, language,
+    addExpense, addIncome, addMode: mode, language,
     members, activeMemberId, setActiveMember,
     categoryBudgets, expenses, currentUserId,
     hiddenCategories,
-    addPrefillCategory, addReturnContext,
-    setHistoryView, setCategoryExpandCategory, setHistoryNavigateMonth,
-    setCategoryScrollTarget,
-    requestRestoreScroll,
+    addPrefillCategory,
     clearAddPrefill,
-    clearAddNavigation,
+    cancelAddNavigation,
   } = useStore();
+
+  useBackHandler(() => {
+    cancelAddNavigation();
+    return true;
+  });
 
   const myRole = getMemberRole(members, currentUserId);
   const showGroup = myRole ? canViewGroupFinances(myRole) : true;
@@ -78,24 +82,11 @@ export default function AddExpense() {
   }
 
   function navigateAfterAdd() {
-    const ctx = addReturnContext;
-    clearAddNavigation();
-    if (ctx) {
-      if (ctx.historyView) setHistoryView(ctx.historyView);
-      if (ctx.categoryExpandCategory) {
-        setCategoryExpandCategory(ctx.categoryExpandCategory);
-        setCategoryScrollTarget(ctx.categoryExpandCategory);
-      }
-      if (ctx.historyNavigateMonth) setHistoryNavigateMonth(ctx.historyNavigateMonth);
-      requestRestoreScroll(ctx.tab);
-      setTab(ctx.tab);
-      return;
-    }
-    setTab(showGroup ? 'home' : 'history');
+    navigateBack();
   }
 
   function handleCancel() {
-    navigateAfterAdd();
+    navigateBack();
   }
 
   function handleSave() {

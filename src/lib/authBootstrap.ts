@@ -1,5 +1,6 @@
 import { getRedirectResult } from 'firebase/auth';
 import { auth } from './firebase';
+import { cacheDriveAccessTokenFromAuthResult } from './googleDriveAuth';
 
 const AUTH_READY_MS = 12_000;
 
@@ -25,7 +26,10 @@ export function bootstrapFirebaseAuth(): Promise<import('firebase/auth').User | 
   bootstrapPromise = (async () => {
     try {
       const result = await getRedirectResult(auth);
-      if (result?.user) return result.user;
+      if (result) {
+        cacheDriveAccessTokenFromAuthResult(result);
+        if (result.user) return result.user;
+      }
     } catch (e) {
       console.error('[auth] getRedirectResult failed', e);
     }

@@ -1,8 +1,14 @@
 import type { Plan } from './plan';
 import type { Category } from '../store/useStore';
+import { migrateStorageKey } from './storageMigrate';
 
-const PLAN_KEY = 'bachao_plan';
-const HIDDEN_KEY = 'bachao_hidden_categories';
+const PLAN_KEY = 'hamrogullak_plan';
+const HIDDEN_KEY = 'hamrogullak_hidden_categories';
+const LEGACY_PLAN_KEY = 'bachao_plan';
+const LEGACY_HIDDEN_KEY = 'bachao_hidden_categories';
+
+migrateStorageKey(PLAN_KEY, LEGACY_PLAN_KEY);
+migrateStorageKey(HIDDEN_KEY, LEGACY_HIDDEN_KEY);
 
 export function loadStoredPlan(): Plan {
   try {

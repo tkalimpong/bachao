@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useBackHandler } from '../hooks/useBackHandler';
 import { useStore } from '../store/useStore';
 import { isLiveFirebase } from '../lib/appMode';
 import {
@@ -36,6 +37,12 @@ export default function Family() {
   const [editTransfer, setEditTransfer] = useState<Transfer | null>(null);
 
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
+
+  useBackHandler(() => {
+    setShowMonthPicker(false);
+    return true;
+  }, showMonthPicker);
+
   const myRole = getMemberRole(members, currentUserId);
   const showGroup = myRole ? canViewGroupFinances(myRole) : false;
 

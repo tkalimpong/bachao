@@ -1,4 +1,4 @@
-# Bachao — Family Budget
+# Hamro Gullak — Family Budget
 
 Vite + React の家計簿アプリ。
 

@@ -17,9 +17,15 @@ import { isLiveFirebase } from '../lib/appMode';
 import { bootstrapFirebaseAuth } from '../lib/authBootstrap';
 import { resolveUserGroup } from '../lib/authProfile';
 import { formatAuthError, signInWithGoogle } from '../lib/googleSignIn';
+import { clearDriveTokenCache, prefetchDriveAccessToken } from '../lib/googleDriveAuth';
 import { useStore } from '../store/useStore';
 
-const PENDING_INVITE_KEY = 'bachao_pending_invite';
+import { migrateSessionKey } from '../lib/storageMigrate';
+
+const PENDING_INVITE_KEY = 'hamrogullak_pending_invite';
+const LEGACY_PENDING_INVITE_KEY = 'bachao_pending_invite';
+
+migrateSessionKey(PENDING_INVITE_KEY, LEGACY_PENDING_INVITE_KEY);
 const SETUP_TIMEOUT_MS = 20_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
@@ -85,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setCurrentUserId(firebaseUser.uid);
           setActiveMember(firebaseUser.uid);
           setSessionReady(true);
+          void prefetchDriveAccessToken();
         } catch (e) {
           sessionStorage.removeItem(PENDING_INVITE_KEY);
           setSessionReady(false);
@@ -183,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     setError(null);
     setSessionReady(false);
+    clearDriveTokenCache();
     await firebaseSignOut(auth);
     setUser(null);
   }, []);

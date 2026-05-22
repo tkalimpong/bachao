@@ -3,8 +3,8 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { isLiveFirebase } from '../lib/appMode';
-import { exportFamilyBackup } from '../lib/backup';
 import { canBackup, isPlus } from '../lib/plan';
+import { appNamePlus } from '../lib/appBrand';
 import { useAuth } from '../context/AuthContext';
 import {
   canManageMembers,
@@ -67,8 +67,8 @@ export default function Settings() {
           bg: '#fefce8',
           en: 'Plan',
           hi: 'प्लान',
-          subEn: plus ? 'Bachao Plus active' : 'Free · Upgrade to Plus',
-          subHi: plus ? 'बचाओ Plus सक्रिय' : 'मुफ़्त · Plus में अपग्रेड',
+          subEn: plus ? `${appNamePlus('en')} active` : 'Free · Upgrade to Plus',
+          subHi: plus ? `${appNamePlus('hi')} सक्रिय` : 'मुफ़्त · Plus में अपग्रेड',
           onClick: () => setTab('premium'),
         }]
       : []),
@@ -80,9 +80,9 @@ export default function Settings() {
           bg: '#ecfdf5',
           en: 'Backup',
           hi: 'बैकअप',
-          subEn: 'Export family data (JSON)',
-          subHi: 'परिवार डेटा JSON में',
-          onClick: () => exportFamilyBackup(),
+          subEn: 'Manual & scheduled Google Drive backup',
+          subHi: 'Google Drive मैन्युअल और स्वचालित',
+          onClick: () => setTab('backup'),
         }]
       : []),
   ];

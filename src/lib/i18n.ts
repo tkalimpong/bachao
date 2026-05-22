@@ -1,7 +1,9 @@
+import { APP_NAME, APP_NAME_HI, APP_TAGLINE_EN, APP_TAGLINE_HI } from './appBrand';
+
 export const T = {
   en: {
-    appName: 'Bachao',
-    tagline: 'Save Smart',
+    appName: APP_NAME,
+    tagline: APP_TAGLINE_EN,
     homeTab: 'Home',
     add: 'Add',
     reports: 'Reports',
@@ -44,8 +46,8 @@ export const T = {
     helper: 'Helper',
   },
   hi: {
-    appName: 'बचाओ',
-    tagline: 'समझदारी से बचाएं',
+    appName: APP_NAME_HI,
+    tagline: APP_TAGLINE_HI,
     homeTab: 'होम',
     add: 'जोड़ें',
     reports: 'रिपोर्ट',

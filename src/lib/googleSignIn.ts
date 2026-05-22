@@ -6,8 +6,13 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth } from './firebase';
+import {
+  DRIVE_APPDATA_SCOPE,
+  cacheDriveAccessTokenFromAuthResult,
+} from './googleDriveAuth';
 
 const provider = new GoogleAuthProvider();
+provider.addScope(DRIVE_APPDATA_SCOPE);
 provider.setCustomParameters({ prompt: 'select_account' });
 
 export function formatAuthError(error: unknown): string {
@@ -54,5 +59,6 @@ export async function signInWithGoogle(): Promise<User | null> {
   }
 
   const result = await signInWithPopup(auth, provider);
+  cacheDriveAccessTokenFromAuthResult(result);
   return result.user;
 }

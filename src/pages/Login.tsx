@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AppLogo from '../components/AppLogo';
 import { useStore } from '../store/useStore';
+import { t } from '../lib/i18n';
 
 type Props = {
   loading: boolean;
@@ -18,7 +19,7 @@ export default function Login({ loading, error, onSignIn }: Props) {
       <div className="w-full max-w-sm min-h-screen bg-surface flex flex-col px-6 pt-16 pb-10">
         <div className="flex flex-col items-center text-center mb-10">
           <AppLogo size={72} className="rounded-2xl shadow-md mb-5" />
-          <h1 className="text-2xl font-black text-gray-900">Bachao</h1>
+          <h1 className="text-2xl font-black text-gray-900">{t(language, 'appName')}</h1>
           <p className="text-sm text-gray-500 mt-2 max-w-[260px]">
             {L(
               'Sign in with Google to sync your family budget across devices.',
