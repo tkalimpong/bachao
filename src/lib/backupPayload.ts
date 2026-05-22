@@ -30,8 +30,11 @@ import { APP_SLUG } from './appBrand';
 
 export const BACKUP_VERSION = 1;
 export const BACKUP_FILENAME = `${APP_SLUG}-family-backup.json`;
-/** Legacy filename from previous app name — still read on restore. */
-export const LEGACY_BACKUP_FILENAME = 'bachao-family-backup.json';
+/** Legacy filenames from previous app names — still read on restore. */
+export const LEGACY_BACKUP_FILENAMES = [
+  'hamro-gullak-family-backup.json',
+  'bachao-family-backup.json',
+] as const;
 
 export interface BackupPayload {
   version: number;

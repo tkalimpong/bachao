@@ -16,7 +16,7 @@ export type AutoBackupResult =
   | 'no_token'
   | 'error';
 
-export const AUTO_BACKUP_EVENT = 'hamrogullak:auto-backup';
+export const AUTO_BACKUP_EVENT = 'familygullak:auto-backup';
 
 let running = false;
 

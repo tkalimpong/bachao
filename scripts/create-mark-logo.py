@@ -1,4 +1,4 @@
-"""Create hamro-gullak-mark.png from hamro-gullak-logo.png (read-only source).
+"""Create familygullak-mark.png from familygullak-logo.png (read-only source).
 
 Same pot + coins artwork, no app caption. Keeps the outer white canvas and
 transparent inner area from the full logo crop.
@@ -9,8 +9,8 @@ from pathlib import Path
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "public" / "hamro-gullak-logo.png"
-OUTPUT = ROOT / "public" / "hamro-gullak-mark.png"
+SOURCE = ROOT / "public" / "familygullak-logo.png"
+OUTPUT = ROOT / "public" / "familygullak-mark.png"
 
 # Crop box tuned for the pot icon (left portion of the full logo art)
 CROP = (0, 0, 512, 512)

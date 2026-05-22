@@ -1,4 +1,4 @@
-# Hamro Gullak — Family Budget
+# familygullak — Family Budget
 
 Vite + React の家計簿アプリ。
 

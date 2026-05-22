@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { getRedirectResult } from 'firebase/auth';
 import { auth } from './firebase';
 import { cacheDriveAccessTokenFromAuthResult } from './googleDriveAuth';
@@ -24,14 +25,16 @@ export function bootstrapFirebaseAuth(): Promise<import('firebase/auth').User | 
   if (bootstrapPromise) return bootstrapPromise;
 
   bootstrapPromise = (async () => {
-    try {
-      const result = await getRedirectResult(auth);
-      if (result) {
-        cacheDriveAccessTokenFromAuthResult(result);
-        if (result.user) return result.user;
+    if (!Capacitor.isNativePlatform()) {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          cacheDriveAccessTokenFromAuthResult(result);
+          if (result.user) return result.user;
+        }
+      } catch (e) {
+        console.error('[auth] getRedirectResult failed', e);
       }
-    } catch (e) {
-      console.error('[auth] getRedirectResult failed', e);
     }
 
     await withTimeout(auth.authStateReady(), AUTH_READY_MS);

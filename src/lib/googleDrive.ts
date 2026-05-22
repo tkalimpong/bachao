@@ -1,6 +1,6 @@
 import {
   BACKUP_FILENAME,
-  LEGACY_BACKUP_FILENAME,
+  LEGACY_BACKUP_FILENAMES,
   serializeBackup,
   parseBackup,
   buildBackupPayload,
@@ -38,7 +38,7 @@ async function driveFetch(url: string, token: string, init?: RequestInit): Promi
 }
 
 async function findBackupFile(token: string): Promise<DriveBackupMeta | null> {
-  for (const name of [BACKUP_FILENAME, LEGACY_BACKUP_FILENAME]) {
+  for (const name of [BACKUP_FILENAME, ...LEGACY_BACKUP_FILENAMES]) {
     const q = encodeURIComponent(`name='${name}' and 'appDataFolder' in parents`);
     const res = await driveFetch(
       `${DRIVE_FILES}?spaces=appDataFolder&q=${q}&fields=files(id,name,modifiedTime)&pageSize=1`,

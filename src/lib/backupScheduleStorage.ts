@@ -7,9 +7,12 @@ export interface AutoBackupSettings {
   interval: AutoBackupInterval;
 }
 
-const SETTINGS_KEY = 'hamrogullak_auto_backup';
-const LAST_AUTO_KEY = 'hamrogullak_auto_backup_last';
-const LAST_CLOUD_KEY = 'hamrogullak_last_cloud_backup';
+const SETTINGS_KEY = 'familygullak_auto_backup';
+const LAST_AUTO_KEY = 'familygullak_auto_backup_last';
+const LAST_CLOUD_KEY = 'familygullak_last_cloud_backup';
+const LEGACY_HAMRO_SETTINGS_KEY = 'hamrogullak_auto_backup';
+const LEGACY_HAMRO_LAST_RUN_KEY = 'hamrogullak_auto_backup_last';
+const LEGACY_HAMRO_LAST_CLOUD_KEY = 'hamrogullak_last_cloud_backup';
 const LEGACY_SETTINGS_KEY = 'bachao_auto_backup';
 const LEGACY_LAST_RUN_KEY = 'bachao_auto_backup_last';
 
@@ -18,6 +21,9 @@ const INTERVAL_MS: Record<AutoBackupInterval, number> = {
   weekly: 7 * 24 * 60 * 60 * 1000,
 };
 
+migrateStorageKey(SETTINGS_KEY, LEGACY_HAMRO_SETTINGS_KEY);
+migrateStorageKey(LAST_AUTO_KEY, LEGACY_HAMRO_LAST_RUN_KEY);
+migrateStorageKey(LAST_CLOUD_KEY, LEGACY_HAMRO_LAST_CLOUD_KEY);
 migrateStorageKey(SETTINGS_KEY, LEGACY_SETTINGS_KEY);
 migrateStorageKey(LAST_AUTO_KEY, LEGACY_LAST_RUN_KEY);
 

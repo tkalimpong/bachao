@@ -1,11 +1,11 @@
-"""Replace hamro-gullak-logo.png teal/green background with trust blue (#2563eb)."""
+"""Replace familygullak-logo.png teal/green background with trust blue (#2563eb)."""
 
 from pathlib import Path
 
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-LOGO = ROOT / "public" / "hamro-gullak-logo.png"
+LOGO = ROOT / "public" / "familygullak-logo.png"
 TRUST_BLUE = (37, 99, 235)
 
 def main() -> None:

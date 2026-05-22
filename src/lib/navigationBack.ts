@@ -13,19 +13,19 @@ export function isRootTab(tab: string): boolean {
 }
 
 export function initNavigationHistory(): void {
-  if (!window.history.state?.hamroNav) {
-    window.history.replaceState({ hamroNav: true }, '');
+  if (!window.history.state?.familygullakNav) {
+    window.history.replaceState({ familygullakNav: true }, '');
   }
 }
 
 export function resetNavigationHistory(): void {
   historyEntries = 0;
-  window.history.replaceState({ hamroNav: true }, '');
+  window.history.replaceState({ familygullakNav: true }, '');
 }
 
 export function pushNavigationHistory(): void {
   historyEntries += 1;
-  window.history.pushState({ hamroNav: true }, '');
+  window.history.pushState({ familygullakNav: true }, '');
 }
 
 export function pushOverlayHistory(): void {

@@ -1,6 +1,6 @@
 # iPhone・PC ブラウザ — Web 版（Firebase Hosting）
 
-Hamro Gullak は **同じ Web アプリ** を Android APK にも、インターネット上にも載せられます。
+familygullak は **同じ Web アプリ** を Android APK にも、インターネット上にも載せられます。
 
 | 端末 | 使い方 |
 |------|--------|

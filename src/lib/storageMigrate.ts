@@ -1,4 +1,4 @@
-/** One-time migration from legacy `bachao_*` localStorage / sessionStorage keys. */
+/** One-time migration from legacy storage keys (bachao_*, hamrogullak_*). */
 export function migrateStorageKey(newKey: string, legacyKey: string): void {
   try {
     if (localStorage.getItem(newKey) != null) return;

@@ -55,8 +55,8 @@ export default function Login({ loading, error, onSignIn }: Props) {
 
           <p className="text-[11px] text-gray-400 px-1 leading-relaxed">
             {L(
-              'On browser, a Google popup opens. Allow popups if asked.',
-              'ब्राउज़र में Google पॉपअप खुलेगा। पॉपअप की अनुमति दें।',
+              'On Android, Google account picker opens. On browser, allow popups if asked.',
+              'Android पर Google खाता चुनें। ब्राउज़र में पॉपअップ की अनुमति दें।',
             )}
           </p>
 

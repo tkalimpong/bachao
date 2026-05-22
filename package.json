@@ -1,5 +1,5 @@
 {
-  "name": "hamro-gullak",
+  "name": "familygullak",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -15,6 +15,7 @@
     "android:apk": "npm run cap:sync && cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "^8.2.0",
     "@capacitor/android": "^8.3.4",
     "@capacitor/app": "^8.1.0",
     "@capacitor/cli": "^8.3.4",

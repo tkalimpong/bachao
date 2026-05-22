@@ -12,6 +12,8 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../lib/firebase';
 import { isLiveFirebase } from '../lib/appMode';
 import { bootstrapFirebaseAuth } from '../lib/authBootstrap';
@@ -22,9 +24,11 @@ import { useStore } from '../store/useStore';
 
 import { migrateSessionKey } from '../lib/storageMigrate';
 
-const PENDING_INVITE_KEY = 'hamrogullak_pending_invite';
+const PENDING_INVITE_KEY = 'familygullak_pending_invite';
+const LEGACY_HAMRO_PENDING_INVITE_KEY = 'hamrogullak_pending_invite';
 const LEGACY_PENDING_INVITE_KEY = 'bachao_pending_invite';
 
+migrateSessionKey(PENDING_INVITE_KEY, LEGACY_HAMRO_PENDING_INVITE_KEY);
 migrateSessionKey(PENDING_INVITE_KEY, LEGACY_PENDING_INVITE_KEY);
 const SETUP_TIMEOUT_MS = 20_000;
 
@@ -191,6 +195,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     setSessionReady(false);
     clearDriveTokenCache();
+    if (Capacitor.isNativePlatform()) {
+      await FirebaseAuthentication.signOut();
+    }
     await firebaseSignOut(auth);
     setUser(null);
   }, []);

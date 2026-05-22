@@ -1,8 +1,11 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { Capacitor } from '@capacitor/core';
 import {
   browserLocalPersistence,
   getAuth,
   inMemoryPersistence,
+  indexedDBLocalPersistence,
+  initializeAuth,
   setPersistence,
   type Auth,
 } from 'firebase/auth';
@@ -55,11 +58,21 @@ function initFirestore(appInstance: FirebaseApp): Firestore {
 if (isFirebaseConfigured && !isPreviewUiMode()) {
   try {
     app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    const persistence = isEmbeddedPreviewBrowser()
-      ? inMemoryPersistence
-      : browserLocalPersistence;
-    void setPersistence(auth, persistence);
+    if (Capacitor.isNativePlatform()) {
+      try {
+        auth = initializeAuth(app, {
+          persistence: indexedDBLocalPersistence,
+        });
+      } catch {
+        auth = getAuth(app);
+      }
+    } else {
+      auth = getAuth(app);
+      const persistence = isEmbeddedPreviewBrowser()
+        ? inMemoryPersistence
+        : browserLocalPersistence;
+      void setPersistence(auth, persistence);
+    }
     db = initFirestore(app);
   } catch (e) {
     firebaseInitError = e instanceof Error ? e.message : 'Firebase init failed';

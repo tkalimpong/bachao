@@ -11,13 +11,19 @@ export const DRIVE_APPDATA_SCOPE = 'https://www.googleapis.com/auth/drive.appdat
 
 import { migrateSessionKey } from './storageMigrate';
 
-const TOKEN_KEY = 'hamrogullak_drive_token';
-const TOKEN_EXP_KEY = 'hamrogullak_drive_token_exp';
-const PENDING_ACTION_KEY = 'hamrogullak_pending_drive_action';
+const TOKEN_KEY = 'familygullak_drive_token';
+const TOKEN_EXP_KEY = 'familygullak_drive_token_exp';
+const PENDING_ACTION_KEY = 'familygullak_pending_drive_action';
+const LEGACY_HAMRO_TOKEN_KEY = 'hamrogullak_drive_token';
+const LEGACY_HAMRO_TOKEN_EXP_KEY = 'hamrogullak_drive_token_exp';
+const LEGACY_HAMRO_PENDING_ACTION_KEY = 'hamrogullak_pending_drive_action';
 const LEGACY_TOKEN_KEY = 'bachao_drive_token';
 const LEGACY_TOKEN_EXP_KEY = 'bachao_drive_token_exp';
 const LEGACY_PENDING_ACTION_KEY = 'bachao_pending_drive_action';
 
+migrateSessionKey(TOKEN_KEY, LEGACY_HAMRO_TOKEN_KEY);
+migrateSessionKey(TOKEN_EXP_KEY, LEGACY_HAMRO_TOKEN_EXP_KEY);
+migrateSessionKey(PENDING_ACTION_KEY, LEGACY_HAMRO_PENDING_ACTION_KEY);
 migrateSessionKey(TOKEN_KEY, LEGACY_TOKEN_KEY);
 migrateSessionKey(TOKEN_EXP_KEY, LEGACY_TOKEN_EXP_KEY);
 migrateSessionKey(PENDING_ACTION_KEY, LEGACY_PENDING_ACTION_KEY);

@@ -1,9 +1,11 @@
 import type { CategoryOverrides } from './categories';
 import { migrateStorageKey } from './storageMigrate';
 
-const STORAGE_KEY = 'hamrogullak_category_overrides';
+const STORAGE_KEY = 'familygullak_category_overrides';
+const LEGACY_HAMRO_KEY = 'hamrogullak_category_overrides';
 const LEGACY_KEY = 'bachao_category_overrides';
 
+migrateStorageKey(STORAGE_KEY, LEGACY_HAMRO_KEY);
 migrateStorageKey(STORAGE_KEY, LEGACY_KEY);
 
 export function loadStoredCategoryOverrides(): CategoryOverrides {

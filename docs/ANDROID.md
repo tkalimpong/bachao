@@ -1,6 +1,6 @@
 # Android で自分・家族が実際に使う
 
-Hamro Gullak は **Vite + Capacitor** の Web アプリです。  
+familygullak は **Vite + Capacitor** の Web アプリです。  
 ブラウザで `npm run dev` の URL を開く方法は、PC と同じ Wi‑Fi がないと使えません。
 
 **外出先や家族のスマホで使う**には、APK（単体アプリ）をビルドして各端末にインストールします。
@@ -40,9 +40,10 @@ Hamro Gullak は **Vite + Capacitor** の Web アプリです。
 1. [Firebase Console](https://console.firebase.google.com/) でプロジェクトを作成
 2. **Authentication** → Sign-in method → **Google** を有効化
 3. **Firestore Database** を有効化
-4. **Firestore セキュリティルールをデプロイ**（ログインに必須 — 下記「ルールのデプロイ」）
-5. **プロジェクトの設定 → マイアプリ → ウェブアプリを追加**
-6. 表示された設定値をコピー
+4. **Android アプリを追加**（パッケージ名 `com.hamrogullak.app`、SHA-1、`google-services.json` → 下記「Android APK で Google ログイン」）
+5. **Firestore セキュリティルールをデプロイ**（ログインに必須 — 下記「ルールのデプロイ」）
+6. **プロジェクトの設定 → マイアプリ → ウェブアプリを追加**
+7. 表示された設定値をコピー
 
 リポジトリ直下で:
 
@@ -82,9 +83,86 @@ npm run dev
 
 ### Android APK で Google ログイン
 
-Capacitor APK では **リダイレクト方式** の Google サインインを使います。  
-うまく戻ってこない場合は Firebase Console → Authentication → Settings →  
-**Authorized domains** に `localhost` が含まれているか確認してください。
+APK では **ネイティブ Google サインイン**（`@capacitor-firebase/authentication`）を使います。  
+WebView 内の Google リダイレクトは Google 側でブロックされるため、ブラウザ版とは方式が異なります。
+
+#### あなたが使う値（コピペ用）
+
+| 項目 | 値 |
+|------|-----|
+| Android パッケージ名 | `com.hamrogullak.app` |
+| デバッグ SHA-1（この PC でビルドした APK） | `ED:16:38:7C:DC:62:D1:A1:8D:78:5C:97:6D:24:C3:FC:B9:FC:DE:49` |
+
+別の PC で APK をビルドした場合は SHA-1 が変わるので、下記コマンドで再取得してください。
+
+---
+
+#### 手順 A — Android アプリをまだ Firebase に登録していない場合
+
+1. ブラウザで [Firebase Console](https://console.firebase.google.com/) を開く
+2. **familygullak 用のプロジェクト**（`.env.local` の `VITE_FIREBASE_PROJECT_ID` と同じ）を選ぶ
+3. 左上の **⚙ プロジェクトの設定**（Project settings）をクリック
+4. 下にスクロールして **「マイアプリ」**（Your apps）まで行く
+5. **Android アイコン**（ロボット）の **「アプリを追加」** をクリック
+6. **Android パッケージ名** に **`com.hamrogullak.app`** を入力（スペースなし・完全一致）
+7. **アプリのニックネーム** は任意（例: `familygullak Android`）
+8. **デバッグ用の署名証明書 SHA-1** の欄に、上の SHA-1 を **そのまま貼り付け**
+9. **アプリを登録** をクリック
+10. 表示された **`google-services.json` をダウンロード**
+11. ダウンロードしたファイルを **`android/app/google-services.json`** に置く（`app` フォルダの直下）
+12. **次へ** → **コンソールに進む** で完了
+
+---
+
+#### 手順 B — Android アプリは既にあるが SHA-1 だけ追加したい場合
+
+1. [Firebase Console](https://console.firebase.google.com/) → 対象プロジェクト
+2. **⚙ プロジェクトの設定**
+3. **マイアプリ** で **Android**（`com.hamrogullak.app`）の行を探す  
+   - 見つからない → 上の **手順 A** からやり直す
+4. その Android アプリの下にある **「SHA 証明書フィンガープリント」** セクションを探す
+5. **「フィンガープリントを追加」**（Add fingerprint）をクリック
+6. SHA-1 を貼り付け → **保存**
+7. **`google-services.json` を再ダウンロード**（設定画面の Android アプリのところにリンクあり）  
+   → **`android/app/google-services.json`** を上書き
+
+---
+
+#### SHA-1 を自分で取り直す場合
+
+PowerShell で `JAVA_HOME is not set` と出る場合:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+cd android
+.\gradlew.bat signingReport
+```
+
+`Variant: debug` の行の **SHA1:** をコピーする（`SHA-256` ではない）。
+
+---
+
+#### 登録後に必ずやること
+
+1. `google-services.json` が **`android/app/`** にあることを確認
+2. APK を **再ビルド**（設定変更は APK に自動では入らない）:
+
+```powershell
+npm run cap:sync
+npm run cap:open
+```
+
+Android Studio → **Build → Build APK(s)** → 端末に **上書きインストール**
+
+**よくあるエラー**
+
+| 症状 | 対処 |
+|------|------|
+| `DEVELOPER_ERROR` / Error 10 | SHA-1 未登録、`google-services.json` 未配置、または APK 未再ビルド |
+| `Firestore access denied` | [ルールのデプロイ](#ルールのデプロイログインエラー-firestore-access-denied-のとき必須) |
+| サインイン直後にタイムアウト | ネットワーク / Firestore ルールを確認 |
+
+ブラウザ（`npm run dev`）では引き続き **ポップアップ** 方式です。Authorized domains に `localhost` が含まれているか確認してください。
 
 ### セキュリティ
 
@@ -101,7 +179,7 @@ Settings → **Backup** から、家族データを Google Drive の **アプリ
    （Firebase Console → プロジェクトの設定 → 「Google Cloud のリソースを管理」から開けます）
 2. **API とサービス → ライブラリ** → **Google Drive API** を検索 → **有効にする**
 3. **OAuth 同意画面** → テストユーザーに自分の Google アカウントを追加（アプリが「テスト」公開の場合）
-4. 数分待ってから、Hamro Gullak で **Backup → Save to Google Drive**
+4. 数分待ってから、familygullak で **Backup → Save to Google Drive**
 
 `Google Drive API has not been used…` / `accessNotConfigured` と出る場合は、手順 2 が未完了です。  
 プロジェクト ID が分かっているときは直接:  
