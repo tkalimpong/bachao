@@ -1,4 +1,4 @@
-import { Check, RotateCcw } from 'lucide-react';
+import { Check } from 'lucide-react';
 import {
   CATEGORY_COLOR_PRESETS,
   type CategoryIconSectionDef,
@@ -22,9 +22,11 @@ type Props = {
   onIconIdChange: (iconId: string) => void;
   previewBg: string;
   onSave: () => void;
-  onReset: () => void;
+  onResetToDefault: () => void;
+  resetToDefaultLabel: string;
+  onCancel: () => void;
+  cancelLabel: string;
   saveLabel: string;
-  resetLabel: string;
 };
 
 export default function TypeIconEditSheet({
@@ -44,9 +46,11 @@ export default function TypeIconEditSheet({
   onIconIdChange,
   previewBg,
   onSave,
-  onReset,
+  onResetToDefault,
+  resetToDefaultLabel,
+  onCancel,
+  cancelLabel,
   saveLabel,
-  resetLabel,
 }: Props) {
   return (
     <>
@@ -106,7 +110,16 @@ export default function TypeIconEditSheet({
             })}
           </div>
 
-          <p className="text-xs text-gray-400 font-semibold uppercase ml-1 mb-2">{iconLabel}</p>
+          <div className="flex items-center justify-between mb-2 ml-1 mr-1">
+            <p className="text-xs text-gray-400 font-semibold uppercase">{iconLabel}</p>
+            <button
+              type="button"
+              onClick={onResetToDefault}
+              className="text-xs font-bold text-brand-600 active:opacity-70"
+            >
+              {resetToDefaultLabel}
+            </button>
+          </div>
           {iconSections.map((section) => (
             <div key={section.id} className="mb-3">
               <p className="text-[11px] text-gray-400 font-semibold ml-1 mb-1.5">
@@ -145,11 +158,10 @@ export default function TypeIconEditSheet({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={onReset}
-              className="flex-1 h-12 rounded-2xl bg-gray-100 text-gray-600 font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95"
+              onClick={onCancel}
+              className="flex-1 h-12 rounded-2xl bg-gray-100 text-gray-600 font-bold text-sm flex items-center justify-center active:scale-95"
             >
-              <RotateCcw className="w-5 h-5" />
-              {resetLabel}
+              {cancelLabel}
             </button>
             <button
               type="button"

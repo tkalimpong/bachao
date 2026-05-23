@@ -24,8 +24,10 @@ import {
 import type { Plan } from '../lib/plan';
 import {
   loadStoredHiddenCategories,
+  loadStoredHiddenIncomeSources,
   loadStoredPlan,
   saveStoredHiddenCategories,
+  saveStoredHiddenIncomeSources,
   saveStoredPlan,
 } from '../lib/planStorage';
 import type { CategoryOverride } from '../lib/categories';
@@ -149,6 +151,8 @@ interface AppState {
   resetCategoryOverride: (id: Category) => void;
   hiddenCategories: Category[];
   setCategoryHidden: (id: Category, hidden: boolean) => void;
+  hiddenIncomeSources: IncomeSource[];
+  setIncomeSourceHidden: (id: IncomeSource, hidden: boolean) => void;
   incomeSourceOverrides: Partial<Record<IncomeSource, IncomeSourceOverride>>;
   setIncomeSourceOverrides: (overrides: Partial<Record<IncomeSource, IncomeSourceOverride>>) => void;
   setIncomeSourceOverride: (id: IncomeSource, data: IncomeSourceOverride) => void;
@@ -227,6 +231,7 @@ type GroupSettingsPatch = {
   categoryOverrides?: Partial<Record<Category, CategoryOverride>>;
   hiddenCategories?: Category[];
   incomeSourceOverrides?: Partial<Record<IncomeSource, IncomeSourceOverride>>;
+  hiddenIncomeSources?: IncomeSource[];
 };
 
 function persistGroupSettings(patch: GroupSettingsPatch) {
@@ -235,18 +240,20 @@ function persistGroupSettings(patch: GroupSettingsPatch) {
   const categoryOverrides = patch.categoryOverrides ?? state.categoryOverrides;
   const hiddenCategories = patch.hiddenCategories ?? state.hiddenCategories;
   const incomeSourceOverrides = patch.incomeSourceOverrides ?? state.incomeSourceOverrides;
+  const hiddenIncomeSources = patch.hiddenIncomeSources ?? state.hiddenIncomeSources;
 
   saveStoredPlan(plan);
   saveStoredCategoryOverrides(categoryOverrides);
   saveStoredHiddenCategories(hiddenCategories);
   saveStoredIncomeSourceOverrides(incomeSourceOverrides);
+  saveStoredHiddenIncomeSources(hiddenIncomeSources);
 
   if (isLiveFirebase() && db) {
     const { groupId } = state;
     if (groupId) {
       setDoc(
         doc(db, `groups/${groupId}/settings/main`),
-        { plan, categoryOverrides, hiddenCategories, incomeSourceOverrides },
+        { plan, categoryOverrides, hiddenCategories, incomeSourceOverrides, hiddenIncomeSources },
         { merge: true },
       );
     }
@@ -399,6 +406,17 @@ export const useStore = create<AppState>((set, get) => ({
         : s.hiddenCategories.filter((c) => c !== id);
       persistGroupSettings({ hiddenCategories });
       return { hiddenCategories };
+    }),
+  hiddenIncomeSources: loadStoredHiddenIncomeSources(),
+  setIncomeSourceHidden: (id, hidden) =>
+    set((s) => {
+      const hiddenIncomeSources = hidden
+        ? s.hiddenIncomeSources.includes(id)
+          ? s.hiddenIncomeSources
+          : [...s.hiddenIncomeSources, id]
+        : s.hiddenIncomeSources.filter((c) => c !== id);
+      persistGroupSettings({ hiddenIncomeSources });
+      return { hiddenIncomeSources };
     }),
   incomeSourceOverrides: loadStoredIncomeSourceOverrides(),
   setIncomeSourceOverrides: (incomeSourceOverrides) => {

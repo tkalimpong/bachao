@@ -419,7 +419,7 @@ export default function Dashboard() {
       <div className="px-4">
         <div className="flex items-center justify-between mb-2 ml-1">
           <p className="text-sm text-gray-400 font-semibold uppercase">
-            {language === 'en' ? 'Category' : 'कैटेगरी'}
+            {language === 'en' ? 'Expense' : 'खर्च'}
           </p>
           <button
             type="button"

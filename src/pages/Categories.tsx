@@ -4,6 +4,9 @@ import { useStore, type Category, type IncomeSource } from '../store/useStore';
 import {
   CATEGORY_DEFS,
   CATEGORY_LABELS,
+  categoryDefaultLabel,
+  categoryOverrideFromEdit,
+  getCat,
   getVisibleCategories,
   isCategoryCustomized,
   resolveCategoryAppearance,
@@ -12,6 +15,10 @@ import {
 import {
   INCOME_SOURCE_DEFS,
   INCOME_SOURCE_LABELS,
+  getIncomeSourceDef,
+  getVisibleIncomeSources,
+  incomeSourceDefaultLabel,
+  incomeSourceOverrideFromEdit,
   isIncomeSourceCustomized,
   resolveIncomeSourceAppearance,
   resolveIncomeSourceLabel,
@@ -37,6 +44,7 @@ export default function Categories() {
     categoryOverrides, setCategoryOverride, resetCategoryOverride,
     incomeSourceOverrides, setIncomeSourceOverride, resetIncomeSourceOverride,
     hiddenCategories, setCategoryHidden,
+    hiddenIncomeSources, setIncomeSourceHidden,
   } = useStore();
 
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
@@ -44,6 +52,8 @@ export default function Categories() {
   const canEdit = canEditCategories(plan);
   const visible = getVisibleCategories(hiddenCategories);
   const hidden = CATEGORY_DEFS.filter((c) => hiddenCategories.includes(c.id));
+  const visibleIncome = getVisibleIncomeSources(hiddenIncomeSources);
+  const hiddenIncome = INCOME_SOURCE_DEFS.filter((s) => hiddenIncomeSources.includes(s.id));
 
   const [sectionTab, setSectionTab] = useState<SectionTab>('expense');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -89,28 +99,50 @@ export default function Categories() {
 
   function saveCategoryEdit() {
     if (!editingCategory || !iconId || !color) return;
-    const trimmed = name.trim();
-    const existing = categoryOverrides[editingCategory]?.label?.trim();
-    const label = trimmed || existing;
-    setCategoryOverride(editingCategory, {
-      iconId,
-      color,
-      ...(label ? { label } : {}),
-    });
+    const patch = categoryOverrideFromEdit(editingCategory, { iconId, color, name });
+    if (patch) setCategoryOverride(editingCategory, patch);
+    else resetCategoryOverride(editingCategory);
     closeEdit();
   }
 
   function saveIncomeEdit() {
     if (!editingIncome || !iconId || !color) return;
-    const trimmed = name.trim();
-    const existing = incomeSourceOverrides[editingIncome]?.label?.trim();
-    const label = trimmed || existing;
-    setIncomeSourceOverride(editingIncome, {
-      iconId,
-      color,
-      ...(label ? { label } : {}),
-    });
+    const patch = incomeSourceOverrideFromEdit(editingIncome, { iconId, color, name });
+    if (patch) setIncomeSourceOverride(editingIncome, patch);
+    else resetIncomeSourceOverride(editingIncome);
     closeEdit();
+  }
+
+  function confirmResetCategoryToDefault() {
+    if (!editingCategory) return;
+    const ok = window.confirm(
+      L(
+        'Reset name, color and icon to defaults?',
+        'नाम, रंग और आइकन डिफ़ॉल्ट पर लौटाएं?',
+      ),
+    );
+    if (!ok) return;
+    resetCategoryOverride(editingCategory);
+    const def = getCat(editingCategory);
+    setIconId(def.iconId);
+    setColor(def.color);
+    setName(categoryDefaultLabel(editingCategory, language));
+  }
+
+  function confirmResetIncomeToDefault() {
+    if (!editingIncome) return;
+    const ok = window.confirm(
+      L(
+        'Reset name, color and icon to defaults?',
+        'नाम, रंग और आइकन डिफ़ॉल्ट पर लौटाएं?',
+      ),
+    );
+    if (!ok) return;
+    resetIncomeSourceOverride(editingIncome);
+    const def = getIncomeSourceDef(editingIncome);
+    setIconId(def.iconId);
+    setColor(def.color);
+    setName(incomeSourceDefaultLabel(editingIncome, language));
   }
 
   const previewBg =
@@ -119,10 +151,24 @@ export default function Categories() {
   const expenseIconSections = EXPENSE_ICON_SECTIONS;
   const incomeIconSections = [...EXPENSE_ICON_SECTIONS, INCOME_ICON_SECTION];
 
+  function categorySubtext(
+    isHidden: boolean,
+    customized: boolean,
+    label: string,
+    defaultLabel: string,
+  ): string | null {
+    if (isHidden) return L('Hidden from lists', 'सूची से छुपा');
+    if (customized && label !== defaultLabel) {
+      return L(`Default: ${defaultLabel}`, `डिफ़ॉल्ट: ${defaultLabel}`);
+    }
+    return null;
+  }
+
   function renderCategoryRow(cat: typeof CATEGORY_DEFS[number], isHidden: boolean) {
     const label = resolveCategoryLabel(cat.id, language, categoryOverrides);
     const customized = isCategoryCustomized(cat.id, categoryOverrides);
     const defaultLabel = CATEGORY_LABELS[cat.id][language];
+    const subtext = categorySubtext(isHidden, customized, label, defaultLabel);
 
     return (
       <div
@@ -144,13 +190,7 @@ export default function Categories() {
             <p className={`text-base font-semibold ${isHidden ? 'text-gray-400' : 'text-gray-900'}`}>
               {label}
             </p>
-            <p className="text-sm text-gray-400">
-              {isHidden
-                ? L('Hidden from lists', 'सूची से छुपा')
-                : customized && label !== defaultLabel
-                  ? L(`Default: ${defaultLabel}`, `डिफ़ॉल्ट: ${defaultLabel}`)
-                  : cat.id}
-            </p>
+            {subtext && <p className="text-sm text-gray-400">{subtext}</p>}
           </div>
           {customized && !isHidden && (
             <span className="text-xs font-bold bg-brand-50 text-brand-500 px-2 py-0.5 rounded-full shrink-0">
@@ -172,33 +212,51 @@ export default function Categories() {
     );
   }
 
-  function renderIncomeRow(src: typeof INCOME_SOURCE_DEFS[number]) {
+  function renderIncomeRow(src: typeof INCOME_SOURCE_DEFS[number], isHidden: boolean) {
     const label = resolveIncomeSourceLabel(src.id, language, incomeSourceOverrides);
     const customized = isIncomeSourceCustomized(src.id, incomeSourceOverrides);
     const defaultLabel = INCOME_SOURCE_LABELS[src.id][language];
+    const subtext = categorySubtext(isHidden, customized, label, defaultLabel);
 
     return (
-      <button
+      <div
         key={src.id}
-        type="button"
-        onClick={() => startEditIncome(src.id)}
-        className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3 text-left active:opacity-80"
+        className="w-full bg-white rounded-2xl px-4 py-3.5 flex items-center gap-3"
       >
-        <IncomeSourceIcon sourceId={src.id} overrides={incomeSourceOverrides} size="lg" />
-        <div className="flex-1 min-w-0">
-          <p className="text-base font-semibold text-gray-900">{label}</p>
-          <p className="text-sm text-gray-400">
-            {customized && label !== defaultLabel
-              ? L(`Default: ${defaultLabel}`, `डिफ़ॉल्ट: ${defaultLabel}`)
-              : src.id}
-          </p>
-        </div>
-        {customized && (
-          <span className="text-xs font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full shrink-0">
-            {L('Edited', 'संपादित')}
-          </span>
+        <button
+          type="button"
+          onClick={() => startEditIncome(src.id)}
+          className="flex items-center gap-3 flex-1 min-w-0 text-left active:opacity-80"
+        >
+          <IncomeSourceIcon
+            sourceId={src.id}
+            overrides={incomeSourceOverrides}
+            size="lg"
+            faded={isHidden}
+          />
+          <div className="flex-1 min-w-0">
+            <p className={`text-base font-semibold ${isHidden ? 'text-gray-400' : 'text-gray-900'}`}>
+              {label}
+            </p>
+            {subtext && <p className="text-sm text-gray-400">{subtext}</p>}
+          </div>
+          {customized && !isHidden && (
+            <span className="text-xs font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full shrink-0">
+              {L('Edited', 'संपादित')}
+            </span>
+          )}
+        </button>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setIncomeSourceHidden(src.id, !isHidden)}
+            className="p-2 rounded-xl text-gray-400 active:bg-gray-100 shrink-0"
+            aria-label={isHidden ? L('Restore', 'वापस') : L('Hide', 'छुपाएं')}
+          >
+            {isHidden ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+          </button>
         )}
-      </button>
+      </div>
     );
   }
 
@@ -258,8 +316,8 @@ export default function Categories() {
                   'नाम, रंग, आइकन बदलें। आँख से छुपाएं।',
                 )
               : L(
-                  'Tap to edit income source name, color and icon.',
-                  'आय स्रोत का नाम, रंग और आइकन बदलें।',
+                  'Tap to edit name, color and icon. Use the eye to hide sources.',
+                  'नाम, रंग, आइकन बदलें। आँख से छुपाएं।',
                 )}
           </p>
         </div>
@@ -282,9 +340,21 @@ export default function Categories() {
           )}
         </>
       ) : (
-        <div className="px-4 flex flex-col gap-2">
-          {INCOME_SOURCE_DEFS.map(renderIncomeRow)}
-        </div>
+        <>
+          <div className="px-4 flex flex-col gap-2">
+            {visibleIncome.map((src) => renderIncomeRow(src, false))}
+          </div>
+          {plus && hiddenIncome.length > 0 && (
+            <>
+              <p className="text-sm text-gray-400 font-semibold uppercase ml-5 mt-4 mb-2">
+                {L('Hidden', 'छुपी हुई')}
+              </p>
+              <div className="px-4 flex flex-col gap-2">
+                {hiddenIncome.map((src) => renderIncomeRow(src, true))}
+              </div>
+            </>
+          )}
+        </>
       )}
 
       {editingCategory && canEdit && (
@@ -305,12 +375,11 @@ export default function Categories() {
             onIconIdChange={setIconId}
             previewBg={previewBg}
             onSave={saveCategoryEdit}
-            onReset={() => {
-              resetCategoryOverride(editingCategory);
-              closeEdit();
-            }}
+            onResetToDefault={confirmResetCategoryToDefault}
+            resetToDefaultLabel={L('Reset to default', 'डिफ़ॉल्ट पर लौटाएं')}
+            onCancel={closeEdit}
+            cancelLabel={L('Cancel', 'रद्द')}
             saveLabel={L('Save', 'सहेजें')}
-            resetLabel={L('Reset', 'रीसेट')}
           />
       )}
 
@@ -332,12 +401,11 @@ export default function Categories() {
             onIconIdChange={setIconId}
             previewBg={previewBg}
             onSave={saveIncomeEdit}
-            onReset={() => {
-              resetIncomeSourceOverride(editingIncome);
-              closeEdit();
-            }}
+            onResetToDefault={confirmResetIncomeToDefault}
+            resetToDefaultLabel={L('Reset to default', 'डिफ़ॉल्ट पर लौटाएं')}
+            onCancel={closeEdit}
+            cancelLabel={L('Cancel', 'रद्द')}
             saveLabel={L('Save', 'सहेजें')}
-            resetLabel={L('Reset', 'रीसेट')}
           />
       )}
     </div>

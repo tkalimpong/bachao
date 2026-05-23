@@ -134,13 +134,40 @@ export function categoryDefaultLabel(id: Category, lang: 'en' | 'hi'): string {
   return lang === 'en' ? def.labelEn : def.labelHi;
 }
 
+function isDefaultCategoryLabel(id: Category, label: string): boolean {
+  const def = getCat(id);
+  const trimmed = label.trim();
+  return trimmed === def.labelEn || trimmed === def.labelHi;
+}
+
+/** Build override from edit form; null when everything matches defaults. */
+export function categoryOverrideFromEdit(
+  id: Category,
+  { iconId, color, name }: { iconId: string; color: string; name: string },
+): CategoryOverride | null {
+  const base = getCat(id);
+  const trimmed = name.trim();
+  const label = trimmed && !isDefaultCategoryLabel(id, trimmed) ? trimmed : undefined;
+  const resolvedIconId = normalizeIconId(iconId);
+  const hasIcon = resolvedIconId !== base.iconId;
+  const hasColor = color !== base.color;
+  if (!label && !hasIcon && !hasColor) return null;
+  return {
+    ...(hasIcon ? { iconId: resolvedIconId } : {}),
+    ...(hasColor ? { color } : {}),
+    ...(label ? { label } : {}),
+  };
+}
+
 export function resolveCategoryAppearance(
   id: Category,
   overrides?: CategoryOverrides,
 ): CategoryAppearance {
   const base = getCat(id);
   const o = overrides?.[id];
-  const iconId = normalizeIconId(o?.iconId, o?.icon);
+  const iconId = o?.iconId || o?.icon
+    ? normalizeIconId(o.iconId, o.icon)
+    : base.iconId;
   const color = o?.color ?? base.color;
   const bg = bgForCategoryColor(color, base.bg);
   return { iconId, color, bg };
@@ -157,18 +184,20 @@ export function resolveCategoryLabel(
   overrides?: CategoryOverrides,
 ): string {
   const o = overrides?.[id];
-  const custom = o?.label?.trim() || o?.en?.trim() || o?.hi?.trim();
-  if (custom) return custom;
+  const label = o?.label?.trim() || o?.en?.trim() || o?.hi?.trim();
+  if (label && !isDefaultCategoryLabel(id, label)) return label;
   return categoryDefaultLabel(id, lang);
 }
 
 export function isCategoryCustomized(id: Category, overrides?: CategoryOverrides): boolean {
   const o = overrides?.[id];
   if (!o) return false;
-  if (o.label?.trim() || o.en?.trim() || o.hi?.trim()) return true;
   const base = getCat(id);
+  const label = o.label?.trim() || o.en?.trim() || o.hi?.trim();
+  if (label && !isDefaultCategoryLabel(id, label)) return true;
+  const iconId = normalizeIconId(o.iconId, o.icon);
+  if (o.iconId && iconId !== base.iconId) return true;
   if (o.color && o.color !== base.color) return true;
-  if (o.iconId && normalizeIconId(o.iconId, o.icon) !== base.iconId) return true;
   return false;
 }
 
@@ -200,16 +229,17 @@ export function normalizeCategoryOverrides(raw: CategoryOverrides): CategoryOver
   for (const [key, o] of Object.entries(raw) as [Category, CategoryOverride][]) {
     if (!o) continue;
     const base = getCat(key);
-    const iconId = normalizeIconId(o.iconId, o.icon);
-    const color = o.color ?? base.color;
+    const iconId = o.iconId || o.icon
+      ? normalizeIconId(o.iconId, o.icon)
+      : base.iconId;
     const label = o.label?.trim() || o.en?.trim() || o.hi?.trim();
-    const hasLabel = !!label;
+    const hasLabel = !!label && !isDefaultCategoryLabel(key, label);
     const hasIcon = iconId !== base.iconId;
     const hasColor = !!o.color && o.color !== base.color;
     if (!hasLabel && !hasIcon && !hasColor) continue;
     out[key] = {
-      iconId,
-      color,
+      ...(hasIcon ? { iconId } : {}),
+      ...(hasColor ? { color: o.color } : {}),
       ...(hasLabel ? { label } : {}),
     };
   }

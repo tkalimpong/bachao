@@ -123,6 +123,30 @@ export function incomeSourceDefaultLabel(id: IncomeSource, lang: 'en' | 'hi'): s
   return lang === 'en' ? def.labelEn : def.labelHi;
 }
 
+function isDefaultIncomeSourceLabel(id: IncomeSource, label: string): boolean {
+  const def = getIncomeSourceDef(id);
+  const trimmed = label.trim();
+  return trimmed === def.labelEn || trimmed === def.labelHi;
+}
+
+export function incomeSourceOverrideFromEdit(
+  id: IncomeSource,
+  { iconId, color, name }: { iconId: string; color: string; name: string },
+): IncomeSourceOverride | null {
+  const base = getIncomeSourceDef(id);
+  const trimmed = name.trim();
+  const label = trimmed && !isDefaultIncomeSourceLabel(id, trimmed) ? trimmed : undefined;
+  const resolvedIconId = normalizeIncomeIconId(iconId);
+  const hasIcon = resolvedIconId !== base.iconId;
+  const hasColor = color !== base.color;
+  if (!label && !hasIcon && !hasColor) return null;
+  return {
+    ...(hasIcon ? { iconId: resolvedIconId } : {}),
+    ...(hasColor ? { color } : {}),
+    ...(label ? { label } : {}),
+  };
+}
+
 export function resolveIncomeSourceAppearance(
   id: IncomeSource,
   overrides?: IncomeSourceOverrides,
@@ -143,8 +167,8 @@ export function resolveIncomeSourceLabel(
   overrides?: IncomeSourceOverrides,
 ): string {
   const o = overrides?.[id];
-  const custom = o?.label?.trim() || o?.en?.trim() || o?.hi?.trim();
-  if (custom) return custom;
+  const label = o?.label?.trim() || o?.en?.trim() || o?.hi?.trim();
+  if (label && !isDefaultIncomeSourceLabel(id, label)) return label;
   return incomeSourceDefaultLabel(id, lang);
 }
 
@@ -162,8 +186,9 @@ export function isIncomeSourceCustomized(
 ): boolean {
   const o = overrides?.[id];
   if (!o) return false;
-  if (o.label?.trim() || o.en?.trim() || o.hi?.trim()) return true;
   const base = getIncomeSourceDef(id);
+  const label = o.label?.trim() || o.en?.trim() || o.hi?.trim();
+  if (label && !isDefaultIncomeSourceLabel(id, label)) return true;
   if (o.color && o.color !== base.color) return true;
   if (o.iconId && normalizeIncomeIconId(o.iconId, o.icon) !== base.iconId) return true;
   return false;
@@ -174,16 +199,17 @@ export function normalizeIncomeSourceOverrides(raw: IncomeSourceOverrides): Inco
   for (const [key, o] of Object.entries(raw) as [IncomeSource, IncomeSourceOverride][]) {
     if (!o) continue;
     const base = getIncomeSourceDef(key);
-    const iconId = normalizeIncomeIconId(o.iconId, o.icon);
-    const color = o.color ?? base.color;
+    const iconId = o.iconId || o.icon
+      ? normalizeIncomeIconId(o.iconId, o.icon)
+      : base.iconId;
     const label = o.label?.trim() || o.en?.trim() || o.hi?.trim();
-    const hasLabel = !!label;
+    const hasLabel = !!label && !isDefaultIncomeSourceLabel(key, label);
     const hasIcon = iconId !== base.iconId;
     const hasColor = !!o.color && o.color !== base.color;
     if (!hasLabel && !hasIcon && !hasColor) continue;
     out[key] = {
-      iconId,
-      color,
+      ...(hasIcon ? { iconId } : {}),
+      ...(hasColor ? { color: o.color } : {}),
       ...(hasLabel ? { label } : {}),
     };
   }
@@ -193,4 +219,18 @@ export function normalizeIncomeSourceOverrides(raw: IncomeSourceOverrides): Inco
 /** @deprecated Use resolveIncomeSourceLabel */
 export function incomeSourceLabel(id: IncomeSource, lang: 'en' | 'hi'): string {
   return resolveIncomeSourceLabel(id, lang);
+}
+
+export function getVisibleIncomeSources(hidden: IncomeSource[] = []) {
+  const hiddenSet = new Set(hidden);
+  return INCOME_SOURCE_DEFS.filter((s) => !hiddenSet.has(s.id));
+}
+
+/** Visible sources plus an optional extra (e.g. when editing income with a hidden source). */
+export function getSelectableIncomeSources(hidden: IncomeSource[] = [], include?: IncomeSource) {
+  const visible = getVisibleIncomeSources(hidden);
+  if (!include || !hidden.includes(include)) return visible;
+  const extra = INCOME_SOURCE_DEFS.find((s) => s.id === include);
+  if (!extra || visible.some((s) => s.id === include)) return visible;
+  return [...visible, extra];
 }

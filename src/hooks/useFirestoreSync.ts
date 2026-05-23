@@ -13,7 +13,7 @@ import { db } from '../lib/firebase';
 import { isLiveFirebase } from '../lib/appMode';
 import { saveStoredCategoryOverrides } from '../lib/categoryOverridesStorage';
 import { saveStoredIncomeSourceOverrides } from '../lib/incomeSourceOverridesStorage';
-import { saveStoredHiddenCategories, saveStoredPlan } from '../lib/planStorage';
+import { saveStoredHiddenCategories, saveStoredHiddenIncomeSources, saveStoredPlan } from '../lib/planStorage';
 import type { Plan } from '../lib/plan';
 import { normalizeCategoryOverrides, type CategoryOverrides } from '../lib/categories';
 import {
@@ -27,6 +27,7 @@ import {
   type Expense,
   type FamilyMember,
   type Income,
+  type IncomeSource,
   type Transfer,
 } from '../store/useStore';
 
@@ -232,6 +233,12 @@ export function useFirestoreSync(enabled = true) {
           const hiddenCategories = data.hiddenCategories as Category[];
           useStore.setState({ hiddenCategories });
           saveStoredHiddenCategories(hiddenCategories);
+        }
+
+        if (Array.isArray(data.hiddenIncomeSources)) {
+          const hiddenIncomeSources = data.hiddenIncomeSources as IncomeSource[];
+          useStore.setState({ hiddenIncomeSources });
+          saveStoredHiddenIncomeSources(hiddenIncomeSources);
         }
 
         const rawIncome = data.incomeSourceOverrides;

@@ -18,6 +18,7 @@ import {
   type FamilyMember,
   type Income,
   type Transfer,
+  type IncomeSource,
 } from '../store/useStore';
 import {
   saveStoredCategoryOverrides,
@@ -27,6 +28,7 @@ import {
 } from './incomeSourceOverridesStorage';
 import {
   saveStoredHiddenCategories,
+  saveStoredHiddenIncomeSources,
   saveStoredPlan,
 } from './planStorage';
 
@@ -52,6 +54,7 @@ export interface BackupPayload {
   categoryBudgets: CategoryBudget[];
   categoryOverrides: CategoryOverrides;
   hiddenCategories: Category[];
+  hiddenIncomeSources?: IncomeSource[];
   incomeSourceOverrides?: IncomeSourceOverrides;
 }
 
@@ -64,6 +67,7 @@ export function buildBackupPayload(): BackupPayload {
     categoryBudgets,
     categoryOverrides,
     hiddenCategories,
+    hiddenIncomeSources,
     incomeSourceOverrides,
     plan,
     groupId,
@@ -81,6 +85,7 @@ export function buildBackupPayload(): BackupPayload {
     categoryBudgets,
     categoryOverrides,
     hiddenCategories,
+    hiddenIncomeSources,
     incomeSourceOverrides,
   };
 }
@@ -189,6 +194,7 @@ function applyToLocalStore(payload: BackupPayload): void {
   saveStoredPlan(payload.plan ?? 'free');
   saveStoredCategoryOverrides(payload.categoryOverrides ?? {});
   saveStoredHiddenCategories(payload.hiddenCategories ?? []);
+  saveStoredHiddenIncomeSources(payload.hiddenIncomeSources ?? []);
   saveStoredIncomeSourceOverrides(payload.incomeSourceOverrides ?? {});
 
   useStore.setState({
@@ -199,6 +205,7 @@ function applyToLocalStore(payload: BackupPayload): void {
     categoryBudgets: payload.categoryBudgets ?? useStore.getState().categoryBudgets,
     categoryOverrides: payload.categoryOverrides ?? {},
     hiddenCategories: payload.hiddenCategories ?? [],
+    hiddenIncomeSources: payload.hiddenIncomeSources ?? [],
     incomeSourceOverrides: payload.incomeSourceOverrides ?? {},
     ...(isLiveFirebase() ? {} : { members: payload.members }),
   });
@@ -259,6 +266,7 @@ async function upsertTransactions(groupId: string, payload: BackupPayload): Prom
       plan: payload.plan ?? 'free',
       categoryOverrides: payload.categoryOverrides ?? {},
       hiddenCategories: payload.hiddenCategories ?? [],
+      hiddenIncomeSources: payload.hiddenIncomeSources ?? [],
       incomeSourceOverrides: payload.incomeSourceOverrides ?? {},
     },
     { merge: true },

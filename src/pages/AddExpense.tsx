@@ -13,7 +13,7 @@ import {
 import CategoryIcon from '../components/CategoryIcon';
 import {
   defaultIncomeSourceNote,
-  INCOME_SOURCE_DEFS,
+  getVisibleIncomeSources,
   resolveIncomeSourceAppearance,
   resolveIncomeSourceLabel,
 } from '../lib/incomeSources';
@@ -30,6 +30,7 @@ export default function AddExpense() {
     members, activeMemberId, setActiveMember,
     categoryBudgets, expenses, currentUserId,
     hiddenCategories,
+    hiddenIncomeSources,
     categoryOverrides,
     incomeSourceOverrides,
     addPrefillCategory,
@@ -201,7 +202,7 @@ export default function AddExpense() {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2">
-            {INCOME_SOURCE_DEFS.map((src) => {
+            {getVisibleIncomeSources(hiddenIncomeSources).map((src) => {
               const isSelected = source === src.id;
               const appearance = resolveIncomeSourceAppearance(src.id, incomeSourceOverrides);
               const shortLabel = resolveIncomeSourceLabel(src.id, language, incomeSourceOverrides);

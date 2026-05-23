@@ -10,7 +10,7 @@ import {
 } from '../lib/categories';
 import CategoryIcon from './CategoryIcon';
 import {
-  INCOME_SOURCE_DEFS,
+  getSelectableIncomeSources,
   resolveIncomeSourceAppearance,
   resolveIncomeSourceLabel,
 } from '../lib/incomeSources';
@@ -38,6 +38,7 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
     updateExpense, deleteExpense,
     updateIncome,  deleteIncome,
     hiddenCategories,
+    hiddenIncomeSources,
     categoryOverrides,
     incomeSourceOverrides,
   } = useStore();
@@ -144,7 +145,10 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-2">
-                {INCOME_SOURCE_DEFS.map((src) => {
+                {getSelectableIncomeSources(
+                  hiddenIncomeSources,
+                  !isExpense ? (original as Income).source : undefined,
+                ).map((src) => {
                   const appearance = resolveIncomeSourceAppearance(src.id, incomeSourceOverrides);
                   const shortLabel = resolveIncomeSourceLabel(src.id, language, incomeSourceOverrides);
                   return (
