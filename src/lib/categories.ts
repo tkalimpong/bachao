@@ -103,8 +103,8 @@ export const CATEGORY_DEFS: CategoryDef[] = [
   {
     id: 'home',
     iconId: 'home',
-    color: '#78716c',
-    bg: '#fafaf9',
+    color: '#ef4444',
+    bg: '#fef2f2',
     labelEn: 'Home',
     labelHi: 'घर',
   },
