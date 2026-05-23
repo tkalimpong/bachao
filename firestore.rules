@@ -52,6 +52,10 @@ service cloud.firestore {
         allow read: if isMember(groupId);
         allow create, update, delete: if isMember(groupId);
       }
+      match /gullakDeposits/{docId} {
+        allow read: if isMember(groupId);
+        allow create, update, delete: if isMember(groupId);
+      }
       match /categoryBudgets/{docId} {
         allow read: if isMember(groupId);
         allow create, update, delete: if isMember(groupId);

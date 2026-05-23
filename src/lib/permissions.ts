@@ -108,7 +108,7 @@ export function isSettingsArea(tab: string): boolean {
 }
 
 /** フルスクリーンの編集タブ（BottomNav 非表示） */
-export const EDIT_SCREEN_TABS = ['add', 'categories', 'members', 'premium', 'backup'] as const;
+export const EDIT_SCREEN_TABS = ['add', 'categories', 'members', 'premium', 'backup', 'gullak'] as const;
 
 export function shouldShowBottomNav(currentTab: string, uiOverlayDepth: number): boolean {
   if (uiOverlayDepth > 0) return false;
@@ -120,6 +120,7 @@ export function canAccessTab(role: MemberRole, tab: string): boolean {
   if (tab === 'categories') return true;
   if (tab === 'members') return true;
   if (tab === 'backup') return canUsePremium(role);
+  if (tab === 'gullak') return true;
   if (isSettingsArea(tab)) return visibleTabs(role).includes('settings');
   return visibleTabs(role).includes(tab);
 }

@@ -18,6 +18,7 @@ import Family from './pages/Family';
 import Premium from './pages/Premium';
 import History from './pages/History';
 import Backup from './pages/Backup';
+import Gullak from './pages/Gullak';
 import Login from './pages/Login';
 
 const SCREENS: Record<string, React.FC> = {
@@ -30,6 +31,7 @@ const SCREENS: Record<string, React.FC> = {
   family:     Family,
   history:    History,
   backup:     Backup,
+  gullak:     Gullak,
 };
 
 function LoadingScreen({ message }: { message: string }) {

@@ -7,10 +7,16 @@ import AppLogo from '../components/AppLogo';
 import GullakPotIcon from '../components/GullakPotIcon';
 import { appName } from '../lib/appBrand';
 import { TRUST_BLUE } from '../lib/theme';
-import { Globe, TrendingDown, TrendingUp, Minus, Pencil, ChevronDown } from 'lucide-react';
+import { Globe, TrendingDown, TrendingUp, Minus, Pencil } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
 import { categoryMonthProgress } from '../lib/categoryAverage';
 import { canViewGroupFinances, getMemberRole } from '../lib/permissions';
+import {
+  availableBalance,
+  scopeGullakDeposits,
+  sumGullakDeposits,
+  sumGullakDepositsInMonth,
+} from '../lib/gullakBalance';
 
 function fmt(n: number) {
   return '₹' + Math.abs(n).toLocaleString('en-IN');
@@ -82,6 +88,8 @@ type EditTarget =
   | { kind: 'expense'; data: Expense }
   | { kind: 'income';  data: Income };
 
+type BalancePeriod = 'all' | 'month';
+
 export default function Dashboard() {
   const {
     expenses, incomes, members, language, toggleLanguage, setTab,
@@ -89,10 +97,12 @@ export default function Dashboard() {
     hiddenCategories,
     categoryOverrides,
     incomeSourceOverrides,
+    gullakDeposits,
+    setGullakPrefillAmount,
   } =
     useStore();
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
-  const [savingsExpanded, setSavingsExpanded] = useState(false);
+  const [balancePeriod, setBalancePeriod] = useState<BalancePeriod>('all');
 
   const thisMonth    = new Date().toISOString().slice(0, 7);
   const myRole = getMemberRole(members, currentUserId);
@@ -125,11 +135,24 @@ export default function Dashboard() {
 
   const monthIn  = monthIncomes.reduce((s, i)  => s + i.amount, 0);
   const monthOut = monthExpenses.reduce((s, e) => s + e.amount, 0);
-  const monthBalance = monthIn - monthOut;
 
   const allTimeIn  = memberIncomes.reduce((s, i) => s + i.amount, 0);
   const allTimeOut = memberExpenses.reduce((s, e) => s + e.amount, 0);
-  const allTimeBalance = allTimeIn - allTimeOut;
+  const rawAllTimeBalance = allTimeIn - allTimeOut;
+
+  const memberScope = showGroup ? null : [currentUserId];
+  const scopedGullak = scopeGullakDeposits(gullakDeposits, memberScope);
+  const gullakTotal = sumGullakDeposits(scopedGullak);
+  const allTimeBalance = availableBalance(rawAllTimeBalance, gullakTotal);
+
+  const periodIn = balancePeriod === 'all' ? allTimeIn : monthIn;
+  const periodOut = balancePeriod === 'all' ? allTimeOut : monthOut;
+  const rawPeriodBalance = periodIn - periodOut;
+  const periodGullak =
+    balancePeriod === 'all'
+      ? gullakTotal
+      : sumGullakDepositsInMonth(scopedGullak, thisMonth);
+  const periodBalance = availableBalance(rawPeriodBalance, periodGullak);
 
   // merged recent transactions (latest 8)
   type TxEntry =
@@ -177,7 +200,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── IN / OUT / BALANCE（全期間）── */}
+      {/* ── IN / OUT / BALANCE（全期間 ⇄ 今月）── */}
       <div className="px-4">
         <div className="bg-ink rounded-3xl p-5 text-white">
           {!showGroup && (
@@ -185,9 +208,27 @@ export default function Dashboard() {
               {L('Your summary', 'आपका सारांश')}
             </p>
           )}
-          <p className="text-xs text-white/40 font-semibold uppercase mb-3">
-            {L('All time', 'कुल')}
-          </p>
+
+          <div className="flex rounded-xl bg-white/10 p-1 mb-4">
+            {([
+              ['all', L('All time', 'कुल')],
+              ['month', L('This month', 'इस महीने')],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setBalancePeriod(id)}
+                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+                  balancePeriod === id
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-white/60'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
@@ -198,7 +239,7 @@ export default function Dashboard() {
                   {language === 'en' ? 'Money In' : 'आया'}
                 </span>
               </div>
-              <p className="text-xl font-black text-emerald-400">{fmt(allTimeIn)}</p>
+              <p className="text-xl font-black text-emerald-400">{fmt(periodIn)}</p>
             </div>
             <div className="bg-white/10 rounded-2xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
@@ -206,212 +247,103 @@ export default function Dashboard() {
                   <TrendingDown className="w-5 h-5 text-rose-400" />
                 </div>
                 <span className="text-sm text-white/60 font-medium">
-                  {language === 'en' ? 'Money Out' : 'गया'}
+                  {L('Spent', 'खर्च')}
                 </span>
               </div>
-              <p className="text-xl font-black text-rose-400">{fmt(allTimeOut)}</p>
+              <p className="text-xl font-black text-rose-400">{fmt(periodOut)}</p>
             </div>
           </div>
-          <div className="border-t border-white/10 pt-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Minus className="w-6 h-6 text-white/40" />
-              <span className="text-sm text-white/60">
-                {language === 'en' ? 'Balance' : 'बचत'}
-              </span>
+
+          <div className="border-t border-white/10 pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Minus className="w-6 h-6 text-white/40" />
+                <span className="text-sm text-white/60">
+                  {language === 'en' ? 'Balance' : 'बचत'}
+                </span>
+              </div>
+              <p
+                className="text-2xl font-black"
+                style={{
+                  color:
+                    periodBalance > 0
+                      ? TRUST_BLUE[400]
+                      : periodBalance < 0
+                      ? undefined
+                      : 'rgba(255,255,255,0.5)',
+                }}
+              >
+                {periodBalance < 0 ? (
+                  <span className="text-rose-400">−{fmt(Math.abs(periodBalance))}</span>
+                ) : (
+                  <>+{fmt(periodBalance)}</>
+                )}
+              </p>
             </div>
-            <p
-              className="text-2xl font-black"
-              style={{
-                color:
-                  allTimeBalance > 0
-                    ? TRUST_BLUE[400]
-                    : allTimeBalance < 0
-                    ? undefined
-                    : 'rgba(255,255,255,0.5)',
-              }}
-            >
-              {allTimeBalance < 0 ? (
-                <span className="text-rose-400">−{fmt(Math.abs(allTimeBalance))}</span>
-              ) : (
-                <>+{fmt(allTimeBalance)}</>
-              )}
-            </p>
+            {periodGullak > 0 && (
+              <div className="flex items-center justify-end gap-1 mt-1.5">
+                <GullakPotIcon state="savings" className="w-3.5 h-3.5 text-brand-300" />
+                <span className="text-xs font-bold text-brand-300">
+                  −{fmt(periodGullak)}
+                </span>
+                <span className="text-[10px] text-white/40">{L('Gullak', 'गुल्लक')}</span>
+              </div>
+            )}
           </div>
-          {allTimeIn > 0 && (
+          {periodIn > 0 && (
             <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full bg-rose-400 rounded-full transition-all duration-700"
-                style={{ width: `${Math.min((allTimeOut / allTimeIn) * 100, 100)}%` }}
+                style={{ width: `${Math.min((periodOut / periodIn) * 100, 100)}%` }}
               />
             </div>
           )}
           <p className="text-xs text-white/30 mt-1 text-right">
-            {allTimeIn > 0 ? Math.round((allTimeOut / allTimeIn) * 100) : 0}%{' '}
-            {language === 'en' ? 'of income spent' : 'आय का खर्च'}
+            {periodIn > 0 ? Math.round((periodOut / periodIn) * 100) : 0}%{' '}
+            {L('of income spent', 'आय का खर्च')}
           </p>
         </div>
       </div>
 
-      {/* ── 貯蓄カード（今月・タップで下に展開）──────────────────────────── */}
+      {/* ── Gullak 残高 ── */}
       <div className="px-4">
         <div
-          className={`rounded-2xl overflow-hidden ${
-            monthBalance >= 0
-              ? ''
-              : 'bg-rose-50 border border-rose-100'
-          }`}
-          style={
-            monthBalance >= 0
-              ? { background: `linear-gradient(to right, ${TRUST_BLUE[500]}, ${TRUST_BLUE[600]})` }
-              : undefined
-          }
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: `linear-gradient(to right, ${TRUST_BLUE[500]}, ${TRUST_BLUE[600]})`,
+          }}
         >
-          <button
-            type="button"
-            onClick={() => setSavingsExpanded((v) => !v)}
-            className="w-full px-4 py-3 flex items-center gap-3 text-left active:opacity-90 transition-opacity"
-          >
-            <div
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
-                monthBalance >= 0 ? 'bg-white/20' : 'bg-rose-100'
-              }`}
-            >
-              <GullakPotIcon
-                state={monthBalance >= 0 ? 'savings' : 'overspend'}
-                className={`w-11 h-11 ${monthBalance >= 0 ? 'text-white' : 'text-rose-800'}`}
-              />
+          <div className="px-4 py-4 flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center shrink-0">
+              <GullakPotIcon state="savings" className="w-11 h-11 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p
-                className={`text-xs font-medium ${
-                  monthBalance >= 0 ? 'text-white/70' : 'text-rose-400'
-                }`}
-              >
-                {monthBalance >= 0
-                  ? L('Savings this month', 'इस महीने की बचत')
-                  : L('Overspending this month', 'इस महीने ज़्यादा खर्च')}
+              <p className="text-xs font-medium text-white/80">
+                {L('Your Gullak', 'आपका गुल्लक')}
               </p>
-              <p
-                className={`text-xs ${
-                  monthBalance >= 0 ? 'text-white/50' : 'text-rose-300'
-                }`}
-              >
-                {L('This month', 'इस महीने')}
+              <p className="text-2xl font-black text-white mt-0.5">
+                {gullakTotal > 0 ? fmt(gullakTotal) : '—'}
               </p>
-              <p
-                className={`text-xl font-black mt-0.5 ${
-                  monthBalance >= 0 ? 'text-white' : 'text-rose-500'
-                }`}
-              >
-                {monthBalance >= 0
-                  ? `+${fmt(monthBalance)}`
-                  : `−${fmt(Math.abs(monthBalance))}`}
+              <p className="text-xs text-white/60 mt-0.5">
+                {L('Physical savings at home', 'घर पर नकद बचत')}
               </p>
-            </div>
-            <div className="text-right shrink-0 flex flex-col items-end gap-1">
-              <div>
-                <p
-                  className={`text-xs ${
-                    monthBalance >= 0 ? 'text-white/70' : 'text-rose-400'
-                  }`}
-                >
-                  {L('of income', 'आय का')}
-                </p>
-                <p
-                  className={`text-sm font-bold ${
-                    monthBalance >= 0 ? 'text-white' : 'text-rose-500'
-                  }`}
-                >
-                  {monthIn > 0 ? Math.round((monthBalance / monthIn) * 100) : 0}%
-                </p>
-              </div>
-              <ChevronDown
-                className={`w-5 h-5 transition-transform duration-300 ${
-                  monthBalance >= 0 ? 'text-white/60' : 'text-rose-300'
-                } ${savingsExpanded ? 'rotate-180' : ''}`}
-              />
-            </div>
-          </button>
-
-          <div
-            className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
-              savingsExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-            }`}
-          >
-            <div className="overflow-hidden">
-              <div
-                className={`px-4 pb-4 pt-1 border-t ${
-                  monthBalance >= 0 ? 'border-white/20' : 'border-rose-100'
-                }`}
-              >
-                <p
-                  className={`text-xs font-semibold uppercase mb-2 ${
-                    monthBalance >= 0 ? 'text-white/50' : 'text-rose-300'
-                  }`}
-                >
-                  {L('This month', 'इस महीने')}
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div
-                    className={`rounded-xl px-3 py-2.5 ${
-                      monthBalance >= 0 ? 'bg-white/15' : 'bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <TrendingUp className="w-6 h-6 text-emerald-400" />
-                      <span
-                        className={`text-xs font-semibold ${
-                          monthBalance >= 0 ? 'text-white/80' : 'text-emerald-600'
-                        }`}
-                      >
-                        {L('Money In', 'आया')}
-                      </span>
-                    </div>
-                    <p
-                      className={`text-sm font-black ${
-                        monthBalance >= 0 ? 'text-emerald-300' : 'text-emerald-600'
-                      }`}
-                    >
-                      {monthIn > 0 ? `+${fmt(monthIn)}` : '—'}
-                    </p>
-                  </div>
-                  <div
-                    className={`rounded-xl px-3 py-2.5 ${
-                      monthBalance >= 0 ? 'bg-white/15' : 'bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <TrendingDown className="w-6 h-6 text-rose-400" />
-                      <span
-                        className={`text-xs font-semibold ${
-                          monthBalance >= 0 ? 'text-white/80' : 'text-rose-500'
-                        }`}
-                      >
-                        {L('Money Out', 'गया')}
-                      </span>
-                    </div>
-                    <p
-                      className={`text-sm font-black ${
-                        monthBalance >= 0 ? 'text-rose-300' : 'text-rose-500'
-                      }`}
-                    >
-                      {monthOut > 0 ? `−${fmt(monthOut)}` : '—'}
-                    </p>
-                  </div>
-                </div>
-                {monthIn > 0 && (
-                  <p
-                    className={`text-xs text-right mt-2 ${
-                      monthBalance >= 0 ? 'text-white/40' : 'text-rose-300'
-                    }`}
-                  >
-                    {Math.round((monthOut / monthIn) * 100)}%{' '}
-                    {L('of income spent', 'आय का खर्च')}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
+          {allTimeBalance > 0 && (
+            <div className="px-4 pb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setGullakPrefillAmount(allTimeBalance);
+                  setTab('gullak');
+                }}
+                className="w-full py-3 rounded-2xl bg-white/20 border border-white/30 text-white font-bold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+              >
+                <GullakPotIcon state="savings" className="w-5 h-5 text-white" />
+                {L('Save to Gullak?', 'गुल्लक में रखें?')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

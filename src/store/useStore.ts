@@ -36,6 +36,10 @@ import {
   loadStoredIncomeSourceOverrides,
   saveStoredIncomeSourceOverrides,
 } from '../lib/incomeSourceOverridesStorage';
+import {
+  loadStoredGullakDeposits,
+  saveStoredGullakDeposits,
+} from '../lib/gullakDepositsStorage';
 import { seedExpenses, seedIncomes, seedTransfers } from '../lib/seedData';
 
 export type Category =
@@ -70,6 +74,13 @@ export interface Transfer {
   amount: number;
   note: string;
   date: string;
+}
+
+export interface GullakDeposit {
+  id: string;
+  amount: number;
+  date: string;
+  memberId: string;
 }
 
 export interface CategoryBudget {
@@ -157,6 +168,16 @@ interface AppState {
   setIncomeSourceOverrides: (overrides: Partial<Record<IncomeSource, IncomeSourceOverride>>) => void;
   setIncomeSourceOverride: (id: IncomeSource, data: IncomeSourceOverride) => void;
   resetIncomeSourceOverride: (id: IncomeSource) => void;
+
+  // ── gullak (physical savings tracking) ────────────────────────
+  gullakDeposits: GullakDeposit[];
+  setGullakDeposits: (deposits: GullakDeposit[]) => void;
+  addGullakDeposit: (d: Omit<GullakDeposit, 'id'>) => void;
+  /** Remove deposits for memberIds (null = entire family). */
+  clearGullakDeposits: (memberIds: string[] | null) => void;
+  gullakPrefillAmount: number | null;
+  setGullakPrefillAmount: (amount: number | null) => void;
+  clearGullakPrefill: () => void;
 
   // ── expenses ──────────────────────────────────────────────────
   expenses: Expense[];
@@ -436,6 +457,67 @@ export const useStore = create<AppState>((set, get) => ({
       persistGroupSettings({ incomeSourceOverrides: next });
       return { incomeSourceOverrides: next };
     }),
+
+  // ── gullak ────────────────────────────────────────────────────
+  gullakDeposits: loadStoredGullakDeposits(),
+  setGullakDeposits: (gullakDeposits) => {
+    saveStoredGullakDeposits(gullakDeposits);
+    set({ gullakDeposits });
+  },
+  addGullakDeposit: (d) => {
+    const id =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `gk_${crypto.randomUUID()}`
+        : `gk_${Date.now()}`;
+    const deposit: GullakDeposit = { ...d, id };
+
+    set((s) => {
+      const gullakDeposits = [deposit, ...s.gullakDeposits];
+      saveStoredGullakDeposits(gullakDeposits);
+      return { gullakDeposits };
+    });
+
+    if (isLiveFirebase() && db) {
+      const { groupId } = get();
+      if (!groupId) return;
+      void setDoc(doc(db, `groups/${groupId}/gullakDeposits/${id}`), {
+        amount: d.amount,
+        date: d.date,
+        memberId: d.memberId,
+        createdAt: serverTimestamp(),
+      }).catch((err) => {
+        console.error('[gullak] Firestore save failed', err);
+      });
+    }
+  },
+  clearGullakDeposits: (memberIds) => {
+    set((s) => {
+      const toRemove = memberIds
+        ? s.gullakDeposits.filter((d) => memberIds.includes(d.memberId))
+        : [...s.gullakDeposits];
+      const remaining = memberIds
+        ? s.gullakDeposits.filter((d) => !memberIds.includes(d.memberId))
+        : [];
+
+      saveStoredGullakDeposits(remaining);
+
+      if (isLiveFirebase() && db) {
+        const { groupId } = get();
+        if (groupId) {
+          toRemove.forEach((d) => {
+            void deleteDoc(doc(db!, `groups/${groupId}/gullakDeposits/${d.id}`)).catch(
+              (err) => console.error('[gullak] Firestore delete failed', err),
+            );
+          });
+        }
+      }
+
+      return { gullakDeposits: remaining };
+    });
+  },
+  gullakPrefillAmount: null,
+  setGullakPrefillAmount: (gullakPrefillAmount) => set({ gullakPrefillAmount }),
+  clearGullakPrefill: () => set({ gullakPrefillAmount: null }),
 
   // ── expenses ──────────────────────────────────────────────────
   expenses: isLiveFirebase() ? [] : initialExpenses,

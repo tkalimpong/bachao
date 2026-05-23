@@ -8,7 +8,13 @@ import IncomeSourceIcon from '../components/IncomeSourceIcon';
 import { Search, X, ChevronLeft, ChevronRight, Pencil, ChevronDown, Check } from 'lucide-react';
 import EditTransactionSheet from '../components/EditTransactionSheet';
 import CategoryPanel from '../components/CategoryPanel';
+import GullakPotIcon from '../components/GullakPotIcon';
 import { TRUST_BLUE } from '../lib/theme';
+import {
+  availableBalance,
+  scopeGullakDeposits,
+  sumGullakDepositsInMonth,
+} from '../lib/gullakBalance';
 import {
   canViewAllHistory,
   canViewGroupFinances,
@@ -150,6 +156,7 @@ export default function History() {
     currentUserId,
     categoryOverrides,
     incomeSourceOverrides,
+    gullakDeposits,
   } = useStore();
 
   const myRole = getMemberRole(members, currentUserId);
@@ -256,7 +263,16 @@ export default function History() {
   const totalIn = filtered
     .filter((t) => t.kind === 'income')
     .reduce((s, t) => s + t.data.amount, 0);
-  const balance = totalIn - totalOut;
+
+  const gullakMemberScope =
+    ownOnly ? [currentUserId] : memberFilter === 'all' ? null : [memberFilter];
+  const scopedGullak = scopeGullakDeposits(gullakDeposits, gullakMemberScope);
+  const monthGullak =
+    typeFilter === 'income' || search.trim()
+      ? 0
+      : sumGullakDepositsInMonth(scopedGullak, selectedMonth);
+  const rawBalance = totalIn - totalOut;
+  const balance = availableBalance(rawBalance, monthGullak);
 
   const L = (en: string, hi: string) => language === 'en' ? en : hi;
 
@@ -409,7 +425,7 @@ export default function History() {
       <>
       {/* ── Monthly summary ─────────────────────────────────────────────── */}
       <div className="px-4 pt-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${monthGullak > 0 ? 'grid-cols-2' : 'grid-cols-3'}`}>
           <div className="bg-emerald-50 rounded-2xl px-3 py-3">
             <p className="text-xs text-emerald-500 font-semibold uppercase mb-1">
               {L('In', 'आया')}
@@ -420,12 +436,56 @@ export default function History() {
           </div>
           <div className="bg-rose-50 rounded-2xl px-3 py-3">
             <p className="text-xs text-rose-400 font-semibold uppercase mb-1">
-              {L('Out', 'गया')}
+              {L('Spent', 'खर्च')}
             </p>
             <p className="text-base font-black text-rose-500 tabular-nums">
               {totalOut > 0 ? `−${fmt(totalOut)}` : '—'}
             </p>
           </div>
+          {monthGullak > 0 ? (
+            <>
+              <div className="bg-brand-50 rounded-2xl px-3 py-3 border border-brand-100">
+                <div className="flex items-center gap-1 mb-1">
+                  <GullakPotIcon state="savings" className="w-4 h-4 text-brand-500" />
+                  <p className="text-xs text-brand-600 font-semibold uppercase">
+                    {L('Gullak', 'गुल्लक')}
+                  </p>
+                </div>
+                <p className="text-base font-black text-brand-600 tabular-nums">
+                  −{fmt(monthGullak)}
+                </p>
+                <p className="text-[10px] text-brand-400 mt-0.5 leading-tight">
+                  {L('Not spending', 'खर्च नहीं')}
+                </p>
+              </div>
+              <div
+                className="rounded-2xl px-3 py-3"
+                style={{ background: balance > 0 ? TRUST_BLUE[50] : '#f9fafb' }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase mb-1"
+                  style={{ color: balance > 0 ? TRUST_BLUE[500] : '#6b7280' }}
+                >
+                  {L('Balance', 'बचत')}
+                </p>
+                <p
+                  className="text-base font-black tabular-nums"
+                  style={{
+                    color:
+                      balance > 0
+                        ? TRUST_BLUE[600]
+                        : balance < 0
+                        ? '#f43f5e'
+                        : '#d1d5db',
+                  }}
+                >
+                  {balance === 0 && totalIn === 0 && totalOut === 0 && monthGullak === 0
+                    ? '—'
+                    : `${balance >= 0 ? '+' : '−'}${fmt(Math.abs(balance))}`}
+                </p>
+              </div>
+            </>
+          ) : (
           <div
             className="rounded-2xl px-3 py-3"
             style={{ background: balance > 0 ? TRUST_BLUE[50] : '#f9fafb' }}
@@ -452,7 +512,13 @@ export default function History() {
                 : `${balance >= 0 ? '+' : '−'}${fmt(Math.abs(balance))}`}
             </p>
           </div>
+          )}
         </div>
+        {monthGullak > 0 && (
+          <p className="text-[11px] text-gray-400 text-center mt-2">
+            {L('Income − Spent − Gullak = Balance', 'आय − खर्च − गुल्लक = बचत')}
+          </p>
+        )}
       </div>
 
       {/* ── Transaction list ────────────────────────────────────────────── */}

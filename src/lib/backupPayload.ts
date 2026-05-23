@@ -19,6 +19,7 @@ import {
   type Income,
   type Transfer,
   type IncomeSource,
+  type GullakDeposit,
 } from '../store/useStore';
 import {
   saveStoredCategoryOverrides,
@@ -31,6 +32,9 @@ import {
   saveStoredHiddenIncomeSources,
   saveStoredPlan,
 } from './planStorage';
+import {
+  saveStoredGullakDeposits,
+} from './gullakDepositsStorage';
 
 import { APP_SLUG } from './appBrand';
 
@@ -56,6 +60,7 @@ export interface BackupPayload {
   hiddenCategories: Category[];
   hiddenIncomeSources?: IncomeSource[];
   incomeSourceOverrides?: IncomeSourceOverrides;
+  gullakDeposits?: GullakDeposit[];
 }
 
 export function buildBackupPayload(): BackupPayload {
@@ -69,6 +74,7 @@ export function buildBackupPayload(): BackupPayload {
     hiddenCategories,
     hiddenIncomeSources,
     incomeSourceOverrides,
+    gullakDeposits,
     plan,
     groupId,
   } = useStore.getState();
@@ -87,6 +93,7 @@ export function buildBackupPayload(): BackupPayload {
     hiddenCategories,
     hiddenIncomeSources,
     incomeSourceOverrides,
+    gullakDeposits,
   };
 }
 
@@ -196,6 +203,7 @@ function applyToLocalStore(payload: BackupPayload): void {
   saveStoredHiddenCategories(payload.hiddenCategories ?? []);
   saveStoredHiddenIncomeSources(payload.hiddenIncomeSources ?? []);
   saveStoredIncomeSourceOverrides(payload.incomeSourceOverrides ?? {});
+  saveStoredGullakDeposits(payload.gullakDeposits ?? []);
 
   useStore.setState({
     plan: payload.plan ?? 'free',
@@ -207,6 +215,7 @@ function applyToLocalStore(payload: BackupPayload): void {
     hiddenCategories: payload.hiddenCategories ?? [],
     hiddenIncomeSources: payload.hiddenIncomeSources ?? [],
     incomeSourceOverrides: payload.incomeSourceOverrides ?? {},
+    gullakDeposits: payload.gullakDeposits ?? [],
     ...(isLiveFirebase() ? {} : { members: payload.members }),
   });
 }
@@ -260,6 +269,15 @@ async function upsertTransactions(groupId: string, payload: BackupPayload): Prom
     );
   }
 
+  for (let i = 0; i < (payload.gullakDeposits ?? []).length; i += 400) {
+    const batch = writeBatch(db);
+    (payload.gullakDeposits ?? []).slice(i, i + 400).forEach((d) => {
+      const { id, ...data } = d;
+      batch.set(doc(db!, `groups/${groupId}/gullakDeposits/${id}`), data);
+    });
+    await batch.commit();
+  }
+
   await setDoc(
     doc(db, `groups/${groupId}/settings/main`),
     {
@@ -282,6 +300,7 @@ async function restoreToFirestore(groupId: string, payload: BackupPayload): Prom
   const expenseIds = new Set(payload.expenses.map((e) => e.id));
   const incomeIds = new Set(payload.incomes.map((i) => i.id));
   const transferIds = new Set(payload.transfers.map((t) => t.id));
+  const gullakIds = new Set((payload.gullakDeposits ?? []).map((d) => d.id));
 
   // Write backup data first; orphan cleanup is best-effort.
   await upsertTransactions(groupId, payload);
@@ -291,6 +310,7 @@ async function restoreToFirestore(groupId: string, payload: BackupPayload): Prom
     await deleteCollectionDocs(`groups/${groupId}/expenses`, expenseIds);
     await deleteCollectionDocs(`groups/${groupId}/incomes`, incomeIds);
     await deleteCollectionDocs(`groups/${groupId}/transfers`, transferIds);
+    await deleteCollectionDocs(`groups/${groupId}/gullakDeposits`, gullakIds);
   } catch (e) {
     console.warn('[restore] could not remove old transactions', e);
   }

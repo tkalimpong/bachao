@@ -14,6 +14,7 @@ import { isLiveFirebase } from '../lib/appMode';
 import { saveStoredCategoryOverrides } from '../lib/categoryOverridesStorage';
 import { saveStoredIncomeSourceOverrides } from '../lib/incomeSourceOverridesStorage';
 import { saveStoredHiddenCategories, saveStoredHiddenIncomeSources, saveStoredPlan } from '../lib/planStorage';
+import { loadStoredGullakDeposits } from '../lib/gullakDepositsStorage';
 import type { Plan } from '../lib/plan';
 import { normalizeCategoryOverrides, type CategoryOverrides } from '../lib/categories';
 import {
@@ -26,6 +27,7 @@ import {
   type CategoryBudget,
   type Expense,
   type FamilyMember,
+  type GullakDeposit,
   type Income,
   type IncomeSource,
   type Transfer,
@@ -68,6 +70,7 @@ export function useFirestoreSync(enabled = true) {
     setMembers,
     setCategoryOverrides,
     setIncomeSourceOverrides,
+    setGullakDeposits,
     setSyncStatus,
   } = useStore();
 
@@ -178,6 +181,38 @@ export function useFirestoreSync(enabled = true) {
         });
         setTransfers(transfers);
       }),
+    );
+
+    // --- gullak deposits（全件 — 累計残高用） ---
+    unsubscribers.push(
+      onSnapshot(
+        collection(db, `${groupBase}/gullakDeposits`),
+        (snap) => {
+          // Offline cache can briefly report empty — don't wipe local deposits.
+          if (snap.empty && snap.metadata.fromCache) return;
+
+          const remote: GullakDeposit[] = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              amount: data.amount as number,
+              date: data.date as string,
+              memberId: data.memberId as string,
+            };
+          });
+
+          const remoteIds = new Set(remote.map((d) => d.id));
+          const localOnly = loadStoredGullakDeposits().filter(
+            (d) => !remoteIds.has(d.id),
+          );
+          const gullakDeposits = [...remote, ...localOnly].sort((a, b) =>
+            b.date.localeCompare(a.date),
+          );
+
+          setGullakDeposits(gullakDeposits);
+        },
+        (err) => console.warn('[sync] gullakDeposits listener error', err),
+      ),
     );
 
     // --- category budgets（全件・10件固定なので常に軽量） ---
