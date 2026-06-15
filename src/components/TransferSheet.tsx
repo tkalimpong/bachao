@@ -63,17 +63,27 @@ export default function TransferSheet({
   const [toId, setToId] = useState(defaultTo);
   const [amount, setAmount] = useState(transfer ? String(transfer.amount) : '');
   const [note, setNote] = useState(transfer?.note ?? '');
-  const [date, setDate] = useState(
-    transfer?.date ?? new Date().toISOString().slice(0, 10),
-  );
+  const [date, setDate] = useState(() => {
+    const fullDate = transfer?.date ?? new Date().toISOString().slice(0, 10);
+    return fullDate.split(' ')[0] || fullDate;
+  });
+  const [time, setTime] = useState(() => {
+    const fullDate = transfer?.date ?? '';
+    return fullDate.includes(' ') ? fullDate.split(' ')[1] : '12:00';
+  });
   const [confirmDel, setConfirmDel] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const L = (en: string, hi: string) => (language === 'en' ? en : hi);
 
+  function getDateWithTime(): string {
+    return `${date} ${time}`;
+  }
+
   function handleSave() {
     const n = Number(amount);
     const saveFromId = lockedFromId ?? fromId;
+    const dateWithTime = getDateWithTime();
     if (!n || n <= 0 || saveFromId === toId) return;
     if (isEdit && transfer) {
       if (!canEdit) return;
@@ -82,7 +92,7 @@ export default function TransferSheet({
         toMemberId: toId,
         amount: n,
         note: note.trim(),
-        date,
+        date: dateWithTime,
       });
     } else {
       addTransfer({
@@ -90,7 +100,7 @@ export default function TransferSheet({
         toMemberId: toId,
         amount: n,
         note: note.trim() || L('Transfer', 'ट्रांसफर'),
-        date,
+        date: dateWithTime,
       });
     }
     setSaved(true);
@@ -226,15 +236,26 @@ export default function TransferSheet({
             className="w-full bg-white rounded-2xl px-4 h-12 text-sm text-gray-800 outline-none placeholder:text-gray-300"
           />
 
-          <div className="bg-white rounded-2xl px-4 h-12 flex items-center gap-3">
-            <CalendarDays className="w-6 h-6 text-gray-300 shrink-0" />
-            <input
-              type="date"
-              value={date}
-              disabled={isEdit && !canEdit}
-              onChange={(e) => setDate(e.target.value)}
-              className="flex-1 text-sm text-gray-800 bg-transparent outline-none"
-            />
+          <div className="flex gap-3">
+            <div className="flex-1 bg-white rounded-2xl px-4 h-12 flex items-center gap-3">
+              <CalendarDays className="w-6 h-6 text-gray-300 shrink-0" />
+              <input
+                type="date"
+                value={date}
+                disabled={isEdit && !canEdit}
+                onChange={(e) => setDate(e.target.value)}
+                className="flex-1 text-sm text-gray-800 bg-transparent outline-none"
+              />
+            </div>
+            <div className="w-28 bg-white rounded-2xl px-4 h-12 flex items-center">
+              <input
+                type="time"
+                value={time}
+                disabled={isEdit && !canEdit}
+                onChange={(e) => setTime(e.target.value)}
+                className="flex-1 text-sm text-gray-800 bg-transparent outline-none"
+              />
+            </div>
           </div>
 
           {isEdit && canEdit && (

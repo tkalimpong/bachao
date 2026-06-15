@@ -105,6 +105,11 @@ function TxList({
                 <p className="text-xs text-gray-300">
                   {resolveCategoryLabel(catId, language === 'en' ? 'en' : 'hi', categoryOverrides)}
                 </p>
+                {data.date.includes(' ') && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {data.date.split(' ')[1]}
+                  </p>
+                )}
               </div>
               <span className="text-sm font-black text-rose-500 shrink-0">−{fmt(data.amount)}</span>
               <Pencil className="w-6 h-6 text-gray-200 shrink-0" />
@@ -134,6 +139,11 @@ function TxList({
                 <p className="text-xs text-gray-300">
                   {resolveIncomeSourceLabel(incomeId, language, incomeSourceOverrides)}
                 </p>
+                {data.date.includes(' ') && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {data.date.split(' ')[1]}
+                  </p>
+                )}
               </div>
               <span className="text-sm font-black text-emerald-500 shrink-0">+{fmt(data.amount)}</span>
               <Pencil className="w-6 h-6 text-gray-200 shrink-0" />
@@ -227,10 +237,17 @@ export default function History() {
     const map = new Map<string, TxEntry[]>();
     for (const tx of filtered) {
       const d = tx.data.date;
-      if (!map.has(d)) map.set(d, []);
-      map.get(d)!.push(tx);
+      const dateOnly = d.split(' ')[0]; // Extract YYYY-MM-DD from "YYYY-MM-DD HH:MM"
+      if (!map.has(dateOnly)) map.set(dateOnly, []);
+      map.get(dateOnly)!.push(tx);
     }
-    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    // Sort each group by time descending, then sort groups by date descending
+    return Array.from(map.entries())
+      .map(([date, txs]) => [
+        date,
+        txs.sort((a, b) => b.data.date.localeCompare(a.data.date)),
+      ] as [string, TxEntry[]])
+      .sort((a, b) => b[0].localeCompare(a[0])) as Array<[string, TxEntry[]]>;
   }, [filtered]);
 
   useEffect(() => {

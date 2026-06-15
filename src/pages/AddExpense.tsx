@@ -74,7 +74,15 @@ export default function AddExpense() {
   const [amount, setAmount]     = useState('');
   const [note, setNote]         = useState('');
   const [date, setDate]         = useState(() => new Date().toISOString().slice(0, 10));
+  const [time, setTime]         = useState(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
   const [saved, setSaved]       = useState(false);
+
+  function getDateWithTime(): string {
+    return `${date} ${time}`;
+  }
 
   const thisMonth = new Date().toISOString().slice(0, 7);
 
@@ -106,24 +114,29 @@ export default function AddExpense() {
     const n = Number(amount);
     if (!n || n <= 0) return;
     const savedNote = resolveNote();
+    const dateWithTime = getDateWithTime();
     if (mode === 'expense') {
-      addExpense({ category, amount: n, note: savedNote, date, memberId: recordAsId });
+      addExpense({ category, amount: n, note: savedNote, date: dateWithTime, memberId: recordAsId });
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
         setAmount('');
         setNote('');
         setDate(new Date().toISOString().slice(0, 10));
+        const now = new Date();
+        setTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
         navigateAfterAdd();
       }, 900);
     } else {
-      addIncome({ source, amount: n, note: savedNote, date, memberId: recordAsId });
+      addIncome({ source, amount: n, note: savedNote, date: dateWithTime, memberId: recordAsId });
       setSaved(true);
       setTimeout(() => {
         setSaved(false);
         setAmount('');
         setNote('');
         setDate(new Date().toISOString().slice(0, 10));
+        const now = new Date();
+        setTime(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
         navigateAfterAdd();
       }, 900);
     }
@@ -279,16 +292,26 @@ export default function AddExpense() {
         />
       </div>
 
-      {/* Date */}
+      {/* Date & Time */}
       <div className="px-4 mb-4">
-        <div className="bg-white rounded-2xl px-4 h-12 flex items-center gap-3">
-          <CalendarDays className="w-6 h-6 text-gray-300 shrink-0" />
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="flex-1 text-sm text-gray-800 bg-transparent outline-none"
-          />
+        <div className="flex gap-3">
+          <div className="flex-1 bg-white rounded-2xl px-4 h-12 flex items-center gap-3">
+            <CalendarDays className="w-6 h-6 text-gray-300 shrink-0" />
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="flex-1 text-sm text-gray-800 bg-transparent outline-none"
+            />
+          </div>
+          <div className="w-28 bg-white rounded-2xl px-4 h-12 flex items-center">
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              className="flex-1 text-sm text-gray-800 bg-transparent outline-none"
+            />
+          </div>
         </div>
       </div>
 

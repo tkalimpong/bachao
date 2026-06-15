@@ -55,19 +55,25 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
   const [source,     setSource]     = useState<IncomeSource>(!isExpense ? (original as Income).source : 'salary');
   const [amount,     setAmount]     = useState(String(original.amount));
   const [note,       setNote]       = useState(original.note);
-  const [date,       setDate]       = useState(original.date);
+  const [date,       setDate]       = useState(() => original.date.split(' ')[0] || original.date);
+  const [time,       setTime]       = useState(() => original.date.includes(' ') ? original.date.split(' ')[1] : '12:00');
   const [memberId,   setMemberId]   = useState(original.memberId);
   const [confirmDel, setConfirmDel] = useState(false);
   const [saved,      setSaved]      = useState(false);
+
+  function getDateWithTime(): string {
+    return `${date} ${time}`;
+  }
 
   function handleSave() {
     if (!canEdit) return;
     const n = Number(amount);
     if (!n || n <= 0) return;
+    const dateWithTime = getDateWithTime();
     if (isExpense) {
-      updateExpense(original.id, { category, amount: n, note, date, memberId });
+      updateExpense(original.id, { category, amount: n, note, date: dateWithTime, memberId });
     } else {
-      updateIncome(original.id, { source, amount: n, note, date, memberId });
+      updateIncome(original.id, { source, amount: n, note, date: dateWithTime, memberId });
     }
     setSaved(true);
     setTimeout(onClose, 700);
@@ -192,17 +198,27 @@ export default function EditTransactionSheet({ target, onClose }: Props) {
             className="w-full bg-white rounded-2xl px-4 h-12 text-sm text-gray-800 outline-none placeholder:text-gray-300"
           />
 
-          {/* Date */}
-          <div className="bg-white rounded-2xl px-4 flex items-center gap-3 h-12">
-            <span className="text-xs text-gray-400 font-semibold shrink-0">
-              {language === 'en' ? 'Date' : 'तारीख'}
-            </span>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="flex-1 text-sm font-semibold text-gray-800 bg-transparent outline-none"
-            />
+          {/* Date & Time */}
+          <div className="flex gap-3">
+            <div className="flex-1 bg-white rounded-2xl px-4 flex items-center gap-3 h-12">
+              <span className="text-xs text-gray-400 font-semibold shrink-0">
+                {language === 'en' ? 'Date' : 'तारीख'}
+              </span>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="flex-1 text-sm font-semibold text-gray-800 bg-transparent outline-none"
+              />
+            </div>
+            <div className="w-28 bg-white rounded-2xl px-4 flex items-center h-12">
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="flex-1 text-sm font-semibold text-gray-800 bg-transparent outline-none"
+              />
+            </div>
           </div>
 
           {/* Member */}
