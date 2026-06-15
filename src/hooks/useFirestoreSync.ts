@@ -109,6 +109,56 @@ export function useFirestoreSync(enabled = true) {
       });
     });
 
+    // Prime local store with full history once; live listeners below keep the
+    // current month fresh without wiping older months on month rollover.
+    void Promise.all([
+      getDocs(query(collection(db, `${groupBase}/expenses`), orderBy('date', 'desc'))),
+      getDocs(query(collection(db, `${groupBase}/incomes`), orderBy('date', 'desc'))),
+      getDocs(query(collection(db, `${groupBase}/transfers`), orderBy('date', 'desc'))),
+    ])
+      .then(([expenseSnap, incomeSnap, transferSnap]) => {
+        const expenses: Expense[] = expenseSnap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            category: data.category,
+            amount: data.amount,
+            note: data.note,
+            date: data.date,
+            memberId: data.memberId,
+          };
+        });
+
+        const incomes: Income[] = incomeSnap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            source: data.source,
+            amount: data.amount,
+            note: data.note,
+            date: data.date,
+            memberId: data.memberId,
+          };
+        });
+
+        const transfers: Transfer[] = transferSnap.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,
+            fromMemberId: data.fromMemberId,
+            toMemberId: data.toMemberId,
+            amount: data.amount,
+            note: data.note,
+            date: data.date,
+          };
+        });
+
+        setExpenses(expenses);
+        setIncomes(incomes);
+        setTransfers(transfers);
+      })
+      .catch((err) => console.warn('[sync] initial history load failed', err));
+
     // --- expenses（当月分のみ） ---
     const expQuery = query(
       collection(db, `${groupBase}/expenses`),
@@ -119,7 +169,7 @@ export function useFirestoreSync(enabled = true) {
       onSnapshot(
         expQuery,
         (snap) => {
-          const expenses: Expense[] = snap.docs.map((d) => {
+          const monthExpenses: Expense[] = snap.docs.map((d) => {
             const data = d.data();
             return {
               id:       d.id,
@@ -130,7 +180,11 @@ export function useFirestoreSync(enabled = true) {
               memberId: data.memberId,
             };
           });
-          setExpenses(expenses);
+          const monthIds = new Set(monthExpenses.map((expense) => expense.id));
+          const olderExpenses = useStore
+            .getState()
+            .expenses.filter((expense) => !monthIds.has(expense.id) && expense.date < monthStart);
+          setExpenses([...monthExpenses, ...olderExpenses].sort((a, b) => b.date.localeCompare(a.date)));
           setSyncStatus('live');
         },
         () => setSyncStatus('offline'),
@@ -145,7 +199,7 @@ export function useFirestoreSync(enabled = true) {
     );
     unsubscribers.push(
       onSnapshot(incQuery, (snap) => {
-        const incomes: Income[] = snap.docs.map((d) => {
+        const monthIncomes: Income[] = snap.docs.map((d) => {
           const data = d.data();
           return {
             id:       d.id,
@@ -156,7 +210,11 @@ export function useFirestoreSync(enabled = true) {
             memberId: data.memberId,
           };
         });
-        setIncomes(incomes);
+        const monthIds = new Set(monthIncomes.map((income) => income.id));
+        const olderIncomes = useStore
+          .getState()
+          .incomes.filter((income) => !monthIds.has(income.id) && income.date < monthStart);
+        setIncomes([...monthIncomes, ...olderIncomes].sort((a, b) => b.date.localeCompare(a.date)));
       }),
     );
 
@@ -168,7 +226,7 @@ export function useFirestoreSync(enabled = true) {
     );
     unsubscribers.push(
       onSnapshot(trQuery, (snap) => {
-        const transfers: Transfer[] = snap.docs.map((d) => {
+        const monthTransfers: Transfer[] = snap.docs.map((d) => {
           const data = d.data();
           return {
             id: d.id,
@@ -179,7 +237,11 @@ export function useFirestoreSync(enabled = true) {
             date: data.date,
           };
         });
-        setTransfers(transfers);
+        const monthIds = new Set(monthTransfers.map((transfer) => transfer.id));
+        const olderTransfers = useStore
+          .getState()
+          .transfers.filter((transfer) => !monthIds.has(transfer.id) && transfer.date < monthStart);
+        setTransfers([...monthTransfers, ...olderTransfers].sort((a, b) => b.date.localeCompare(a.date)));
       }),
     );
 

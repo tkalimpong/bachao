@@ -523,38 +523,52 @@ export const useStore = create<AppState>((set, get) => ({
   expenses: isLiveFirebase() ? [] : initialExpenses,
   setExpenses: (expenses) => set({ expenses }),
   addExpense: (e) => {
+    const id = Date.now().toString();
+    set((s) => ({
+      expenses: [{ ...e, id }, ...s.expenses],
+    }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
       addDoc(collection(db, `groups/${groupId}/expenses`), {
         ...e,
         createdAt: serverTimestamp(),
+      }).then((ref) => {
+        set((s) => ({
+          expenses: s.expenses.map((expense) => (expense.id === id ? { ...expense, id: ref.id } : expense)),
+        }));
+      }).catch(() => {
+        set((s) => ({ expenses: s.expenses.filter((expense) => expense.id !== id) }));
       });
-    } else {
-      set((s) => ({
-        expenses: [
-          { ...e, id: Date.now().toString() },
-          ...s.expenses,
-        ],
-      }));
     }
   },
 
   updateExpense: (id, data) => {
+    const previous = get().expenses.find((expense) => expense.id === id);
+    if (!previous) return;
+
+    set((s) => ({
+      expenses: s.expenses.map((expense) => (expense.id === id ? { ...expense, ...data } : expense)),
+    }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
-      updateDoc(doc(db, `groups/${groupId}/expenses/${id}`), data);
-    } else {
-      set((s) => ({
-        expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...data } : e)),
-      }));
+      updateDoc(doc(db, `groups/${groupId}/expenses/${id}`), data).catch(() => {
+        set((s) => ({
+          expenses: s.expenses.map((expense) => (expense.id === id ? previous : expense)),
+        }));
+      });
     }
   },
   deleteExpense: (id) => {
+    const previous = get().expenses;
+    set((s) => ({ expenses: s.expenses.filter((expense) => expense.id !== id) }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
-      deleteDoc(doc(db, `groups/${groupId}/expenses/${id}`));
-    } else {
-      set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
+      deleteDoc(doc(db, `groups/${groupId}/expenses/${id}`)).catch(() => {
+        set({ expenses: previous });
+      });
     }
   },
 
@@ -562,38 +576,52 @@ export const useStore = create<AppState>((set, get) => ({
   incomes: isLiveFirebase() ? [] : initialIncomes,
   setIncomes: (incomes) => set({ incomes }),
   addIncome: (i) => {
+    const id = 'inc_' + Date.now();
+    set((s) => ({
+      incomes: [{ ...i, id }, ...s.incomes],
+    }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
       addDoc(collection(db, `groups/${groupId}/incomes`), {
         ...i,
         createdAt: serverTimestamp(),
+      }).then((ref) => {
+        set((s) => ({
+          incomes: s.incomes.map((income) => (income.id === id ? { ...income, id: ref.id } : income)),
+        }));
+      }).catch(() => {
+        set((s) => ({ incomes: s.incomes.filter((income) => income.id !== id) }));
       });
-    } else {
-      set((s) => ({
-        incomes: [
-          { ...i, id: 'inc_' + Date.now() },
-          ...s.incomes,
-        ],
-      }));
     }
   },
 
   updateIncome: (id, data) => {
+    const previous = get().incomes.find((income) => income.id === id);
+    if (!previous) return;
+
+    set((s) => ({
+      incomes: s.incomes.map((income) => (income.id === id ? { ...income, ...data } : income)),
+    }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
-      updateDoc(doc(db, `groups/${groupId}/incomes/${id}`), data);
-    } else {
-      set((s) => ({
-        incomes: s.incomes.map((i) => (i.id === id ? { ...i, ...data } : i)),
-      }));
+      updateDoc(doc(db, `groups/${groupId}/incomes/${id}`), data).catch(() => {
+        set((s) => ({
+          incomes: s.incomes.map((income) => (income.id === id ? previous : income)),
+        }));
+      });
     }
   },
   deleteIncome: (id) => {
+    const previous = get().incomes;
+    set((s) => ({ incomes: s.incomes.filter((income) => income.id !== id) }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
-      deleteDoc(doc(db, `groups/${groupId}/incomes/${id}`));
-    } else {
-      set((s) => ({ incomes: s.incomes.filter((i) => i.id !== id) }));
+      deleteDoc(doc(db, `groups/${groupId}/incomes/${id}`)).catch(() => {
+        set({ incomes: previous });
+      });
     }
   },
 
@@ -602,35 +630,52 @@ export const useStore = create<AppState>((set, get) => ({
   setTransfers: (transfers) => set({ transfers }),
   addTransfer: (t) => {
     if (t.fromMemberId === t.toMemberId) return;
+    const id = 'tr_' + Date.now();
+    set((s) => ({
+      transfers: [{ ...t, id }, ...s.transfers],
+    }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
       addDoc(collection(db, `groups/${groupId}/transfers`), {
         ...t,
         createdAt: serverTimestamp(),
+      }).then((ref) => {
+        set((s) => ({
+          transfers: s.transfers.map((transfer) => (transfer.id === id ? { ...transfer, id: ref.id } : transfer)),
+        }));
+      }).catch(() => {
+        set((s) => ({ transfers: s.transfers.filter((transfer) => transfer.id !== id) }));
       });
-    } else {
-      set((s) => ({
-        transfers: [{ ...t, id: 'tr_' + Date.now() }, ...s.transfers],
-      }));
     }
   },
   updateTransfer: (id, data) => {
     if (data.fromMemberId && data.toMemberId && data.fromMemberId === data.toMemberId) return;
+    const previous = get().transfers.find((transfer) => transfer.id === id);
+    if (!previous) return;
+
+    set((s) => ({
+      transfers: s.transfers.map((transfer) => (transfer.id === id ? { ...transfer, ...data } : transfer)),
+    }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
-      updateDoc(doc(db, `groups/${groupId}/transfers/${id}`), data);
-    } else {
-      set((s) => ({
-        transfers: s.transfers.map((t) => (t.id === id ? { ...t, ...data } : t)),
-      }));
+      updateDoc(doc(db, `groups/${groupId}/transfers/${id}`), data).catch(() => {
+        set((s) => ({
+          transfers: s.transfers.map((transfer) => (transfer.id === id ? previous : transfer)),
+        }));
+      });
     }
   },
   deleteTransfer: (id) => {
+    const previous = get().transfers;
+    set((s) => ({ transfers: s.transfers.filter((transfer) => transfer.id !== id) }));
+
     if (isLiveFirebase() && db) {
       const { groupId } = get();
-      deleteDoc(doc(db, `groups/${groupId}/transfers/${id}`));
-    } else {
-      set((s) => ({ transfers: s.transfers.filter((t) => t.id !== id) }));
+      deleteDoc(doc(db, `groups/${groupId}/transfers/${id}`)).catch(() => {
+        set({ transfers: previous });
+      });
     }
   },
 
